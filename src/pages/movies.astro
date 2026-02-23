@@ -1,0 +1,121 @@
+---
+import Breadcrumbs from '@/components/Breadcrumbs.astro'
+import PageHead from '@/components/PageHead.astro'
+import Layout from '@/layouts/Layout.astro'
+import { Image } from 'astro:assets'
+import { getCollection, render } from 'astro:content'
+
+const rawMovies = await getCollection('movies')
+const movies = await Promise.all(
+  rawMovies.map(async (entry) => {
+    const { Content } = await render(entry)
+    const rating = entry.data.rating
+    const starValue =
+      typeof rating === 'number' ? Math.round(rating / 20) : null
+    const starsString =
+      typeof starValue === 'number'
+        ? '★'.repeat(starValue) + '☆'.repeat(5 - starValue)
+        : null
+    return { ...entry, Content, starsString }
+  }),
+)
+---
+
+<Layout class="max-w-3xl">
+  <PageHead
+    slot="head"
+    title="Movie Reviews"
+    description="Fragments and reflections on films I can’t stop thinking about."
+  />
+  <Breadcrumbs items={[{ label: 'Movie reviews', icon: 'lucide:film' }]} />
+
+  {
+    movies.length === 0 ? (
+      <p class="text-muted-foreground text-sm">
+        No movie reviews yet. Add <code>.mdx</code> files under
+        <code>src/content/movies</code> to have them appear here.
+      </p>
+    ) : (
+      <ul class="fade-in-up-soft flex flex-col gap-y-4">
+        {
+          movies.map((movie) => (
+            <li class="group rounded-xl border bg-background/40 p-4 sm:p-5 transition-all duration-500 ease-out hover:-translate-y-1 hover:bg-muted/40">
+              <div class="grid grid-cols-[auto,1fr] items-start gap-4 sm:gap-6">
+                {
+                  movie.data.image ? (
+                    <Image
+                      src={movie.data.image}
+                      alt={movie.data.title}
+                      width={360}
+                      height={540}
+                      class="h-32 w-24 rounded-sm object-cover shadow-lg sm:h-40 sm:w-28"
+                    />
+                  ) : (
+                    <div class="flex h-32 w-24 items-center justify-center rounded-sm border border-border/70 bg-muted/10 text-[0.6rem] uppercase tracking-[0.24em] text-muted-foreground sm:h-40 sm:w-28">
+                      film
+                    </div>
+                  )
+                }
+
+                <div class="flex flex-col gap-2">
+                  <div>
+                    <h3 class="text-lg font-medium tracking-[0.16em] uppercase">
+                      {movie.data.title}
+                    </h3>
+                    <p class="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                      {movie.data.year ?? 'Unknown year'}
+                      {
+                        movie.data.directors && movie.data.directors.length > 0 && (
+                          <>
+                            {' '}
+                            &bull; {movie.data.directors.join(', ')}
+                          </>
+                        )
+                      }
+                      {
+                        typeof movie.data.runtimeMinutes === 'number' && (
+                          <>
+                            {' '}
+                            &bull; {movie.data.runtimeMinutes} min
+                          </>
+                        )
+                      }
+                    </p>
+                  </div>
+
+                  {
+                    movie.starsString && (
+                      <div class="flex items-baseline gap-2 text-sm">
+                        <span class="font-medium tracking-[0.2em] text-primary">
+                          {movie.starsString}
+                        </span>
+                        {typeof movie.data.rating === 'number' && (
+                          <span class="text-xs text-muted-foreground">
+                            {movie.data.rating} / 100
+                          </span>
+                        )}
+                      </div>
+                    )
+                  }
+
+                  {
+                    movie.data.description && (
+                      <p class="text-sm text-muted-foreground">
+                        {movie.data.description}
+                      </p>
+                    )
+                  }
+                </div>
+              </div>
+
+              <article class="prose small mt-4 max-w-none text-sm text-foreground/90">
+                <movie.Content />
+              </article>
+            </li>
+          ))
+        }
+      </ul>
+    )
+  }
+</Layout>
+

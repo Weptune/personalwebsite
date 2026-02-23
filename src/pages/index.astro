@@ -12,54 +12,22 @@ const blog = await getRecentPosts(SITE.featuredPostCount)
 
 <Layout class="max-w-3xl">
   <PageHead slot="head" title="Home" />
-  <section class="rounded-lg border">
+  <section class="rounded-lg border fade-in-up-soft">
     <div class="flex flex-col space-y-1.5 p-6">
-      <h3 class="text-3xl leading-none font-medium">er·u·dite</h3>
+      <h3 class="text-3xl leading-none font-medium normal-case">ab·hi·nav</h3>
       <p class="text-muted-foreground text-sm">
-        /ˈer(y)əˌdīt/ &bull; <span class="font-medium">adjective</span>
+        /ˈʌb.hɪ.nɑːv/ &bull; <span class="font-medium">noun</span>
       </p>
     </div>
     <div class="p-6 pt-0">
       <p class="text-muted-foreground mb-2 text-sm">
-        astro-erudite is an opinionated, unstyled static blogging template built
-        with <Link
-          href="https://astro.build"
-          class="text-foreground"
-          external
-          underline>Astro</Link
-        >, <Link
-          href="https://tailwindcss.com"
-          class="text-foreground"
-          external
-          underline>Tailwind</Link
-        >, and <Link
-          href="https://ui.shadcn.com"
-          class="text-foreground"
-          external
-          underline>shadcn/ui</Link
-        >. Extraordinarily loosely based on the <Link
-          href="https://astro-micro.vercel.app/"
-          class="text-foreground"
-          external
-          underline>Astro Micro</Link
-        > theme.
-      </p>
-      <p class="text-muted-foreground text-sm">
-        To use this template, check out the <Link
-          href="https://github.com/jktrn/astro-erudite"
-          class="text-foreground"
-          underline
-          external>GitHub</Link
-        > repository. To learn more about why this template exists, read this blog
-        post: <Link
-          href="/blog/the-state-of-static-blogs"
-          class="text-foreground"
-          underline>The State of Static Blogs in 2024</Link
-        >.
+        All the being and the doing, expansive, glittering, vocal, evaporated; and one shrunk, with a sense of solemnity, to being oneself, a wedge-shaped core of darkness, something invisible to others.<br>
+         Although she continued to knit, and sat erect, it was thus that she felt herself; and this self having shed its attachments was free for the strangest adventures.<br>
+         When life sank down for a moment, the range of experience seemed limitless. Beneath it is all dark, it is all spreading, it is unfathomably deep; but now and again we rise to the surface and that is what you see us by.
       </p>
     </div>
   </section>
-  <section class="flex flex-col gap-y-4">
+  <section class="flex flex-col gap-y-4 fade-in-up-soft">
     <h2 class="text-2xl font-medium">Latest posts</h2>
     <ul class="flex flex-col gap-y-4">
       {
@@ -72,7 +40,7 @@ const blog = await getRecentPosts(SITE.featuredPostCount)
     </ul>
     <div class="flex justify-center">
       <Link
-        href="/blog"
+        href="/thoughts"
         class={buttonVariants({ variant: 'ghost' }) + ' group'}
       >
         See all posts <span

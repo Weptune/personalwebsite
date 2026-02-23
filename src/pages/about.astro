@@ -13,34 +13,39 @@ const projects = await getAllProjects()
   <PageHead slot="head" title="About" />
   <Breadcrumbs items={[{ label: 'About', icon: 'lucide:info' }]} />
 
-  <section>
+  <section class="fade-in-up-soft">
     <div class="min-w-full">
       <div class="prose mb-8">
         <p class="mt-0">
-          astro-erudite is an opinionated, unstyled static blogging template
-          that prioritizes simplicity and performance, built with <Link
-            href="https://astro.build"
-            external
-            underline>Astro</Link
-          >, <Link href="https://tailwindcss.com" external underline
-            >Tailwind</Link
-          >, and <Link href="https://ui.shadcn.com" external underline
-            >shadcn/ui</Link
-          >. It provides a clean foundation for your content while being
-          extremely easy to customize.
+          I’m Abhinav. This place is a small, quiet corner of the internet
+          where I keep track of the things that won’t leave my head—albums and
+          films I love (or struggle with), projects I’m building, and thoughts
+          that don’t quite fit anywhere else.
         </p>
         <p>
-          To learn more about the philosophy behind this template, check out the
-          following blog post: <Link
-            href="/blog/the-state-of-static-blogs"
-            underline>The State of Static Blogs in 2024</Link
-          >.
+          The site is intentionally minimal: mostly black and white, with just
+          enough structure to get out of the way of the words. If you’re here,
+          you’re welcome to wander—start with the <Link href="/albums" underline
+            >album reviews</Link
+          >, fall into a <Link href="/movies" underline>movie</Link> or two, or
+          browse the <Link href="/projects" underline>projects</Link> I’m
+          currently obsessed with.
+        </p>
+        <p>
+          This will keep changing as I do. For now, think of it as a living
+          notebook rather than a finished portfolio.
         </p>
       </div>
 
-      <h2 class="mb-4 text-2xl font-medium">Example Projects Listing</h2>
-      <div class="flex flex-col gap-4">
-        {projects.map((project) => <ProjectCard project={project} />)}
+      <h2 class="mb-4 text-2xl font-medium">Elsewhere</h2>
+      <div class="text-sm text-muted-foreground space-y-1">
+        <p>
+          You can usually find my code on <Link
+            href="https://github.com/"
+            external
+            underline>GitHub</Link
+          > and my half-formed takes scattered across this site.
+        </p>
       </div>
     </div>
   </section>

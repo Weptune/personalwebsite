@@ -1,0 +1,32 @@
+---
+import Breadcrumbs from '@/components/Breadcrumbs.astro'
+import PageHead from '@/components/PageHead.astro'
+import ProjectCard from '@/components/ProjectCard.astro'
+import Layout from '@/layouts/Layout.astro'
+import { getAllProjects } from '@/lib/data-utils'
+
+const projects = await getAllProjects()
+---
+
+<Layout class="max-w-3xl">
+  <PageHead
+    slot="head"
+    title="Projects"
+    description="Things I’ve built, broken, and slowly put back together."
+  />
+  <Breadcrumbs items={[{ label: 'Projects', icon: 'lucide:folder-kanban' }]} />
+
+  <section class="flex flex-col gap-4 fade-in-up-soft">
+    {
+      projects.length === 0 ? (
+        <p class="text-muted-foreground text-sm">
+          No projects published yet. Add entries under <code>src/content/projects</code> to
+          have them appear here.
+        </p>
+      ) : (
+        projects.map((project) => <ProjectCard project={project} />)
+      )
+    }
+  </section>
+</Layout>
+

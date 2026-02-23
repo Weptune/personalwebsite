@@ -2,10 +2,15 @@
 
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
+/* ------------------------------------------------ */
+/* THEME TOKEN MAPPING (UNCHANGED STRUCTURE)       */
+/* ------------------------------------------------ */
+
 @theme inline {
   --font-sans:
     Geist, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
     'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
   --font-mono:
     Geist Mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     'Liberation Mono', 'Courier New', monospace;
@@ -26,6 +31,10 @@
   --color-ring: var(--ring);
 }
 
+/* ------------------------------------------------ */
+/* FONTS                                            */
+/* ------------------------------------------------ */
+
 @font-face {
   font-family: 'Geist';
   src: url('/fonts/GeistVF.woff2') format('woff2-variations');
@@ -42,29 +51,43 @@
   font-display: swap;
 }
 
+/* ------------------------------------------------ */
+/* LIGHT MODE (unchanged — keep clean minimal)     */
+/* ------------------------------------------------ */
+
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
+  --background: oklch(0.98 0 0);
+  --foreground: oklch(0.18 0 0);
+  --primary: oklch(0.25 0 0);
+  --primary-foreground: oklch(0.98 0 0);
+  --muted: oklch(0.94 0 0);
+  --muted-foreground: oklch(0.45 0 0);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --border: oklch(0.9 0 0);
+  --ring: oklch(0.6 0 0);
 }
 
+/* ------------------------------------------------ */
+/* DARK MODE — GOTHIC REFINEMENT                   */
+/* ------------------------------------------------ */
+
 [data-theme='dark'] {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --ring: oklch(0.556 0 0);
+  --background: oklch(0.08 0 0);
+  --foreground: oklch(0.95 0 0);
+
+  --primary: oklch(0.82 0 0);
+  --primary-foreground: oklch(0.18 0 0);
+
+  --muted: oklch(0.18 0 0);
+  --muted-foreground: oklch(0.6 0 0);
+
+  --border: oklch(1 0 0 / 4%);
+  --ring: oklch(0.45 0 0);
 }
+
+/* ------------------------------------------------ */
+/* BASE LAYER REFINEMENT                           */
+/* ------------------------------------------------ */
 
 @layer base {
   *,
@@ -74,4 +97,59 @@
   ::file-selector-button {
     @apply border-border outline-ring/50 tracking-tight;
   }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "liga" 1, "calt" 1;
+    line-height: 1.7;
+  }
+
+  h1, h2, h3, h4 {
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-family: "Playfair Display", var(--font-sans);
+  }
+
+  a {
+    @apply text-primary transition-all duration-300;
+  }
+
+  a:hover {
+    opacity: 0.7;
+  }
+
+  hr {
+    @apply border-border my-10;
+  }
+}
+
+@layer utilities {
+  .fade-in-up-soft {
+    animation: fade-in-up-soft 600ms ease-out both;
+  }
+}
+
+@keyframes fade-in-up-soft {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ------------------------------------------------ */
+/* OPTIONAL ATMOSPHERIC TOUCH (very subtle)        */
+/* ------------------------------------------------ */
+
+[data-theme='dark'] body {
+  background: radial-gradient(
+    circle at 50% 0%,
+    oklch(0.13 0 0) 0%,
+    oklch(0.1 0 0) 60%,
+    oklch(0.08 0 0) 100%
+  );
 }

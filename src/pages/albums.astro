@@ -1,0 +1,99 @@
+---
+import Breadcrumbs from '@/components/Breadcrumbs.astro'
+import PageHead from '@/components/PageHead.astro'
+import Layout from '@/layouts/Layout.astro'
+import { Image } from 'astro:assets'
+import { getCollection, render } from 'astro:content'
+
+const rawAlbums = await getCollection('albums')
+const albums = await Promise.all(
+  rawAlbums.map(async (entry) => {
+    const { Content } = await render(entry)
+    return { ...entry, Content }
+  }),
+)
+---
+
+<Layout class="max-w-3xl">
+  <PageHead
+    slot="head"
+    title="Album Reviews"
+    description="Slow, subjective notes on albums that have stayed with me."
+  />
+  <Breadcrumbs items={[{ label: 'Album reviews', icon: 'lucide:disc' }]} />
+
+  {
+    albums.length === 0 ? (
+      <p class="text-muted-foreground text-sm">
+        No album reviews yet. Add <code>.mdx</code> files under
+        <code>src/content/albums</code> to have them appear here.
+      </p>
+    ) : (
+      <ul class="fade-in-up-soft flex flex-col gap-y-4">
+        {
+          albums.map((album) => (
+            <li class="group rounded-xl border bg-background/40 p-4 sm:p-5 transition-all duration-500 ease-out hover:-translate-y-1 hover:bg-muted/40">
+              <div class="grid grid-cols-[auto,1fr,auto] items-start gap-4 sm:gap-6">
+                {
+                  album.data.image ? (
+                    <Image
+                      src={album.data.image}
+                      alt={album.data.title}
+                      width={320}
+                      height={320}
+                      class="h-24 w-24 rounded-sm object-cover shadow-lg sm:h-28 sm:w-28"
+                    />
+                  ) : (
+                    <div class="flex h-24 w-24 items-center justify-center rounded-sm border border-border/70 bg-muted/10 text-[0.6rem] uppercase tracking-[0.24em] text-muted-foreground sm:h-28 sm:w-28">
+                      album
+                    </div>
+                  )
+                }
+
+                <div class="space-y-1.5">
+                  <h3 class="text-lg font-medium tracking-[0.18em] uppercase">
+                    {album.data.title}
+                  </h3>
+                  <p class="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                    {album.data.artists?.join(', ') ?? 'Unknown artist'}
+                    {
+                      album.data.year && (
+                        <>
+                          {' '}
+                          &bull; {album.data.year}
+                        </>
+                      )
+                    }
+                  </p>
+                  {
+                    album.data.description && (
+                      <p class="text-sm text-muted-foreground mt-2">
+                        {album.data.description}
+                      </p>
+                    )
+                  }
+                </div>
+
+                <div class="flex flex-col items-end gap-1 text-right">
+                  {
+                    typeof album.data.rating === 'number' && (
+                      <span class="font-mono text-2xl leading-none">
+                        {album.data.rating}
+                        <span class="text-xs text-muted-foreground">/100</span>
+                      </span>
+                    )
+                  }
+                </div>
+              </div>
+
+              <article class="prose small mt-4 max-w-none text-sm text-foreground/90">
+                <album.Content />
+              </article>
+            </li>
+          ))
+        }
+      </ul>
+    )
+  }
+</Layout>
+

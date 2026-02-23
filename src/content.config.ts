@@ -2,6 +2,7 @@ import { glob } from 'astro/loaders'
 import { defineCollection, z } from 'astro:content'
 
 const blog = defineCollection({
+  // Used for "thoughts" posts
   loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/blog' }),
   schema: ({ image }) =>
     z.object({
@@ -46,4 +47,33 @@ const projects = defineCollection({
     }),
 })
 
-export const collections = { blog, authors, projects }
+const albums = defineCollection({
+  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/albums' }),
+  schema: ({ image }) =>
+    z.object({
+      title: z.string(),
+      description: z.string(),
+      date: z.coerce.date(),
+      year: z.number().int(),
+      artists: z.array(z.string()),
+      rating: z.number().int().min(0).max(100),
+      image: image().optional(),
+    }),
+})
+
+const movies = defineCollection({
+  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/movies' }),
+  schema: ({ image }) =>
+    z.object({
+      title: z.string(),
+      description: z.string(),
+      date: z.coerce.date(),
+      year: z.number().int(),
+      directors: z.array(z.string()),
+      rating: z.number().int().min(0).max(100),
+      runtimeMinutes: z.number().int().optional(),
+      image: image().optional(),
+    }),
+})
+
+export const collections = { blog, authors, projects, albums, movies }
