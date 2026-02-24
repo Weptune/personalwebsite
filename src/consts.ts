@@ -16,31 +16,24 @@ export const NAV_LINKS: SocialLink[] = [
   { href: '/movies', label: 'movie reviews' },
   { href: '/thoughts', label: 'thoughts' },
   { href: '/projects', label: 'projects' },
+  { href: '/guestbook', label: 'guestbook' },
   { href: '/about', label: 'about me' },
 ];
 
 export const SOCIAL_LINKS: SocialLink[] = [
-  {
-    href: 'https://github.com/jktrn',
-    label: 'GitHub',
-  },
-  {
-    href: 'https://twitter.com/enscry',
-    label: 'Twitter',
-  },
-  {
-    href: 'mailto:jason@enscribe.dev',
-    label: 'Email',
-  },
-  {
-    href: '/rss.xml',
-    label: 'RSS',
-  },
-]
+  { href: 'https://github.com/Weptune', label: 'GitHub' },
+  { href: 'https://www.youtube.com/@Weptune', label: 'YouTube' },
+  { href: 'https://discord.gg/dcjKwMvs', label: 'Discord' },
+  { href: 'https://www.instagram.com/abhinavityy/', label: 'Instagram' },
+  { href: '/rss.xml', label: 'RSS' },
+];
 
 export const ICON_MAP: IconMap = {
   Website: 'lucide:globe',
   GitHub: 'lucide:github',
+  YouTube: 'lucide:youtube',
+  Discord: 'lucide:message-circle',
+  Instagram: 'lucide:instagram',
   LinkedIn: 'lucide:linkedin',
   Twitter: 'lucide:twitter',
   Email: 'lucide:mail',

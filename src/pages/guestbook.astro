@@ -1,0 +1,183 @@
+---
+import Breadcrumbs from '@/components/Breadcrumbs.astro'
+import PageHead from '@/components/PageHead.astro'
+import Layout from '@/layouts/Layout.astro'
+---
+
+<Layout class="max-w-3xl">
+  <PageHead
+    slot="head"
+    title="Guestbook"
+    description="Leave a note. Say hello."
+  />
+  <Breadcrumbs items={[{ label: 'Guestbook', icon: 'lucide:book-open' }]} />
+
+  <section class="gothic-panel fade-in-up-soft">
+    <div class="p-6">
+      <p class="text-foreground mb-4 font-serif italic text-base">
+        Leave a comment. Pick a name. It stays.
+      </p>
+      <form id="guestbook-form" class="flex flex-col gap-4">
+        <div>
+          <label for="gb-username" class="text-muted-foreground mb-1.5 block text-sm font-medium">
+            Username
+          </label>
+          <input
+            id="gb-username"
+            name="username"
+            type="text"
+            required
+            maxlength="64"
+            placeholder="anonymous"
+            class="border-border bg-background/50 w-full rounded border px-3 py-2 text-sm outline-none transition-colors focus:ring-1 focus:ring-primary/50"
+          />
+        </div>
+        <div>
+          <label for="gb-comment" class="text-muted-foreground mb-1.5 block text-sm font-medium">
+            Comment
+          </label>
+          <textarea
+            id="gb-comment"
+            name="comment"
+            required
+            rows="3"
+            maxlength="500"
+            placeholder="Say something..."
+            class="border-border bg-background/50 w-full resize-none rounded border px-3 py-2 text-sm outline-none transition-colors focus:ring-1 focus:ring-primary/50"
+          ></textarea>
+        </div>
+        <button
+          type="submit"
+          class="border-border text-foreground hover:bg-muted/50 w-fit rounded border px-4 py-2 font-serif italic text-sm transition-colors"
+        >
+          Sign
+        </button>
+      </form>
+      <p id="gb-message" class="text-muted-foreground mt-3 text-sm" role="status" aria-live="polite" hidden></p>
+    </div>
+  </section>
+
+  <section class="mt-8 flex flex-col gap-y-4 fade-in-up-soft">
+    <h2 class="text-xl font-medium">Entries</h2>
+    <div id="gb-entries" class="flex flex-col gap-4">
+      <p class="text-muted-foreground text-sm">Loading...</p>
+    </div>
+  </section>
+</Layout>
+
+<script>
+  const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL as string | undefined
+  const SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string | undefined
+
+  function formatDate(iso: string) {
+    const d = new Date(iso)
+    return d.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+
+  async function fetchEntries(): Promise<{ id: string; username: string; comment: string; created_at: string }[]> {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return []
+    try {
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/guestbook?select=id,username,comment,created_at&order=created_at.desc`,
+        {
+          headers: {
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          },
+        }
+      )
+      if (!res.ok) return []
+      return await res.json()
+    } catch {
+      return []
+    }
+  }
+
+  function renderEntries(entries: { id: string; username: string; comment: string; created_at: string }[]) {
+    const root = document.getElementById('gb-entries')
+    if (!root) return
+    if (entries.length === 0) {
+      root.innerHTML = '<p class="text-muted-foreground text-sm">No entries yet. Be the first.</p>'
+      return
+    }
+    root.innerHTML = entries
+      .map(
+        (e) => `
+      <div class="gothic-panel p-4">
+        <div class="flex flex-wrap items-baseline gap-2 text-sm">
+          <span class="font-medium">${escapeHtml(e.username)}</span>
+          <span class="text-muted-foreground text-xs">${formatDate(e.created_at)}</span>
+        </div>
+        <p class="text-muted-foreground mt-2 whitespace-pre-wrap text-sm">${escapeHtml(e.comment)}</p>
+      </div>
+    `
+      )
+      .join('')
+  }
+
+  function escapeHtml(s: string) {
+    const div = document.createElement('div')
+    div.textContent = s
+    return div.innerHTML
+  }
+
+  function initGuestbook() {
+    const form = document.getElementById('guestbook-form') as HTMLFormElement | null
+    const messageEl = document.getElementById('gb-message') as HTMLParagraphElement | null
+
+    if (!form || !messageEl) return
+
+    async function load() {
+      const entries = await fetchEntries()
+      renderEntries(entries)
+    }
+
+    load()
+
+    form.onsubmit = async (e) => {
+      e.preventDefault()
+      const username = (form.elements.namedItem('username') as HTMLInputElement).value.trim() || 'anonymous'
+      const comment = (form.elements.namedItem('comment') as HTMLTextAreaElement).value.trim()
+      if (!comment) return
+
+      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+        messageEl.textContent = 'Guestbook requires Supabase. See docs/POLL_SETUP.md'
+        messageEl.hidden = false
+        return
+      }
+
+      try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/guestbook`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            Prefer: 'return=representation',
+          },
+          body: JSON.stringify({ username, comment }),
+        })
+        if (!res.ok) {
+          const err = await res.text()
+          throw new Error(err)
+        }
+        messageEl.textContent = 'Thanks. Your note is signed.'
+        messageEl.hidden = false
+        form.reset()
+        load()
+      } catch (err) {
+        messageEl.textContent = 'Something went wrong. Try again.'
+        messageEl.hidden = false
+      }
+    }
+  }
+
+  initGuestbook()
+  document.addEventListener('astro:page-load', initGuestbook)
+</script>

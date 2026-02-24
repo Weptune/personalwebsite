@@ -1,0 +1,27 @@
+---
+import { getAllPostsAndSubposts } from '@/lib/data-utils'
+
+export async function getStaticPaths() {
+  const posts = await getAllPostsAndSubposts()
+  return posts.map((post) => ({
+    params: { path: post.id },
+  }))
+}
+
+const pathParam = Astro.params.path
+const slug = Array.isArray(pathParam) ? pathParam.join('/') : pathParam
+const destination = slug ? `/thoughts/${slug}` : '/thoughts'
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="refresh" content={`0; url=${destination}`} />
+    <link rel="canonical" href={destination} />
+    <title>Redirecting…</title>
+  </head>
+  <body>
+    <a href={destination}>Redirecting…</a>
+  </body>
+</html>
+

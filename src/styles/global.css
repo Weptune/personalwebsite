@@ -81,7 +81,7 @@
   --muted: oklch(0.18 0 0);
   --muted-foreground: oklch(0.6 0 0);
 
-  --border: oklch(1 0 0 / 4%);
+  --border: oklch(1 0 0 / 8%);
   --ring: oklch(0.45 0 0);
 }
 
@@ -102,6 +102,8 @@
     @apply bg-background text-foreground;
     font-feature-settings: "liga" 1, "calt" 1;
     line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 
   h1, h2, h3, h4 {
@@ -116,17 +118,50 @@
   }
 
   a:hover {
-    opacity: 0.7;
+    opacity: 0.85;
+  }
+
+  /* Subtle link underline animation */
+  a:not(.no-underline) {
+    background: linear-gradient(
+      to right,
+      currentColor 0%,
+      currentColor 100%
+    ) no-repeat bottom left / 0 1px;
+    transition: background-size 0.3s ease, opacity 0.3s ease;
+  }
+
+  a:not(.no-underline):hover {
+    background-size: 100% 1px;
   }
 
   hr {
     @apply border-border my-10;
+  }
+
+  ::selection {
+    background: color-mix(in oklch, var(--foreground) 18%, transparent);
+    color: var(--foreground);
   }
 }
 
 @layer utilities {
   .fade-in-up-soft {
     animation: fade-in-up-soft 600ms ease-out both;
+  }
+
+  .gothic-panel {
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in oklch, var(--background) 30%, transparent),
+        color-mix(in oklch, var(--background) 65%, transparent)
+      );
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    box-shadow:
+      0 1px 0 color-mix(in oklch, var(--foreground) 10%, transparent),
+      0 16px 60px color-mix(in oklch, black 55%, transparent);
   }
 }
 
@@ -141,15 +176,95 @@
   }
 }
 
+/* Staggered fade-in for lists */
+@keyframes fade-in-up-stagger {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Subtle focus ring for better a11y */
+:focus-visible {
+  outline: 1px solid color-mix(in oklch, var(--foreground) 40%, transparent);
+  outline-offset: 2px;
+}
+
 /* ------------------------------------------------ */
-/* OPTIONAL ATMOSPHERIC TOUCH (very subtle)        */
+/* STARFIELD / NIGHT SKY (dark theme)              */
 /* ------------------------------------------------ */
 
 [data-theme='dark'] body {
-  background: radial-gradient(
-    circle at 50% 0%,
-    oklch(0.13 0 0) 0%,
-    oklch(0.1 0 0) 60%,
-    oklch(0.08 0 0) 100%
-  );
+  position: relative;
+  background:
+    radial-gradient(circle at 20% 0%, oklch(0.25 0.08 260) 0%, transparent 55%),
+    radial-gradient(circle at 80% 100%, oklch(0.22 0.07 210) 0%, transparent 60%),
+    radial-gradient(circle at 50% 50%, oklch(0.15 0.04 260) 0%, oklch(0.06 0 0) 85%);
+  background-attachment: fixed;
+}
+
+/* Gothic panels - gentle pulse */
+.gothic-panel {
+  animation: gothic-panel-idle 8s ease-in-out infinite;
+}
+
+@keyframes gothic-panel-idle {
+  0%, 100% {
+    box-shadow:
+      0 1px 0 color-mix(in oklch, var(--foreground) 10%, transparent),
+      0 16px 60px color-mix(in oklch, black 55%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 1px 0 color-mix(in oklch, var(--foreground) 14%, transparent),
+      0 20px 70px color-mix(in oklch, black 45%, transparent);
+  }
+}
+
+/* Card hover - soft lift */
+@media (hover: hover) {
+  .group:hover .group-hover-lift {
+    transform: translateY(-2px);
+  }
+}
+
+/* Custom cursor (desktop only) */
+@media (pointer: fine) {
+  html,
+  body {
+    cursor: url('/static/cursor-default.svg') 14 14, auto;
+  }
+
+  a,
+  button,
+  summary,
+  [role='button'],
+  input[type='submit'],
+  label[for] {
+    cursor: url('/static/cursor-pointer.svg') 14 14, pointer;
+  }
+}
+
+/* About page background panel */
+.about-hero {
+  background-image:
+    linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--background) 55%, transparent),
+      color-mix(in oklch, var(--background) 78%, transparent)
+    ),
+    url('/static/about-bg.gif');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  padding: 1.5rem;
+  min-height: 60vh;
 }

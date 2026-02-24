@@ -1,0 +1,227 @@
+---
+const OPTIONS = ['The Stars', 'The Sun', 'The Ocean', 'The Sky', 'The Moon'] as const
+---
+
+<section class="gothic-panel fade-in-up-soft" aria-label="Poll">
+  <div class="p-6">
+    <p class="text-foreground mb-4 font-serif italic text-base">
+      Which of these do you relate to the most?
+    </p>
+    <form id="poll-form" class="flex flex-col gap-3">
+      {
+        OPTIONS.map((opt) => (
+          <label class="flex cursor-pointer items-center gap-3 text-muted-foreground font-serif italic transition-colors hover:text-foreground">
+            <input type="radio" name="poll" value={opt} class="border-border accent-primary size-4" />
+            <span>{opt}</span>
+          </label>
+        ))
+      }
+    </form>
+    <div class="mt-4 flex flex-wrap gap-3">
+      <button
+        type="button"
+        id="poll-vote"
+        class="border-border text-foreground hover:bg-muted/50 rounded border px-3 py-1.5 font-serif italic text-sm transition-colors"
+      >
+        Vote
+      </button>
+      <button
+        type="button"
+        id="poll-view"
+        class="border-border text-foreground hover:bg-muted/50 rounded border px-3 py-1.5 font-serif italic text-sm transition-colors"
+      >
+        View results
+      </button>
+    </div>
+    <div id="poll-message" class="text-muted-foreground mt-3 font-serif italic text-sm space-y-2" role="status" aria-live="polite" hidden></div>
+  </div>
+</section>
+
+<script>
+  const OPTIONS = ['The Stars', 'The Sun', 'The Ocean', 'The Sky', 'The Moon']
+  const POLL_KEY = 'poll-choice'
+  const POLL_HAS_VOTED_KEY = 'poll-has-voted'
+  const POLL_COUNTS_KEY = 'poll-counts'
+  const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL as string | undefined
+  const SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string | undefined
+
+  function getLocalCounts(): Record<string, number> {
+    try {
+      const raw = localStorage.getItem(POLL_COUNTS_KEY)
+      if (raw) {
+        const parsed = JSON.parse(raw) as Record<string, number>
+        const out: Record<string, number> = {}
+        for (const o of OPTIONS) out[o] = parsed[o] ?? 0
+        return out
+      }
+    } catch {}
+    return Object.fromEntries(OPTIONS.map((o) => [o, 0]))
+  }
+
+  function addLocalVote(choice: string) {
+    const counts = getLocalCounts()
+    counts[choice] = (counts[choice] ?? 0) + 1
+    try {
+      localStorage.setItem(POLL_COUNTS_KEY, JSON.stringify(counts))
+    } catch {}
+  }
+
+  function initPoll() {
+    const form = document.getElementById('poll-form') as HTMLFormElement | null
+    const voteBtn = document.getElementById('poll-vote')
+    const viewBtn = document.getElementById('poll-view')
+    const messageEl = document.getElementById('poll-message') as HTMLDivElement | null
+
+    if (!form || !voteBtn || !viewBtn || !messageEl) return
+
+    const msg = messageEl
+    const f = form
+
+    function hasVoted(): boolean {
+      try {
+        return localStorage.getItem(POLL_HAS_VOTED_KEY) === 'true'
+      } catch { return false }
+    }
+
+    function setVoted() {
+      try {
+        localStorage.setItem(POLL_HAS_VOTED_KEY, 'true')
+      } catch {}
+    }
+
+    function lockPoll() {
+      voteBtn!.setAttribute('disabled', '')
+      voteBtn!.classList.add('opacity-50', 'cursor-not-allowed', 'pointer-events-none')
+      voteBtn!.textContent = 'Voted'
+      f.querySelectorAll('input[type="radio"]').forEach((el) => {
+        ;(el as HTMLInputElement).disabled = true
+      })
+    }
+
+    if (hasVoted()) {
+      lockPoll()
+    }
+
+    function showMessage(html: string) {
+      msg.innerHTML = html
+      msg.hidden = false
+    }
+
+    function getSelected(): string | null {
+      const data = new FormData(f)
+      return data.get('poll') as string | null
+    }
+
+    async function submitVote(choice: string): Promise<boolean> {
+      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return false
+      try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/poll_votes`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Prefer': 'return=minimal',
+          },
+          body: JSON.stringify({ choice }),
+        })
+        return res.ok
+      } catch {
+        return false
+      }
+    }
+
+    async function fetchResults(): Promise<Record<string, number> | null> {
+      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null
+      try {
+        const res = await fetch(
+          `${SUPABASE_URL}/rest/v1/poll_votes?select=choice`,
+          {
+            headers: {
+              apikey: SUPABASE_ANON_KEY,
+              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            },
+          }
+        )
+        if (!res.ok) return null
+        const rows = (await res.json()) as { choice: string }[]
+        const counts: Record<string, number> = {}
+        for (const o of OPTIONS) counts[o] = 0
+        for (const r of rows) {
+          if (OPTIONS.includes(r.choice as any)) counts[r.choice] = (counts[r.choice] ?? 0) + 1
+        }
+        return counts
+      } catch {
+        return null
+      }
+    }
+
+    function renderResults(counts: Record<string, number>) {
+      const total = Object.values(counts).reduce((a, b) => a + b, 0)
+      if (total === 0) return '<p>No votes yet.</p>'
+      const max = Math.max(...Object.values(counts), 1)
+      return OPTIONS.map((opt) => {
+        const n = counts[opt] ?? 0
+        const pct = total > 0 ? Math.round((n / total) * 100) : 0
+        const w = max > 0 ? (n / max) * 100 : 0
+        return `<div class="flex items-center gap-3"><span class="min-w-[90px]">${opt}</span><div class="flex-1 h-2 rounded bg-muted/50 overflow-hidden"><div class="h-full bg-primary/60 rounded transition-all duration-500" style="width:${w}%"></div></div><span class="text-xs tabular-nums">${n} (${pct}%)</span></div>`
+      }).join('')
+    }
+
+    voteBtn.onclick = async () => {
+      if (hasVoted()) return
+      const choice = getSelected()
+      if (!choice) {
+        showMessage('<p>Pick one first.</p>')
+        return
+      }
+      const ok = await submitVote(choice)
+      try {
+        localStorage.setItem(POLL_KEY, choice)
+        setVoted()
+        if (!ok) addLocalVote(choice)
+        lockPoll()
+      } catch {}
+      if (ok) {
+        const counts = await fetchResults()
+        if (counts) {
+          showMessage(`<p class="mb-2">Thanks — you chose ${choice}.</p><div class="text-sm space-y-1.5">${renderResults(counts)}</div>`)
+        } else {
+          showMessage(`<p>Thanks — you chose ${choice}.</p>`)
+        }
+      } else {
+        showMessage(`<p>Thanks — you chose ${choice}. (Results require Supabase — see .env.example)</p>`)
+      }
+    }
+
+    viewBtn.onclick = async () => {
+      const counts = await fetchResults()
+      if (counts) {
+        const saved = localStorage.getItem(POLL_KEY)
+        let msg = ''
+        if (saved) msg = `<p class="mb-2">You chose: ${saved}.</p>`
+        showMessage(msg + `<div class="text-sm space-y-1.5">${renderResults(counts)}</div>`)
+      } else {
+        const localCounts = getLocalCounts()
+        const total = Object.values(localCounts).reduce((a, b) => a + b, 0)
+        if (total > 0) {
+          const saved = localStorage.getItem(POLL_KEY)
+          let h = ''
+          if (saved) h = `<p class="mb-2">You chose: ${saved}. (Local results — add Supabase for shared)</p>`
+          showMessage(h + `<div class="text-sm space-y-1.5">${renderResults(localCounts)}</div>`)
+        } else {
+          try {
+            const saved = localStorage.getItem(POLL_KEY)
+            if (saved) showMessage(`<p>You chose: ${saved}. Add Supabase for shared results.</p>`)
+            else showMessage("<p>You haven't voted yet. Cast a vote to see your choice here.</p>")
+          } catch {
+            showMessage("<p>You haven't voted yet.</p>")
+          }
+        }
+      }
+    }
+  }
+
+  initPoll()
+  document.addEventListener('astro:page-load', initPoll)
+</script>

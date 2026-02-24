@@ -1,0 +1,88 @@
+---
+// Gothic cursor trail - desktop only, subtle but noticeable
+---
+
+<div id="cursor-trail-root" aria-hidden="true" class="pointer-events-none fixed inset-0 z-[9999] overflow-hidden" style="display: none"></div>
+
+<script>
+  const TRAIL_COUNT = 8
+  const SMOOTH = 0.22
+
+  function initTrail() {
+    const root = document.getElementById('cursor-trail-root')
+    if (!root || window.matchMedia('(pointer: coarse)').matches) return
+
+    root.style.display = ''
+    const dots: { el: HTMLDivElement; x: number; y: number }[] = []
+
+    for (let i = 0; i < TRAIL_COUNT; i++) {
+      const el = document.createElement('div')
+      el.className = 'cursor-trail-dot'
+      el.style.cssText = `
+        position: fixed;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: color-mix(in oklch, var(--foreground) 45%, transparent);
+        border: 1px solid color-mix(in oklch, var(--foreground) 25%, transparent);
+        box-shadow: 0 0 8px color-mix(in oklch, var(--foreground) 20%, transparent);
+        pointer-events: none;
+        transform: translate(-50%, -50%);
+        left: -999px;
+        top: -999px;
+        opacity: ${1 - i * 0.1};
+      `
+      root.appendChild(el)
+      dots.push({ el, x: -999, y: -999 })
+    }
+
+    let mx = -999
+    let my = -999
+    let raf = 0
+
+    function update() {
+      let px = mx
+      let py = my
+      for (let i = 0; i < dots.length; i++) {
+        const d = dots[i]
+        d.x += (px - d.x) * SMOOTH
+        d.y += (py - d.y) * SMOOTH
+        d.el.style.left = `${d.x}px`
+        d.el.style.top = `${d.y}px`
+        px = d.x
+        py = d.y
+      }
+      raf = requestAnimationFrame(update)
+    }
+
+    const onMove = (e: MouseEvent) => {
+      mx = e.clientX
+      my = e.clientY
+      if (dots[0].x === -999) {
+        for (const d of dots) {
+          d.x = mx
+          d.y = my
+        }
+      }
+    }
+
+    document.addEventListener('mousemove', onMove, { passive: true })
+    raf = requestAnimationFrame(update)
+
+    return () => {
+      document.removeEventListener('mousemove', onMove)
+      cancelAnimationFrame(raf)
+      root.style.display = 'none'
+    }
+  }
+
+  let cleanup: (() => void) | null = null
+
+  function setup() {
+    cleanup?.()
+    cleanup = initTrail() ?? null
+  }
+
+  setup()
+  document.addEventListener('astro:page-load', setup)
+</script>

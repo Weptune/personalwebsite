@@ -1,0 +1,119 @@
+---
+import Breadcrumbs from '@/components/Breadcrumbs.astro'
+import PageHead from '@/components/PageHead.astro'
+import Layout from '@/layouts/Layout.astro'
+import { Image } from 'astro:assets'
+import { getCollection, render } from 'astro:content'
+
+const rawMovies = await getCollection('movies')
+const perfect = rawMovies.filter((m) => m.data.rating === 100)
+const movies = await Promise.all(
+  perfect.map(async (entry) => {
+    const { Content } = await render(entry)
+    return { ...entry, Content }
+  }),
+)
+---
+
+<Layout class="max-w-3xl">
+  <PageHead
+    slot="head"
+    title="100/100 Movies"
+    description="Films that earned a perfect score."
+  />
+  <Breadcrumbs
+    items={[
+      { href: '/movies', label: 'Movie reviews', icon: 'lucide:film' },
+      { label: '100/100', icon: 'lucide:sparkles' },
+    ]}
+  />
+
+  <p class="text-muted-foreground mb-6 text-sm">
+    Films that left no room for compromise.
+  </p>
+
+  {
+    movies.length === 0 ? (
+      <p class="text-muted-foreground text-sm">
+        No perfect scores yet. The bar is high.
+      </p>
+    ) : (
+      <ul class="fade-in-up-soft flex flex-col gap-y-4">
+        {
+          movies.map((movie) => (
+            <li>
+              <a
+                href={`/movies/${movie.id}`}
+                class="group block rounded-xl border bg-background/40 p-4 sm:p-5 transition-all duration-500 ease-out hover:-translate-y-1 hover:bg-muted/40"
+              >
+                <div class="grid grid-cols-[auto,1fr] items-start gap-4 sm:gap-6">
+                  {
+                    movie.data.image ? (
+                      <Image
+                        src={movie.data.image}
+                        alt={movie.data.title}
+                        width={360}
+                        height={540}
+                        class="h-32 w-24 rounded-sm object-cover shadow-lg sm:h-40 sm:w-28"
+                      />
+                    ) : (
+                      <div class="flex h-32 w-24 items-center justify-center rounded-sm border border-border/70 bg-muted/10 text-[0.6rem] uppercase tracking-[0.24em] text-muted-foreground sm:h-40 sm:w-28">
+                        film
+                      </div>
+                    )
+                  }
+
+                  <div class="flex flex-col gap-2">
+                    <div>
+                      <h3 class="text-lg font-medium tracking-[0.16em] uppercase">
+                        {movie.data.title}
+                      </h3>
+                      <p class="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                        {movie.data.year ?? 'Unknown year'}
+                        {
+                          movie.data.directors && movie.data.directors.length > 0 && (
+                            <>
+                              {' '}
+                              &bull; {movie.data.directors.join(', ')}
+                            </>
+                          )
+                        }
+                        {
+                          typeof movie.data.runtimeMinutes === 'number' && (
+                            <>
+                              {' '}
+                              &bull; {movie.data.runtimeMinutes} min
+                            </>
+                          )
+                        }
+                      </p>
+                    </div>
+
+                    <div class="flex items-baseline gap-2 text-sm">
+                      <span class="font-medium tracking-[0.2em] text-primary">
+                        ★★★★★
+                      </span>
+                      <span class="text-xs text-muted-foreground">100 / 100</span>
+                    </div>
+
+                    {
+                      movie.data.description && (
+                        <p class="text-sm text-muted-foreground">
+                          {movie.data.description}
+                        </p>
+                      )
+                    }
+                  </div>
+                </div>
+
+                <article class="prose small mt-4 max-w-none text-sm text-foreground/90">
+                  <movie.Content />
+                </article>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    )
+  }
+</Layout>

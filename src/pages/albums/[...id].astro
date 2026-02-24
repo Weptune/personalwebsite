@@ -1,0 +1,84 @@
+---
+import Breadcrumbs from '@/components/Breadcrumbs.astro'
+import PageHead from '@/components/PageHead.astro'
+import Layout from '@/layouts/Layout.astro'
+import { Image } from 'astro:assets'
+import { getCollection, render } from 'astro:content'
+
+export async function getStaticPaths() {
+  const albums = await getCollection('albums')
+  return albums.map((album) => ({
+    params: { id: album.id },
+    props: album,
+  }))
+}
+
+const album = Astro.props
+const { Content } = await render(album)
+---
+
+<Layout class="max-w-3xl">
+  <PageHead
+    slot="head"
+    title={album.data.title}
+    description={album.data.description}
+  />
+  <Breadcrumbs
+    items={[
+      { href: '/albums', label: 'Album reviews', icon: 'lucide:disc' },
+      { label: album.data.title, icon: 'lucide:disc-3' },
+    ]}
+  />
+
+  <section class="mt-4 flex flex-col gap-6">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
+      {
+        album.data.image ? (
+          <Image
+            src={album.data.image}
+            alt={album.data.title}
+            width={400}
+            height={400}
+            class="h-40 w-40 rounded-sm object-cover shadow-lg sm:h-48 sm:w-48"
+          />
+        ) : (
+          <div class="flex h-40 w-40 items-center justify-center rounded-sm border border-border/70 bg-muted/10 text-[0.6rem] uppercase tracking-[0.24em] text-muted-foreground sm:h-48 sm:w-48">
+            album
+          </div>
+        )
+      }
+
+      <div class="space-y-2">
+        <h1 class="text-2xl font-medium tracking-[0.18em] uppercase">
+          {album.data.title}
+        </h1>
+        <p class="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+          {album.data.artists?.join(', ') ?? 'Unknown artist'}
+          {' '}&bull; {album.data.year}
+        </p>
+        {
+          typeof album.data.rating === 'number' && (
+            <p class="font-mono text-lg">
+              <span class="text-muted-foreground text-xs uppercase tracking-[0.2em]">
+                rating
+              </span>
+              <br />
+              {album.data.rating}
+              <span class="text-xs text-muted-foreground">/100</span>
+            </p>
+          )
+        }
+        {album.data.description && (
+          <p class="text-sm text-muted-foreground mt-1">
+            {album.data.description}
+          </p>
+        )}
+      </div>
+    </div>
+
+    <article class="prose max-w-none">
+      <Content />
+    </article>
+  </section>
+</Layout>
+

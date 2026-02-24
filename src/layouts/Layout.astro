@@ -2,6 +2,7 @@
 import '@/styles/global.css'
 import '@/styles/typography.css'
 
+import CursorTrail from '@/components/CursorTrail.astro'
 import Footer from '@/components/Footer.astro'
 import Head from '@/components/Head.astro'
 import Header from '@/components/Header.astro'
@@ -24,19 +25,105 @@ const { class: className } = Astro.props
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
     <slot name="head" />
   </Head>
-  <body class="flex h-fit min-h-screen flex-col gap-y-6 font-sans">
+  <body class="flex h-fit min-h-screen flex-col font-sans">
+    <CursorTrail />
+    <canvas
+      id="starfield"
+      class="fixed inset-0 z-0 pointer-events-none"
+      aria-hidden="true"
+    ></canvas>
     <header
-      class="bg-background/50 sticky top-0 z-50 divide-y backdrop-blur-sm xl:divide-none"
+      class="relative z-10 bg-background/50 sticky top-0 divide-y backdrop-blur-sm xl:divide-none"
     >
       <Header />
       <slot name="subposts-navigation" />
       <slot name="table-of-contents" />
     </header>
     <main
-      class={cn('w-full mx-auto flex grow flex-col gap-y-6 px-4', className)}
+      class={cn('relative z-10 w-full mx-auto flex grow flex-col gap-y-6 px-4', className)}
     >
       <slot />
     </main>
     <Footer />
+    <script>
+      // @ts-nocheck
+      const STAR_COUNT = 180
+
+      function startStarfield() {
+        const canvas = document.getElementById('starfield')
+        if (!canvas || !canvas.getContext) return
+        const ctx = canvas.getContext('2d')
+        if (!ctx) return
+
+        let width = 0
+        let height = 0
+        let stars = []
+        let frameId = 0
+
+        function createStars() {
+          stars = Array.from({ length: STAR_COUNT }, () => ({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            r: 0.6 + Math.random() * 1.4,
+            vy: 0.02 + Math.random() * 0.08,
+            tw: Math.random() * Math.PI * 2,
+          }))
+        }
+
+        function resize() {
+          width = window.innerWidth
+          height = window.innerHeight
+          canvas.width = width
+          canvas.height = height
+          createStars()
+        }
+
+        function draw(time) {
+          if (!width || !height) return
+          ctx.clearRect(0, 0, width, height)
+          ctx.globalCompositeOperation = 'lighter'
+
+          const t = time || performance.now()
+          for (const star of stars) {
+            star.y += star.vy
+            if (star.y > height + 5) {
+              star.y = -5
+              star.x = Math.random() * width
+            }
+            const alpha = 0.25 + 0.75 * Math.abs(Math.sin(t / 800 + star.tw))
+            ctx.beginPath()
+            ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2)
+            ctx.fillStyle = `rgba(255,255,255,${alpha})`
+            ctx.fill()
+          }
+
+          ctx.globalCompositeOperation = 'source-over'
+        }
+
+        function loop(timestamp) {
+          draw(timestamp)
+          frameId = requestAnimationFrame(loop)
+        }
+
+        resize()
+        cancelAnimationFrame(frameId)
+        loop(0)
+        window.addEventListener('resize', resize)
+
+        return () => {
+          window.removeEventListener('resize', resize)
+          cancelAnimationFrame(frameId)
+        }
+      }
+
+      let starfieldCleanup = null
+
+      function setupStarfield() {
+        if (starfieldCleanup) starfieldCleanup()
+        starfieldCleanup = startStarfield()
+      }
+
+      document.addEventListener('astro:page-load', setupStarfield)
+    </script>
   </body>
 </html>
