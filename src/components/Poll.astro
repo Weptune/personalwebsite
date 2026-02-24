@@ -205,7 +205,7 @@ const OPTIONS = ['The Stars', 'The Sun', 'The Ocean', 'The Sky', 'The Moon'] as 
         if (total > 0) {
           const saved = localStorage.getItem(POLL_KEY)
           let h = ''
-          if (saved) h = `<p class="mb-2">You chose: ${saved}. (Local results — add Supabase for shared)</p>`
+          if (saved) h = `<p class="mb-2">You chose: ${saved}.</p>`
           showMessage(h + `<div class="text-sm space-y-1.5">${renderResults(localCounts)}</div>`)
         } else {
           try {
