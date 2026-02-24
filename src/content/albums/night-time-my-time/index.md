@@ -6,7 +6,7 @@ year: 2013
 artists:
   - 'Sky Ferreira'
 rating: 100
+image: './cover.jpg'
 ---
 
 Review coming soon.
-

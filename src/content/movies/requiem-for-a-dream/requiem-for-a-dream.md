@@ -7,7 +7,7 @@ directors:
   - 'Darren Aronofsky'
 rating: 100 # 10 / 10
 runtimeMinutes: 102
+image: './poster.jpg'
 ---
 
-Your movie review…
-
+Review coming soon.

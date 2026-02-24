@@ -7,7 +7,7 @@ directors:
   - 'Quentin Tarantino'
 rating: 100 # 10 / 10
 runtimeMinutes: 153
+image: './poster.jpg'
 ---
 
-Your movie review…
-
+Review coming soon.

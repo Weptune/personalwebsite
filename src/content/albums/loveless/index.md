@@ -1,10 +1,10 @@
 ---
-title: 'A Lonely Sinner'
+title: 'Loveless'
 description: 'Digital heartbreak smeared into something weirdly holy.'
-date: 2024-11-16
-year: 2024
+date: 2025-01-15
+year: 1991
 artists:
-  - 'samlrc'
+  - 'My Bloody Valentine'
 rating: 100
 image: './cover.jpg'
 ---

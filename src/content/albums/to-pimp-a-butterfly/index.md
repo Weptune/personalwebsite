@@ -6,7 +6,7 @@ year: 2015
 artists:
   - 'Kendrick Lamar'
 rating: 100
+image: './cover.jpg'
 ---
 
 Review coming soon.
-

@@ -6,7 +6,7 @@ year: 2022
 artists:
   - 'what is your name?'
 rating: 100
+image: './cover.jpg'
 ---
 
 Review coming soon.
-

@@ -6,7 +6,7 @@ year: 2005
 artists:
   - 'Bright Eyes'
 rating: 100
+image: './cover.jpg'
 ---
 
 Review coming soon.
-

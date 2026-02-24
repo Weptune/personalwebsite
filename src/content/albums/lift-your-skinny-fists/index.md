@@ -6,7 +6,7 @@ year: 2000
 artists:
   - 'Godspeed You! Black Emperor'
 rating: 100
+image: './cover.jpg'
 ---
 
 Review coming soon.
-
