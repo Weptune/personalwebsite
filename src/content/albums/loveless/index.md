@@ -1,7 +1,7 @@
 ---
 title: 'Loveless'
 description: 'Digital heartbreak smeared into something weirdly holy.'
-date: 2025-01-15
+date: 2026-02-24
 year: 1991
 artists:
   - 'My Bloody Valentine'

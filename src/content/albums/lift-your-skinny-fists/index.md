@@ -1,7 +1,7 @@
 ---
 title: 'Lift Your Skinny Fists Like Antennas to Heaven'
 description: 'Two hours of slow-motion apocalyptic sunrise.'
-date: 2024-06-08
+date: 2026-02-24
 year: 2000
 artists:
   - 'Godspeed You! Black Emperor'

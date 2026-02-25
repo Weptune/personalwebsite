@@ -25,7 +25,6 @@ export const SOCIAL_LINKS: SocialLink[] = [
   { href: 'https://www.youtube.com/@Weptune', label: 'YouTube' },
   { href: 'https://discord.gg/dcjKwMvs', label: 'Discord' },
   { href: 'https://www.instagram.com/abhinavityy/', label: 'Instagram' },
-  { href: '/rss.xml', label: 'RSS' },
 ];
 
 export const ICON_MAP: IconMap = {

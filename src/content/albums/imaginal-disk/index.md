@@ -1,7 +1,7 @@
 ---
 title: 'Imaginal Disk'
 description: 'Pop music pulled apart into something crystalline and unreal.'
-date: 2024-08-25
+date: 2026-02-24
 year: 2024
 artists:
   - 'Magdalena Bay'

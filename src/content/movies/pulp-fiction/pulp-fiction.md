@@ -1,7 +1,7 @@
 ---
 title: 'Pulp Fiction'
 description: 'Time folds in on itself and somehow every scene is iconic.'
-date: 2026-02-23
+date: 2026-02-24
 year: 1994
 directors:
   - 'Quentin Tarantino'

@@ -5,6 +5,28 @@ import Layout from '@/layouts/Layout.astro'
 import { Image } from 'astro:assets'
 import { getCollection, render } from 'astro:content'
 
+// helpers to robustly parse dd-mm-yyyy or Date objects and format as dd-mm-yyyy
+function parseToDate(value: any) {
+  if (!value) return null
+  if (value instanceof Date) return value
+  const s = String(value)
+  const m = s.match(/^(\d{2})-(\d{2})-(\d{4})$/)
+  if (m) {
+    return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]))
+  }
+  const d = new Date(s)
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
+function formatDDMMYYYY(value: any) {
+  const d = parseToDate(value)
+  if (!d) return ''
+  const day = String(d.getDate()).padStart(2, '0')
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const year = d.getFullYear()
+  return `${day}-${month}-${year}`
+}
+
 export async function getStaticPaths() {
   const movies = await getCollection('movies')
   return movies.map((movie) => ({
@@ -17,8 +39,7 @@ const movie = Astro.props
 const { Content } = await render(movie)
 
 const rating = movie.data.rating
-const starValue =
-  typeof rating === 'number' ? Math.round(rating / 20) : null
+const starValue = typeof rating === 'number' ? Math.round(rating / 20) : null
 const starsString =
   typeof starValue === 'number'
     ? '★'.repeat(starValue) + '☆'.repeat(5 - starValue)
@@ -50,7 +71,7 @@ const starsString =
             class="h-48 w-32 rounded-sm object-cover shadow-lg sm:h-56 sm:w-36"
           />
         ) : (
-          <div class="flex h-48 w-32 items-center justify-center rounded-sm border border-border/70 bg-muted/10 text-[0.6rem] uppercase tracking-[0.24em] text-muted-foreground sm:h-56 sm:w-36">
+          <div class="border-border/70 bg-muted/10 text-muted-foreground flex h-48 w-32 items-center justify-center rounded-sm border text-[0.6rem] tracking-[0.24em] uppercase sm:h-56 sm:w-36">
             film
           </div>
         )
@@ -61,42 +82,42 @@ const starsString =
           <h1 class="text-2xl font-medium tracking-[0.16em] uppercase">
             {movie.data.title}
           </h1>
-          <p class="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+          <p class="text-muted-foreground text-xs tracking-[0.2em] uppercase">
             {movie.data.year}
             {
               movie.data.directors && movie.data.directors.length > 0 && (
-                <>
-                  {' '}
-                  &bull; {movie.data.directors.join(', ')}
-                </>
+                <> &bull; {movie.data.directors.join(', ')}</>
               )
             }
             {
               typeof movie.data.runtimeMinutes === 'number' && (
-                <>
-                  {' '}
-                  &bull; {movie.data.runtimeMinutes} min
-                </>
+                <> &bull; {movie.data.runtimeMinutes} min</>
               )
             }
           </p>
-        </div>
-
-        {
-          typeof rating === 'number' && (
-            <div class="flex items-baseline gap-3 text-sm">
-              {starsString && (
-                <span class="font-medium tracking-[0.2em] text-primary">
-                  {starsString}
+          {
+            movie.data.date && (
+              <p class="text-muted-foreground text-xs">
+                Reviewed {formatDDMMYYYY(movie.data.date)}
+              </p>
+            )
+          }
+          {
+            typeof rating === 'number' && (
+              <div class="flex items-baseline gap-3 text-sm">
+                {starsString && (
+                  <span class="text-primary font-medium tracking-[0.2em]">
+                    {starsString}
+                  </span>
+                )}
+                <span class="font-mono text-lg">
+                  {rating}
+                  <span class="text-muted-foreground text-xs">/100</span>
                 </span>
-              )}
-              <span class="font-mono text-lg">
-                {rating}
-                <span class="text-xs text-muted-foreground">/100</span>
-              </span>
-            </div>
-          )
-        }
+              </div>
+            )
+          }
+        </div>
       </div>
     </div>
 
@@ -105,4 +126,3 @@ const starsString =
     </article>
   </section>
 </Layout>
-

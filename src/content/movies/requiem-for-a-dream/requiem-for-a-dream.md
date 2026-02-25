@@ -1,7 +1,7 @@
 ---
 title: 'Requiem for a Dream'
 description: 'Four spirals, one city, and a score that never really stops.'
-date: 2026-02-23
+date: 2026-02-24
 year: 2000
 directors:
   - 'Darren Aronofsky'

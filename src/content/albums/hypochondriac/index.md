@@ -1,7 +1,7 @@
 ---
 title: 'hypochondriac'
 description: 'Glitchy, anxious pop that somehow feels like a hug.'
-date: 2024-06-08
+date: 2026-02-24
 year: 2022
 artists:
   - 'brakence'

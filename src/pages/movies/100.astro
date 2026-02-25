@@ -5,6 +5,28 @@ import Layout from '@/layouts/Layout.astro'
 import { Image } from 'astro:assets'
 import { getCollection, render } from 'astro:content'
 
+// helpers to robustly parse dd-mm-yyyy or Date objects and format as dd-mm-yyyy
+function parseToDate(value: any) {
+  if (!value) return null
+  if (value instanceof Date) return value
+  const s = String(value)
+  const m = s.match(/^(\d{2})-(\d{2})-(\d{4})$/)
+  if (m) {
+    return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]))
+  }
+  const d = new Date(s)
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
+function formatDDMMYYYY(value: any) {
+  const d = parseToDate(value)
+  if (!d) return ''
+  const day = String(d.getDate()).padStart(2, '0')
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const year = d.getFullYear()
+  return `${day}-${month}-${year}`
+}
+
 const rawMovies = await getCollection('movies')
 const perfect = rawMovies.filter((m) => m.data.rating === 100)
 const movies = await Promise.all(
@@ -28,9 +50,7 @@ const movies = await Promise.all(
     ]}
   />
 
-  <p class="text-muted-foreground mb-6 text-sm">
-    peak alert
-  </p>
+  <p class="text-muted-foreground mb-6 text-sm">peak alert</p>
 
   {
     movies.length === 0 ? (
@@ -39,72 +59,62 @@ const movies = await Promise.all(
       </p>
     ) : (
       <ul class="fade-in-up-soft flex flex-col gap-y-4">
-        {
-          movies.map((movie) => (
-            <li>
-              <a
-                href={`/movies/${movie.id}`}
-                class="group block rounded-xl border bg-background/40 p-4 sm:p-5 transition-all duration-500 ease-out hover:-translate-y-1 hover:bg-muted/40"
-              >
-                <div class="grid grid-cols-[auto,1fr] items-start gap-4 sm:gap-6">
-                  {
-                    movie.data.image ? (
-                      <Image
-                        src={movie.data.image}
-                        alt={movie.data.title}
-                        width={360}
-                        height={540}
-                        class="h-32 w-24 rounded-sm object-cover shadow-lg sm:h-40 sm:w-28"
-                      />
-                    ) : (
-                      <div class="flex h-32 w-24 items-center justify-center rounded-sm border border-border/70 bg-muted/10 text-[0.6rem] uppercase tracking-[0.24em] text-muted-foreground sm:h-40 sm:w-28">
-                        film
-                      </div>
-                    )
-                  }
+        {movies.map((movie) => (
+          <li>
+            <a
+              href={`/movies/${movie.id}`}
+              class="group bg-background/40 hover:bg-muted/40 block rounded-xl border p-4 transition-all duration-500 ease-out hover:-translate-y-1 sm:p-5"
+            >
+              <div class="grid grid-cols-[auto,1fr] items-start gap-4 sm:gap-6">
+                {movie.data.image ? (
+                  <Image
+                    src={movie.data.image}
+                    alt={movie.data.title}
+                    width={360}
+                    height={540}
+                    class="h-32 w-24 rounded-sm object-cover shadow-lg sm:h-40 sm:w-28"
+                  />
+                ) : (
+                  <div class="border-border/70 bg-muted/10 text-muted-foreground flex h-32 w-24 items-center justify-center rounded-sm border text-[0.6rem] tracking-[0.24em] uppercase sm:h-40 sm:w-28">
+                    film
+                  </div>
+                )}
 
-                  <div class="flex flex-col gap-2">
-                    <div>
-                      <h3 class="text-lg font-medium tracking-[0.16em] uppercase">
-                        {movie.data.title}
-                      </h3>
-                      <p class="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                        {movie.data.year ?? 'Unknown year'}
-                        {
-                          movie.data.directors && movie.data.directors.length > 0 && (
-                            <>
-                              {' '}
-                              &bull; {movie.data.directors.join(', ')}
-                            </>
-                          )
-                        }
-                        {
-                          typeof movie.data.runtimeMinutes === 'number' && (
-                            <>
-                              {' '}
-                              &bull; {movie.data.runtimeMinutes} min
-                            </>
-                          )
-                        }
-                      </p>
-                    </div>
+                <div class="flex flex-col gap-2">
+                  <div>
+                    <h3 class="text-lg font-medium tracking-[0.16em] uppercase">
+                      {movie.data.title}
+                    </h3>
+                    <p class="text-muted-foreground text-xs tracking-[0.2em] uppercase">
+                      {movie.data.year ?? 'Unknown year'}
+                      {movie.data.directors &&
+                        movie.data.directors.length > 0 && (
+                          <> &bull; {movie.data.directors.join(', ')}</>
+                        )}
+                      {typeof movie.data.runtimeMinutes === 'number' && (
+                        <> &bull; {movie.data.runtimeMinutes} min</>
+                      )}
+                      {movie.data.date && (
+                        <> &bull; {formatDDMMYYYY(movie.data.date)}</>
+                      )}
+                    </p>
+                  </div>
 
-                    <div class="flex items-baseline gap-2 text-sm">
-                      <span class="font-medium tracking-[0.2em] text-primary">
-                        ★★★★★
-                      </span>
-                      <span class="text-xs text-muted-foreground">100 / 100</span>
-                    </div>
+                  <div class="flex items-baseline gap-2 text-sm">
+                    <span class="text-primary font-medium tracking-[0.2em]">
+                      ★★★★★
+                    </span>
+                    <span class="text-muted-foreground text-xs">100 / 100</span>
                   </div>
                 </div>
+              </div>
 
-                <article class="prose small mt-4 max-w-none text-sm text-foreground/90">
-                  <movie.Content />
-                </article>
-              </a>
-            </li>
-          ))
-        }
+              <article class="prose small text-foreground/90 mt-4 max-w-none text-sm">
+                <movie.Content />
+              </article>
+            </a>
+          </li>
+        ))}
       </ul>
     )
   }

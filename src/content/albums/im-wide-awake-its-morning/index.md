@@ -1,7 +1,7 @@
 ---
 title: "I'm Wide Awake, It's Morning"
 description: 'Folk songs that feel like waking up too early in a city you love.'
-date: 2024-06-08
+date: 2026-02-24
 year: 2005
 artists:
   - 'Bright Eyes'

@@ -1,7 +1,7 @@
 ---
 title: 'Beatopia'
 description: 'Dreamy guitar pop that somehow feels like being thirteen again.'
-date: 2024-04-09
+date: 2026-02-24
 year: 2022
 artists:
   - 'beabadoobee'

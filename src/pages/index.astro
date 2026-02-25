@@ -1,8 +1,8 @@
 ---
 import BlogCard from '@/components/BlogCard.astro'
-import Poll from '@/components/Poll.astro'
 import Link from '@/components/Link.astro'
 import PageHead from '@/components/PageHead.astro'
+import Poll from '@/components/Poll.astro'
 import { buttonVariants } from '@/components/ui/button'
 import { SITE } from '@/consts'
 import Layout from '@/layouts/Layout.astro'
@@ -22,16 +22,22 @@ const recentThoughts = await getRecentPosts(SITE.featuredPostCount)
     </div>
     <div class="p-6 pt-0">
       <p class="text-muted-foreground mb-2 text-sm">
-        All the being and the doing, expansive, glittering, vocal, evaporated; and one shrunk, with a sense of solemnity, to being oneself, a wedge-shaped core of darkness, something invisible to others.<br>
-         Although she continued to knit, and sat erect, it was thus that she felt herself; and this self having shed its attachments was free for the strangest adventures.<br>
-         When life sank down for a moment, the range of experience seemed limitless. Beneath it is all dark, it is all spreading, it is unfathomably deep; but now and again we rise to the surface and that is what you see us by.
+        All the being and the doing, expansive, glittering, vocal, evaporated;
+        and one shrunk, with a sense of solemnity, to being oneself, a
+        wedge-shaped core of darkness, something invisible to others.<br />
+        Although she continued to knit, and sat erect, it was thus that she felt
+        herself; and this self having shed its attachments was free for the strangest
+        adventures.<br />
+        When life sank down for a moment, the range of experience seemed limitless.
+        Beneath it is all dark, it is all spreading, it is unfathomably deep; but
+        now and again we rise to the surface and that is what you see us by.
       </p>
     </div>
   </section>
 
   <Poll />
 
-  <section class="flex flex-col gap-y-4 fade-in-up-soft">
+  <section class="fade-in-up-soft flex flex-col gap-y-4">
     <h2 class="text-2xl font-medium">Latest posts</h2>
     <ul class="flex flex-col gap-y-4">
       {

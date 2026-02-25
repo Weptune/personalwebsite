@@ -1,7 +1,7 @@
 ---
 title: 'the now now and never'
 description: 'Feels like staring at a flickering laptop screen at 4AM and not minding.'
-date: 2024-06-08
+date: 2026-02-24
 year: 2022
 artists:
   - 'what is your name?'
