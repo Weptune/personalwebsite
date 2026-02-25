@@ -1,0 +1,63 @@
+---
+import Breadcrumbs from '@/components/Breadcrumbs.astro'
+import PageHead from '@/components/PageHead.astro'
+import Layout from '@/layouts/Layout.astro'
+import { getCollection } from 'astro:content'
+
+const rawMovies = await getCollection('movies')
+
+// Get all categories and count movies in each
+const categoryMap = new Map<string, number>()
+rawMovies.forEach((movie) => {
+  if (movie.data.category) {
+    const count = categoryMap.get(movie.data.category) || 0
+    categoryMap.set(movie.data.category, count + 1)
+  }
+})
+
+// Convert to sorted array
+const categories = Array.from(categoryMap.entries())
+  .sort((a, b) => b[1] - a[1]) // Sort by count descending
+  .map(([name, count]) => ({ name, count }))
+---
+
+<Layout class="max-w-3xl">
+  <PageHead
+    slot="head"
+    title="Movie Categories"
+    description="Browse movie reviews by category."
+  />
+  <Breadcrumbs
+    items={[
+      { label: 'Movie reviews', href: '/movies', icon: 'lucide:film' },
+      { label: 'Categories', icon: 'lucide:folder' },
+    ]}
+  />
+
+  {
+    categories.length === 0 ? (
+      <p class="text-muted-foreground text-sm">
+        No categorized movies yet. Add a <code>category</code> field to movie
+        reviews to see them here.
+      </p>
+    ) : (
+      <ul class="fade-in-up-soft flex flex-col gap-y-3">
+        {categories.map(({ name, count }) => (
+          <li>
+            <a
+              href={`/movies/categories/${name}`}
+              class="group bg-background/40 hover:bg-muted/40 flex items-center justify-between rounded-lg border p-4 transition-all duration-500 ease-out hover:-translate-y-1 sm:p-5"
+            >
+              <h3 class="text-lg font-medium tracking-[0.18em] capitalize transition-transform group-hover:translate-x-1">
+                {name}
+              </h3>
+              <span class="text-muted-foreground text-sm">
+                {count} {count === 1 ? 'movie' : 'movies'}
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</Layout>

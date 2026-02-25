@@ -1,0 +1,63 @@
+---
+import Breadcrumbs from '@/components/Breadcrumbs.astro'
+import PageHead from '@/components/PageHead.astro'
+import Layout from '@/layouts/Layout.astro'
+import { getCollection } from 'astro:content'
+
+const rawAlbums = await getCollection('albums')
+
+// Get all categories and count albums in each
+const categoryMap = new Map<string, number>()
+rawAlbums.forEach((album) => {
+  if (album.data.category) {
+    const count = categoryMap.get(album.data.category) || 0
+    categoryMap.set(album.data.category, count + 1)
+  }
+})
+
+// Convert to sorted array
+const categories = Array.from(categoryMap.entries())
+  .sort((a, b) => b[1] - a[1]) // Sort by count descending
+  .map(([name, count]) => ({ name, count }))
+---
+
+<Layout class="max-w-3xl">
+  <PageHead
+    slot="head"
+    title="Album Categories"
+    description="Browse album reviews by category."
+  />
+  <Breadcrumbs
+    items={[
+      { label: 'Album reviews', href: '/albums', icon: 'lucide:disc' },
+      { label: 'Categories', icon: 'lucide:folder' },
+    ]}
+  />
+
+  {
+    categories.length === 0 ? (
+      <p class="text-muted-foreground text-sm">
+        No categorized albums yet. Add a <code>category</code> field to album
+        reviews to see them here.
+      </p>
+    ) : (
+      <ul class="fade-in-up-soft flex flex-col gap-y-3">
+        {categories.map(({ name, count }) => (
+          <li>
+            <a
+              href={`/albums/categories/${name}`}
+              class="group bg-background/40 hover:bg-muted/40 flex items-center justify-between rounded-lg border p-4 transition-all duration-500 ease-out hover:-translate-y-1 sm:p-5"
+            >
+              <h3 class="text-lg font-medium tracking-[0.18em] capitalize transition-transform group-hover:translate-x-1">
+                {name}
+              </h3>
+              <span class="text-muted-foreground text-sm">
+                {count} {count === 1 ? 'album' : 'albums'}
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</Layout>

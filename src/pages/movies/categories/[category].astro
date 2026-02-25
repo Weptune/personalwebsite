@@ -28,15 +28,33 @@ function formatDDMMYYYY(value: any) {
   return `${day}-${month}-${year}`
 }
 
+export async function getStaticPaths() {
+  const allMovies = await getCollection('movies')
+  const categories = new Set(
+    allMovies
+      .filter((movie) => movie.data.category)
+      .map((movie) => movie.data.category),
+  )
+
+  return Array.from(categories).map((category) => ({
+    params: { category },
+  }))
+}
+
+const { category } = Astro.params as { category: string }
+
 const rawMovies = await getCollection('movies')
-// sort by `date` descending so most recently reviewed appears first
-rawMovies.sort((a, b) => {
+const categoryMovies = rawMovies.filter((m) => m.data.category === category)
+
+// sort by date descending
+categoryMovies.sort((a, b) => {
   const at = parseToDate(a.data.date)?.getTime() || 0
   const bt = parseToDate(b.data.date)?.getTime() || 0
   return bt - at
 })
+
 const movies = await Promise.all(
-  rawMovies.map(async (entry) => {
+  categoryMovies.map(async (entry) => {
     const { Content } = await render(entry)
     const rating = entry.data.rating
     const starValue =
@@ -50,7 +68,7 @@ const movies = await Promise.all(
 )
 
 // Build search data for this page
-const movieSearchData = rawMovies.map((movie) => ({
+const searchData = categoryMovies.map((movie) => ({
   id: movie.id,
   title: movie.data.title,
   url: `/movies/${movie.id}`,
@@ -59,42 +77,30 @@ const movieSearchData = rawMovies.map((movie) => ({
 ---
 
 <Layout class="max-w-3xl">
-  <PageHead
-    slot="head"
-    title="Movie Reviews"
-    description="Fragments and reflections on films I can’t stop thinking about."
+  <PageHead slot="head" title={`${category} - Movie Reviews`} />
+  <Breadcrumbs
+    items={[
+      { label: 'Movie reviews', href: '/movies', icon: 'lucide:film' },
+      {
+        label: 'Categories',
+        href: '/movies/categories',
+        icon: 'lucide:folder',
+      },
+      { label: category, icon: 'lucide:tag' },
+    ]}
   />
-  <Breadcrumbs items={[{ label: 'Movie reviews', icon: 'lucide:film' }]} />
-
-  <div class="mb-6 flex flex-wrap gap-3">
-    <a
-      href="/movies/100"
-      class="text-muted-foreground hover:text-foreground text-sm transition-colors"
-    >
-      ★ 100/100
-    </a>
-    <a
-      href="/movies/categories"
-      class="text-muted-foreground hover:text-foreground text-sm transition-colors"
-    >
-      Categories
-    </a>
-  </div>
 
   <div class="mb-6">
     <Search
       client:load
-      items={movieSearchData}
-      placeholder="Search movies..."
+      items={searchData}
+      placeholder={`Search ${category} movies...`}
     />
   </div>
 
   {
     movies.length === 0 ? (
-      <p class="text-muted-foreground text-sm">
-        No movie reviews yet. Add <code>.mdx</code> files under
-        <code>src/content/movies</code> to have them appear here.
-      </p>
+      <p class="text-muted-foreground text-sm">No movies in this category.</p>
     ) : (
       <ul class="fade-in-up-soft flex flex-col gap-y-4">
         {movies.map((movie) => (

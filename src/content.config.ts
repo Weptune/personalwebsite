@@ -41,6 +41,7 @@ const albums = defineCollection({
       artists: z.array(z.string()),
       rating: z.number().int().min(0).max(100),
       image: image().optional(),
+      category: z.string().optional(),
     }),
 })
 
@@ -56,6 +57,7 @@ const movies = defineCollection({
       rating: z.number().int().min(0).max(100),
       runtimeMinutes: z.number().int().optional(),
       image: image().optional(),
+      category: z.string().optional(),
     }),
 })
 

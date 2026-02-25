@@ -28,22 +28,40 @@ function formatDDMMYYYY(value: any) {
   return `${day}-${month}-${year}`
 }
 
+export async function getStaticPaths() {
+  const allAlbums = await getCollection('albums')
+  const categories = new Set(
+    allAlbums
+      .filter((album) => album.data.category)
+      .map((album) => album.data.category),
+  )
+
+  return Array.from(categories).map((category) => ({
+    params: { category },
+  }))
+}
+
+const { category } = Astro.params as { category: string }
+
 const rawAlbums = await getCollection('albums')
-// sort by `date` descending so most recently reviewed appears first
-rawAlbums.sort((a, b) => {
+const categoryAlbums = rawAlbums.filter((a) => a.data.category === category)
+
+// sort by date descending
+categoryAlbums.sort((a, b) => {
   const at = parseToDate(a.data.date)?.getTime() || 0
   const bt = parseToDate(b.data.date)?.getTime() || 0
   return bt - at
 })
+
 const albums = await Promise.all(
-  rawAlbums.map(async (entry) => {
+  categoryAlbums.map(async (entry) => {
     const { Content } = await render(entry)
     return { ...entry, Content }
   }),
 )
 
 // Build search data for this page
-const albumSearchData = rawAlbums.map((album) => ({
+const searchData = categoryAlbums.map((album) => ({
   id: album.id,
   title: album.data.title,
   url: `/albums/${album.id}`,
@@ -52,42 +70,30 @@ const albumSearchData = rawAlbums.map((album) => ({
 ---
 
 <Layout class="max-w-3xl">
-  <PageHead
-    slot="head"
-    title="Album Reviews"
-    description="Slow, subjective notes on albums that have stayed with me."
+  <PageHead slot="head" title={`${category} - Album Reviews`} />
+  <Breadcrumbs
+    items={[
+      { label: 'Album reviews', href: '/albums', icon: 'lucide:disc' },
+      {
+        label: 'Categories',
+        href: '/albums/categories',
+        icon: 'lucide:folder',
+      },
+      { label: category, icon: 'lucide:tag' },
+    ]}
   />
-  <Breadcrumbs items={[{ label: 'Album reviews', icon: 'lucide:disc' }]} />
-
-  <div class="mb-6 flex flex-wrap gap-3">
-    <a
-      href="/albums/100"
-      class="text-muted-foreground hover:text-foreground text-sm transition-colors"
-    >
-      ★ 100/100
-    </a>
-    <a
-      href="/albums/categories"
-      class="text-muted-foreground hover:text-foreground text-sm transition-colors"
-    >
-      Categories
-    </a>
-  </div>
 
   <div class="mb-6">
     <Search
       client:load
-      items={albumSearchData}
-      placeholder="Search albums..."
+      items={searchData}
+      placeholder={`Search ${category} albums...`}
     />
   </div>
 
   {
     albums.length === 0 ? (
-      <p class="text-muted-foreground text-sm">
-        No album reviews yet. Add <code>.mdx</code> files under
-        <code>src/content/albums</code> to have them appear here.
-      </p>
+      <p class="text-muted-foreground text-sm">No albums in this category.</p>
     ) : (
       <ul class="fade-in-up-soft flex flex-col gap-y-4">
         {albums.map((album) => (
