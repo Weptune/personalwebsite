@@ -26,137 +26,166 @@
 }
 
 @layer components {
+  /* Base prose styling */
   .prose {
     @apply text-foreground text-base leading-7;
+  }
 
-    :where(p):not(:where(.not-prose, .not-prose *)) {
-      @apply text-foreground/80 my-5;
-    }
+  .prose :first-child:not(:where(.not-prose, .not-prose *)) {
+    @apply mt-0;
+  }
 
-    :where(h1, h2, h3, h4, h5, h6):not(:where(.not-prose, .not-prose *)) {
-      @apply text-foreground scroll-mt-32 font-medium xl:scroll-mt-20;
-    }
+  /* ============================================
+     DARK MODE: Text glow for readability
+     ============================================ */
+  
+  [data-theme='dark'] .prose p {
+    text-shadow: 0 0 4px rgba(255, 255, 255, 0.8), 0 0 16px rgba(255, 255, 255, 0.6), 0 0 24px rgba(255, 255, 255, 0.4), 0 0 32px rgba(255, 255, 255, 0.2) !important;
+  }
 
-    :first-child:not(:where(.not-prose, .not-prose *)) {
-      @apply mt-0;
-    }
+  [data-theme='dark'] .prose li {
+    text-shadow: 0 0 4px rgba(255, 255, 255, 0.8), 0 0 16px rgba(255, 255, 255, 0.6), 0 0 24px rgba(255, 255, 255, 0.4), 0 0 32px rgba(255, 255, 255, 0.2) !important;
+  }
 
-    /* Don't use an <h1> in your posts, one is already generated in blog/[...id].astro */
-    :where(h1):not(:where(.not-prose, .not-prose *)) {
-      @apply mt-8 mb-6 text-4xl;
-    }
+  [data-theme='dark'] .prose td {
+    text-shadow: 0 0 4px rgba(255, 255, 255, 0.8), 0 0 16px rgba(255, 255, 255, 0.6), 0 0 24px rgba(255, 255, 255, 0.4), 0 0 32px rgba(255, 255, 255, 0.2) !important;
+  }
 
-    :where(h2):not(:where(.not-prose, .not-prose *)) {
-      @apply mt-8 mb-4 text-2xl;
-    }
+  [data-theme='dark'] .prose h1,
+  [data-theme='dark'] .prose h2,
+  [data-theme='dark'] .prose h3,
+  [data-theme='dark'] .prose h4,
+  [data-theme='dark'] .prose h5,
+  [data-theme='dark'] .prose h6 {
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.9), 0 0 20px rgba(255, 255, 255, 0.7), 0 0 30px rgba(255, 255, 255, 0.5), 0 0 40px rgba(255, 255, 255, 0.3) !important;
+  }
 
-    :where(h3):not(:where(.not-prose, .not-prose *)) {
-      @apply mt-8 mb-4 text-xl;
-    }
+  [data-theme='dark'] .prose a,
+  [data-theme='dark'] .prose strong {
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.8), 0 0 16px rgba(255, 255, 255, 0.6), 0 0 24px rgba(255, 255, 255, 0.4), 0 0 32px rgba(255, 255, 255, 0.2) !important;
+  }
 
-    :where(h4):not(:where(.not-prose, .not-prose *)) {
-      @apply mt-7 mb-3 text-lg;
-    }
+  /* ============================================
+     TYPOGRAPHY STRUCTURE (light + dark)
+     ============================================ */
 
-    :where(h5, h6):not(:where(.not-prose, .not-prose *)) {
-      @apply mt-5 mb-3;
-    }
+  .prose :where(h1):not(:where(.not-prose, .not-prose *)) {
+    @apply mt-8 mb-6 text-4xl;
+  }
 
-    :where(a):not(:where(.not-prose, .not-prose *)) {
-      @apply text-foreground decoration-muted-foreground hover:decoration-foreground font-medium break-words underline underline-offset-[3px] transition-colors;
-    }
+  .prose :where(h2):not(:where(.not-prose, .not-prose *)) {
+    @apply mt-8 mb-4 text-2xl;
+  }
 
-    :where(strong):not(:where(.not-prose, .not-prose *)) {
-      @apply text-foreground font-medium;
-    }
+  .prose :where(h3):not(:where(.not-prose, .not-prose *)) {
+    @apply mt-8 mb-4 text-xl;
+  }
 
-    :where(ul):not(:where(.not-prose, .not-prose *)) {
-      @apply marker:text-foreground/30 my-5 ml-6 list-disc [&>li]:mt-2;
-    }
+  .prose :where(h4):not(:where(.not-prose, .not-prose *)) {
+    @apply mt-7 mb-3 text-lg;
+  }
 
-    :where(ol):not(:where(.not-prose, .not-prose *)) {
-      @apply marker:text-foreground/30 my-5 ml-6 list-decimal [&>li]:mt-2;
-      @apply [&[type='A']]:list-[upper-alpha] [&[type='I']]:list-[upper-roman] [&[type='a']]:list-[lower-alpha] [&[type='i']]:list-[lower-roman];
-    }
+  .prose :where(h5, h6):not(:where(.not-prose, .not-prose *)) {
+    @apply mt-5 mb-3;
+  }
 
-    :where(li):not(:where(.not-prose, .not-prose *)) {
-      @apply text-foreground/80 pl-2 [&>p]:my-0;
-    }
+  .prose :where(p):not(:where(.not-prose, .not-prose *)) {
+    @apply text-foreground/95 my-5;
+  }
 
-    :where(ul ul, ol ol, ul ol, ol ul):not(:where(.not-prose, .not-prose *)) {
-      @apply marker:text-foreground/30 my-2 ml-6;
-    }
+  .prose :where(a):not(:where(.not-prose, .not-prose *)) {
+    @apply text-foreground decoration-muted-foreground hover:decoration-foreground font-medium break-words underline underline-offset-[3px] transition-colors;
+  }
 
-    :where(code):not(:where(.not-prose, .not-prose *)) {
-      @apply bg-muted/50 text-foreground relative rounded-sm px-[0.3rem] py-[0.2rem] text-sm font-medium break-words;
-    }
+  .prose :where(strong):not(:where(.not-prose, .not-prose *)) {
+    @apply text-foreground font-medium;
+  }
 
-    :where(.shiki):not(:where(pre *, .not-prose, .not-prose *)) {
-      @apply bg-muted/50! text-foreground relative rounded-sm px-[0.3rem] py-[0.2rem] text-sm font-medium break-words;
-    }
+  .prose :where(ul):not(:where(.not-prose, .not-prose *)) {
+    @apply marker:text-foreground/30 my-5 ml-6 list-disc [&>li]:mt-2;
+  }
 
-    :where(.shiki code):not(:where(.not-prose, .not-prose *)) {
-      @apply bg-transparent p-0;
-    }
+  .prose :where(ol):not(:where(.not-prose, .not-prose *)) {
+    @apply marker:text-foreground/30 my-5 ml-6 list-decimal [&>li]:mt-2;
+    @apply [&[type='A']]:list-[upper-alpha] [&[type='I']]:list-[upper-roman] [&[type='a']]:list-[lower-alpha] [&[type='i']]:list-[lower-roman];
+  }
 
-    :where(.shiki span):not(:where(pre *, .not-prose, .not-prose *)) {
-      @apply dark:text-(--shiki-dark)!;
-    }
+  .prose :where(li):not(:where(.not-prose, .not-prose *)) {
+    @apply text-foreground/95 pl-2 [&>p]:my-0;
+  }
 
-    :where(blockquote):not(:where(.not-prose, .not-prose *)) {
-      @apply [&_*]:text-muted-foreground small my-6 border-l-2 pl-6;
-    }
+  .prose :where(ul ul, ol ol, ul ol, ol ul):not(:where(.not-prose, .not-prose *)) {
+    @apply marker:text-foreground/30 my-2 ml-6;
+  }
 
-    :where(hr):not(:where(.not-prose, .not-prose *)) {
-      @apply my-8 border-t;
-    }
+  .prose :where(code):not(:where(.not-prose, .not-prose *)) {
+    @apply bg-muted/50 text-foreground relative rounded-sm px-[0.3rem] py-[0.2rem] text-sm font-medium break-words;
+  }
 
-    :where(table):not(:where(.not-prose, .not-prose *)) {
-      @apply mx-auto my-6 block max-w-fit overflow-x-auto text-sm;
-    }
+  .prose :where(.shiki):not(:where(pre *, .not-prose, .not-prose *)) {
+    @apply bg-muted/50! text-foreground relative rounded-sm px-[0.3rem] py-[0.2rem] text-sm font-medium break-words;
+  }
 
-    :where(thead):not(:where(.not-prose, .not-prose *)) {
-      @apply border-muted-foreground/30 border-b;
-    }
+  .prose :where(.shiki code):not(:where(.not-prose, .not-prose *)) {
+    @apply bg-transparent p-0;
+  }
 
-    :where(th):not(:where(.not-prose, .not-prose *)) {
-      @apply px-4 py-2 font-medium;
-      @apply text-left [&[align=center]]:text-center [&[align=right]]:text-right;
-    }
+  .prose :where(.shiki span):not(:where(pre *, .not-prose, .not-prose *)) {
+    @apply dark:text-(--shiki-dark)!;
+  }
 
-    :where(tr):not(:where(.not-prose, .not-prose *)) {
-      @apply border-muted-foreground/30 border-y first:border-t-0 last:border-b-0;
-    }
+  .prose :where(blockquote):not(:where(.not-prose, .not-prose *)) {
+    @apply [&_*]:text-muted-foreground small my-6 border-l-2 pl-6;
+  }
 
-    :where(td):not(:where(.not-prose, .not-prose *)) {
-      @apply text-foreground/80 small px-4 py-2 align-top break-words [&>*]:first:mt-0! [&>*]:last:mb-0!;
-      @apply text-left [&[align=center]]:text-center [&[align=right]]:text-right;
-    }
+  .prose :where(hr):not(:where(.not-prose, .not-prose *)) {
+    @apply my-8 border-t;
+  }
 
-    :where(img, video, figure, .expressive-code):not(
-        :where(.not-prose, .not-prose *)
-      ) {
-      @apply mx-auto my-6;
-    }
+  .prose :where(table):not(:where(.not-prose, .not-prose *)) {
+    @apply mx-auto my-6 block max-w-fit overflow-x-auto text-sm;
+  }
 
-    :where(pre):not(:where(.not-prose, .not-prose *)) {
-      @apply max-h-[min(68vh,1000px)]! overflow-y-auto [&::-webkit-scrollbar-corner]:hidden;
-    }
+  .prose :where(thead):not(:where(.not-prose, .not-prose *)) {
+    @apply border-muted-foreground/30 border-b;
+  }
 
-    :where(summary):not(:where(.not-prose, .not-prose *)) {
-      @apply [&~*]:small [&~*>*]:first:mt-0! [&~*>*]:last:mb-0!;
-    }
+  .prose :where(th):not(:where(.not-prose, .not-prose *)) {
+    @apply px-4 py-2 font-medium;
+    @apply text-left [&[align=center]]:text-center [&[align=right]]:text-right;
+  }
 
-    :where(kbd):not(:where(.not-prose, .not-prose *)) {
-      @apply text-foreground bg-muted rounded-md border px-2 py-1 text-xs font-medium;
-    }
+  .prose :where(tr):not(:where(.not-prose, .not-prose *)) {
+    @apply border-muted-foreground/30 border-y first:border-t-0 last:border-b-0;
+  }
 
-    :where(.katex-display):not(:where(.not-prose, .not-prose *)) {
-      @apply text-foreground/80 my-6 overflow-x-auto overflow-y-hidden py-2 tracking-normal;
-    }
+  .prose :where(td):not(:where(.not-prose, .not-prose *)) {
+    @apply text-foreground/95 small px-4 py-2 align-top break-words [&>*]:first:mt-0! [&>*]:last:mb-0!;
+    @apply text-left [&[align=center]]:text-center [&[align=right]]:text-right;
+  }
+
+  .prose :where(img, video, figure, .expressive-code):not(:where(.not-prose, .not-prose *)) {
+    @apply mx-auto my-6;
+  }
+
+  .prose :where(pre):not(:where(.not-prose, .not-prose *)) {
+    @apply max-h-[min(68vh,1000px)]! overflow-y-auto [&::-webkit-scrollbar-corner]:hidden;
+  }
+
+  .prose :where(summary):not(:where(.not-prose, .not-prose *)) {
+    @apply [&~*]:small [&~*>*]:first:mt-0! [&~*>*]:last:mb-0!;
+  }
+
+  .prose :where(kbd):not(:where(.not-prose, .not-prose *)) {
+    @apply text-foreground bg-muted rounded-md border px-2 py-1 text-xs font-medium;
+  }
+
+  .prose :where(.katex-display):not(:where(.not-prose, .not-prose *)) {
+    @apply text-foreground/95 my-6 overflow-x-auto overflow-y-hidden py-2 tracking-normal;
   }
 }
 
 @utility small {
   @apply text-sm leading-6 [&_code]:text-xs [&_img,video,figure,details,blockquote,.katex-display,.expressive-code]:my-4! [&_li,ol]:mt-0 [&_p]:my-2! [&_ul]:my-0;
 }
+

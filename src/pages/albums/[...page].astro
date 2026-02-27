@@ -1,0 +1,246 @@
+---
+import Breadcrumbs from '@/components/Breadcrumbs.astro'
+import PageHead from '@/components/PageHead.astro'
+import Search from '@/components/Search'
+import Layout from '@/layouts/Layout.astro'
+import { Image } from 'astro:assets'
+import { getCollection, render } from 'astro:content'
+
+function parseToDate(value: any) {
+  if (!value) return null
+  if (value instanceof Date) return value
+  const s = String(value)
+  const m = s.match(/^(\d{2})-(\d{2})-(\d{4})$/)
+  if (m) {
+    return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]))
+  }
+  const d = new Date(s)
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
+function formatDDMMYYYY(value: any) {
+  const d = parseToDate(value)
+  if (!d) return ''
+  const day = String(d.getDate()).padStart(2, '0')
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const year = d.getFullYear()
+  return `${day}-${month}-${year}`
+}
+
+const rawAlbums = await getCollection('albums')
+rawAlbums.sort((a, b) => {
+  const at = parseToDate(a.data.date)?.getTime() || 0
+  const bt = parseToDate(b.data.date)?.getTime() || 0
+  return bt - at
+})
+
+const albums = await Promise.all(
+  rawAlbums.map(async (entry) => {
+    const { Content } = await render(entry)
+    return { ...entry, Content }
+  }),
+)
+
+const albumSearchData = rawAlbums.map((album) => ({
+  id: album.id,
+  title: album.data.title,
+  url: `/albums/${album.id}`,
+  description: album.data.artists?.join(', '),
+}))
+
+export async function getStaticPaths() {
+  function parseToDate(value: any) {
+    if (!value) return null
+    if (value instanceof Date) return value
+    const s = String(value)
+    const m = s.match(/^(\d{2})-(\d{2})-(\d{4})$/)
+    if (m) {
+      return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]))
+    }
+    const d = new Date(s)
+    return Number.isNaN(d.getTime()) ? null : d
+  }
+
+  const rawAlbums = await getCollection('albums')
+  rawAlbums.sort((a, b) => {
+    const at = parseToDate(a.data.date)?.getTime() || 0
+    const bt = parseToDate(b.data.date)?.getTime() || 0
+    return bt - at
+  })
+
+  const albums = await Promise.all(
+    rawAlbums.map(async (entry) => {
+      const { Content } = await render(entry)
+      return { ...entry, Content }
+    }),
+  )
+
+  const pageSize = 10
+  const totalPages = Math.ceil(albums.length / pageSize)
+  const pages = []
+
+  for (let page = 1; page <= totalPages; page++) {
+    const start = (page - 1) * pageSize
+    const end = start + pageSize
+    const pageData = albums.slice(start, end)
+
+    pages.push({
+      params: { page: page.toString() },
+      props: {
+        page: {
+          data: pageData,
+          currentPage: page,
+          lastPage: totalPages,
+          url: {
+            current: page === 1 ? '/albums/' : `/albums/${page}/`,
+            prev: page > 1 ? (page === 2 ? '/albums/' : `/albums/${page - 1}/`) : undefined,
+            next: page < totalPages ? `/albums/${page + 1}/` : undefined,
+          },
+        },
+        totalCount: albums.length,
+      },
+    })
+  }
+
+  return pages
+}
+
+interface Props {
+  page: {
+    data: any[]
+    currentPage: number
+    lastPage: number
+    url: { current: string; prev?: string; next?: string }
+  }
+  totalCount: number
+}
+
+const { page, totalCount } = Astro.props as Props
+---
+
+<Layout class="max-w-3xl">
+  <PageHead
+    slot="head"
+    title="Album Reviews"
+    description="Slow, subjective notes on albums that have stayed with me."
+  />
+  <Breadcrumbs items={[{ label: 'Album reviews', icon: 'lucide:disc' }]} />
+
+  <div class="mb-2 flex items-center justify-between">
+    <p class="text-muted-foreground text-sm">
+      {totalCount} album{totalCount !== 1 ? 's' : ''} reviewed
+    </p>
+  </div>
+
+  <div class="mb-6 flex flex-wrap gap-3">
+    <a
+      href="/albums/100"
+      class="text-muted-foreground hover:text-foreground text-sm transition-colors"
+    >
+      ★ 100/100
+    </a>
+    <a
+      href="/albums/categories"
+      class="text-muted-foreground hover:text-foreground text-sm transition-colors"
+    >
+      Categories
+    </a>
+  </div>
+
+  <div class="mb-6">
+    <Search
+      client:load
+      items={albumSearchData}
+      placeholder="Search albums..."
+    />
+  </div>
+
+  {
+    page.data.length === 0 ? (
+      <p class="text-muted-foreground text-sm">No album reviews found.</p>
+    ) : (
+      <ul class="fade-in-up-soft flex flex-col gap-y-4">
+        {page.data.map((album) => (
+          <li>
+            <a
+              href={`/albums/${album.id}`}
+              class="group bg-background/40 hover:bg-muted/40 block rounded-xl border p-4 transition-all duration-500 ease-out hover:-translate-y-1 sm:p-5"
+            >
+              <div class="grid grid-cols-[auto,1fr,auto] items-start gap-4 sm:gap-6">
+                {album.data.image ? (
+                  <Image
+                    src={album.data.image}
+                    alt={album.data.title}
+                    width={320}
+                    height={320}
+                    class="h-24 w-24 rounded-sm object-cover shadow-lg sm:h-28 sm:w-28"
+                  />
+                ) : (
+                  <div class="border-border/70 bg-muted/10 text-muted-foreground flex h-24 w-24 items-center justify-center rounded-sm border text-[0.6rem] tracking-[0.24em] uppercase sm:h-28 sm:w-28">
+                    album
+                  </div>
+                )}
+
+                <div class="space-y-1.5">
+                  <h3 class="text-lg font-medium tracking-[0.18em] uppercase">
+                    {album.data.title}
+                  </h3>
+                  <p class="text-muted-foreground text-xs tracking-[0.2em] uppercase">
+                    {album.data.artists?.join(', ') ?? 'Unknown artist'}
+                    {album.data.year && <> &bull; {album.data.year}</>}
+                    {album.data.date && (
+                      <> &bull; {formatDDMMYYYY(album.data.date)}</>
+                    )}
+                  </p>
+                </div>
+
+                <div class="flex flex-col items-end gap-1 text-right">
+                  {typeof album.data.rating === 'number' && (
+                    <span class="font-mono text-2xl leading-none">
+                      {album.data.rating}
+                      <span class="text-muted-foreground text-xs">/100</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <article class="prose small text-foreground/90 mt-4 max-w-none text-sm">
+                <album.Content />
+              </article>
+            </a>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+
+  <div class="mt-8 flex items-center justify-between gap-4">
+    {
+      page.url.prev ? (
+        <a
+          href={page.url.prev}
+          class="text-foreground hover:text-foreground/75 text-sm transition-colors"
+        >
+          ← Previous
+        </a>
+      ) : (
+        <div />
+      )
+    }
+    <p class="text-muted-foreground text-sm">
+      Page {page.currentPage} of {page.lastPage}
+    </p>
+    {
+      page.url.next ? (
+        <a
+          href={page.url.next}
+          class="text-foreground hover:text-foreground/75 text-sm transition-colors"
+        >
+          Next →
+        </a>
+      ) : (
+        <div />
+      )
+    }
+  </div>
+</Layout>
