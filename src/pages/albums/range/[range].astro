@@ -1,12 +1,11 @@
 ---
 import Breadcrumbs from '@/components/Breadcrumbs.astro'
 import PageHead from '@/components/PageHead.astro'
-import Search from '@/components/Search'
-import RatingDistribution from '@/components/RatingDistribution.astro'
 import Layout from '@/layouts/Layout.astro'
 import { Image } from 'astro:assets'
 import { getCollection, render } from 'astro:content'
 
+// helpers to robustly parse dd-mm-yyyy or Date objects and format as dd-mm-yyyy
 function parseToDate(value: any) {
   if (!value) return null
   if (value instanceof Date) return value
@@ -28,82 +27,79 @@ function formatDDMMYYYY(value: any) {
   return `${day}-${month}-${year}`
 }
 
+export async function getStaticPaths() {
+  const AOTY_COLORS = [
+    { label: '100', min: 100, max: 100 },
+    { label: '90-99', min: 90, max: 99 },
+    { label: '80-89', min: 80, max: 89 },
+    { label: '70-79', min: 70, max: 79 },
+    { label: '60-69', min: 60, max: 69 },
+    { label: '50-59', min: 50, max: 59 },
+    { label: '40-49', min: 40, max: 49 },
+    { label: '30-39', min: 30, max: 39 },
+    { label: '20-29', min: 20, max: 29 },
+    { label: '10-19', min: 10, max: 19 },
+    { label: '0-9', min: 0, max: 9 },
+  ]
+
+  return AOTY_COLORS.map((bin) => ({
+    params: { range: bin.label },
+    props: { bin },
+  }))
+}
+
+const { range } = Astro.params
+const { bin } = Astro.props as any
+
 const rawAlbums = await getCollection('albums')
-rawAlbums.sort((a, b) => {
+const filteredAlbums = rawAlbums.filter((a: any) => {
+  const r = a.data?.rating
+  return typeof r === 'number' && r >= bin.min && r <= bin.max
+})
+
+// sort by rating desc, then date desc
+filteredAlbums.sort((a, b) => {
+  if (b.data.rating !== a.data.rating) {
+    return b.data.rating - a.data.rating
+  }
   const at = parseToDate(a.data.date)?.getTime() || 0
   const bt = parseToDate(b.data.date)?.getTime() || 0
   return bt - at
 })
 
 const albums = await Promise.all(
-  rawAlbums.map(async (entry) => {
+  filteredAlbums.map(async (entry) => {
     const { Content } = await render(entry)
     return { ...entry, Content }
   }),
 )
-
-const albumSearchData = rawAlbums.map((album) => ({
-  id: album.id,
-  title: album.data.title,
-  url: `/albums/${album.id}`,
-  description: album.data.artists?.join(', '),
-}))
-
-// Show first 10 albums for page 1
-const pageSize = 10
-const pageData = albums.slice(0, pageSize)
-const totalCount = albums.length
-const totalPages = Math.ceil(totalCount / pageSize)
-const currentPage = 1
 ---
 
 <Layout class="max-w-3xl">
   <PageHead
     slot="head"
-    title="Album Reviews"
-    description="Slow, subjective notes on albums that have stayed with me."
+    title={`${range} Albums`}
+    description={`Albums rated between ${range}.`}
   />
-  <Breadcrumbs items={[{ label: 'Album reviews', icon: 'lucide:disc' }]} />
+  <Breadcrumbs
+    items={[
+      { href: '/albums', label: 'Album reviews', icon: 'lucide:disc' },
+      { label: range as string, icon: 'lucide:bar-chart-2' },
+    ]}
+  />
 
-  <div class="mb-2 flex items-center justify-between">
-    <p class="text-muted-foreground text-sm">
-      {totalCount} album{totalCount !== 1 ? 's' : ''} reviewed
-    </p>
-  </div>
-
-  <div class="mb-6 flex flex-wrap gap-3">
-    <a
-      href="/albums/100"
-      class="text-muted-foreground hover:text-foreground text-sm transition-colors"
-    >
-      ★ 100/100
-    </a>
-    <a
-      href="/albums/categories"
-      class="text-muted-foreground hover:text-foreground text-sm transition-colors"
-    >
-      Categories
-    </a>
-  </div>
-
-  <div class="mb-6">
-    <Search
-      client:load
-      items={albumSearchData}
-      placeholder="Search albums..."
-    />
-  </div>
-
-  <div class="mb-4 w-full">
-    <RatingDistribution data={rawAlbums} type="albums" />
-  </div>
+  <p class="text-muted-foreground mb-6 text-sm">
+    {filteredAlbums.length} album{filteredAlbums.length !== 1 ? 's' : ''} in this range
+  </p>
 
   {
-    pageData.length === 0 ? (
-      <p class="text-muted-foreground text-sm">No album reviews found.</p>
+    albums.length === 0 ? (
+      <p class="text-muted-foreground text-sm">
+        No albums found in this range.
+      </p>
     ) : (
       <ul class="fade-in-up-soft flex flex-col gap-y-4">
-        {pageData.map((album) => (
+        {albums.map((album) => (
           <li>
             <a
               href={`/albums/${album.id}`}
@@ -138,12 +134,10 @@ const currentPage = 1
                 </div>
 
                 <div class="flex flex-col items-end gap-1 text-right">
-                  {typeof album.data.rating === 'number' && (
-                    <span class="font-mono text-2xl leading-none">
-                      {album.data.rating}
-                      <span class="text-muted-foreground text-xs">/100</span>
-                    </span>
-                  )}
+                  <span class="text-primary font-mono text-2xl leading-none">
+                    {album.data.rating}
+                    <span class="text-muted-foreground text-xs">/100</span>
+                  </span>
                 </div>
               </div>
 
@@ -156,23 +150,4 @@ const currentPage = 1
       </ul>
     )
   }
-
-  <div class="mt-8 flex items-center justify-between gap-4">
-    <div />
-    <p class="text-muted-foreground text-sm">
-      Page {currentPage} of {totalPages}
-    </p>
-    {
-      totalPages > 1 ? (
-        <a
-          href="/albums/2/"
-          class="text-foreground hover:text-foreground/75 text-sm transition-colors"
-        >
-          Next →
-        </a>
-      ) : (
-        <div />
-      )
-    }
-  </div>
 </Layout>

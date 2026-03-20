@@ -1,0 +1,69 @@
+---
+interface Props {
+  data: any[]
+  type?: 'albums' | 'movies'
+}
+
+const { data, type = 'albums' } = Astro.props
+
+const AOTY_COLORS = [
+  { label: '100', min: 100, max: 100, color: '#7eed7a' },
+  { label: '90-99', min: 90, max: 99, color: '#9df395' },
+  { label: '80-89', min: 80, max: 89, color: '#b0f395' },
+  { label: '70-79', min: 70, max: 79, color: '#cff395' },
+  { label: '60-69', min: 60, max: 69, color: '#e6f395' },
+  { label: '50-59', min: 50, max: 59, color: '#f3db95' },
+  { label: '40-49', min: 40, max: 49, color: '#f3bc95' },
+  { label: '30-39', min: 30, max: 39, color: '#f3a495' },
+  { label: '20-29', min: 20, max: 29, color: '#f08a78' },
+  { label: '10-19', min: 10, max: 19, color: '#ea6f5f' },
+  { label: '0-9', min: 0, max: 9, color: '#e35548' },
+]
+
+const distribution = AOTY_COLORS.map(bin => {
+  const count = data.filter((item: any) => {
+    const r = item.data?.rating
+    return typeof r === 'number' && r >= bin.min && r <= bin.max
+  }).length
+  return { ...bin, count }
+})
+
+const maxCount = Math.max(...distribution.map(d => d.count), 1)
+---
+
+<div class="bg-background/40 hover:bg-background/60 transition-colors rounded-xl border border-border p-5 sm:p-6 w-full mb-4">
+  <div class="flex items-center justify-between mb-5 border-b border-border/80 pb-3">
+    <h3 class="text-xs font-semibold tracking-[0.15em] text-foreground/90 uppercase">Rating Distribution</h3>
+    <div class="flex items-center gap-1.5 text-muted-foreground text-[10px] font-medium tracking-[0.15em] uppercase">
+      {type === 'albums' ? 'Albums' : 'Movies'}
+      {type === 'albums' ? (
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-disc"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="2"/></svg>
+      ) : (
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-film"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 3v18"/><path d="M3 7.5h4"/><path d="M3 12h18"/><path d="M3 16.5h4"/><path d="M17 3v18"/><path d="M17 7.5h4"/><path d="M17 16.5h4"/></svg>
+      )}
+    </div>
+  </div>
+
+  <div class="relative">
+    <div class="absolute left-[3rem] top-0 bottom-0 w-[1px] bg-border/80"></div>
+    <div class="flex flex-col gap-y-[8px]">
+      {distribution.map((bin) => {
+        const widthPct = (bin.count / maxCount) * 100
+        return (
+          <a href={`/${type}/range/${bin.label}`} class="flex items-center text-[11px] group relative h-4 cursor-pointer hover:bg-white/5 rounded pl-1 -ml-1 py-2.5 my-[-2px]">
+            <div class="w-12 text-right text-foreground/70 pr-3 tabular-nums font-mono">{bin.label}</div>
+            <div class="w-8 pl-3 text-left text-muted-foreground/50 tabular-nums font-mono transition-colors group-hover:text-foreground/80">{bin.count}</div>
+            <div class="flex-1 h-[10px] bg-transparent flex items-center pr-2">
+              {bin.count > 0 && (
+                <div 
+                  class="h-full rounded-[2px] shadow-sm transition-all duration-700 ease-out saturate-150 group-hover:brightness-125 group-hover:shadow-[0_0_8px_rgba(255,255,255,0.2)]" 
+                  style={`width: ${widthPct}%; background-color: ${bin.color};`}
+                />
+              )}
+            </div>
+          </a>
+        )
+      })}
+    </div>
+  </div>
+</div>
