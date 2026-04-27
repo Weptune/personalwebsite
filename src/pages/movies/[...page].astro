@@ -209,9 +209,10 @@ const { page, totalCount } = Astro.props as Props
                 </div>
 
                 <div class="flex flex-col items-end gap-1 text-right">
-                  {movie.starsString && (
-                    <span class="font-mono text-lg leading-none">
-                      {movie.starsString}
+                  {typeof movie.data.rating === 'number' && (
+                    <span class="font-mono text-2xl leading-none">
+                      {movie.data.rating}
+                      <span class="text-muted-foreground text-xs">/100</span>
                     </span>
                   )}
                 </div>

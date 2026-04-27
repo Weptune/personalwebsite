@@ -5,7 +5,7 @@ date: 2026-02-27
 year: 2023
 artists:
   - 'PinkPantheress'
-rating: 90
+rating: 80
 image: './cover.jpg'
 ---
 

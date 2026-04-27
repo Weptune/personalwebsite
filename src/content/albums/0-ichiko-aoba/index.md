@@ -5,7 +5,7 @@ date: 2026-02-27
 year: 2013
 artists:
   - 'Ichiko Aoba'
-rating: 91
+rating: 100
 image: './cover.jpg'
 ---
 

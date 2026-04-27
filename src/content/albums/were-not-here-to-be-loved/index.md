@@ -1,0 +1,12 @@
+---
+title: "We're Not Here to Be Loved"
+description: ''
+date: 2026-04-26
+year: 2022
+artists:
+  - 'Fleshwater'
+rating: 73
+image: './cover.jpg'
+---
+
+Review coming soon.

@@ -1,11 +1,11 @@
 ---
 title: 'Frailty'
 description: ''
-date: 2026-02-27
+date: 2026-04-26
 year: 2021
 artists:
   - 'Jane Remover'
-rating: 92
+rating: 80
 image: './cover.jpg'
 ---
 
