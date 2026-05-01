@@ -1,5 +1,5 @@
 ---
-title: privelege
+title: privilege
 description: Site inauguration note.
 date: 2026-04-27
 tags: ['musings']
