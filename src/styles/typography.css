@@ -38,17 +38,16 @@
   /* ============================================
      DARK MODE: Text glow for readability
      ============================================ */
-  
   [data-theme='dark'] .prose p {
-    text-shadow: 0 0 4px rgba(255, 255, 255, 0.8), 0 0 16px rgba(255, 255, 255, 0.6), 0 0 24px rgba(255, 255, 255, 0.4), 0 0 32px rgba(255, 255, 255, 0.2) !important;
+    text-shadow: 0 0 4px rgba(255, 255, 255, 0.6), 0 0 12px rgba(255, 255, 255, 0.4), 0 0 18px rgba(255, 255, 255, 0.2) !important;
   }
 
   [data-theme='dark'] .prose li {
-    text-shadow: 0 0 4px rgba(255, 255, 255, 0.8), 0 0 16px rgba(255, 255, 255, 0.6), 0 0 24px rgba(255, 255, 255, 0.4), 0 0 32px rgba(255, 255, 255, 0.2) !important;
+    text-shadow: 0 0 4px rgba(255, 255, 255, 0.6), 0 0 12px rgba(255, 255, 255, 0.4), 0 0 18px rgba(255, 255, 255, 0.2) !important;
   }
 
   [data-theme='dark'] .prose td {
-    text-shadow: 0 0 4px rgba(255, 255, 255, 0.8), 0 0 16px rgba(255, 255, 255, 0.6), 0 0 24px rgba(255, 255, 255, 0.4), 0 0 32px rgba(255, 255, 255, 0.2) !important;
+    text-shadow: 0 0 4px rgba(255, 255, 255, 0.6), 0 0 12px rgba(255, 255, 255, 0.4), 0 0 18px rgba(255, 255, 255, 0.2) !important;
   }
 
   [data-theme='dark'] .prose h1,
@@ -57,12 +56,12 @@
   [data-theme='dark'] .prose h4,
   [data-theme='dark'] .prose h5,
   [data-theme='dark'] .prose h6 {
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.9), 0 0 20px rgba(255, 255, 255, 0.7), 0 0 30px rgba(255, 255, 255, 0.5), 0 0 40px rgba(255, 255, 255, 0.3) !important;
+    text-shadow: 0 0 6px rgba(255, 255, 255, 0.8), 0 0 16px rgba(255, 255, 255, 0.5), 0 0 24px rgba(255, 255, 255, 0.3) !important;
   }
 
   [data-theme='dark'] .prose a,
   [data-theme='dark'] .prose strong {
-    text-shadow: 0 0 8px rgba(255, 255, 255, 0.8), 0 0 16px rgba(255, 255, 255, 0.6), 0 0 24px rgba(255, 255, 255, 0.4), 0 0 32px rgba(255, 255, 255, 0.2) !important;
+    text-shadow: 0 0 4px rgba(255, 255, 255, 0.7), 0 0 14px rgba(255, 255, 255, 0.4), 0 0 20px rgba(255, 255, 255, 0.2) !important;
   }
 
   /* ============================================
