@@ -4,5 +4,5 @@ description: 'A competitive multiplayer game for engineering students of all dis
 tags: ['educational', 'college', 'website']
 image: 'cover.png'
 link: 'https://synapsegg.vercel.app/'
-startDate: '2025-05-10'
+startDate: '2026-05-10'
 ---
