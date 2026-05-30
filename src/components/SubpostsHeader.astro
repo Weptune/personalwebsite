@@ -1,20 +1,24 @@
 ---
 import { ScrollArea } from '@/components/ui/scroll-area'
-import {
-  getCombinedReadingTime,
-  getParentId,
-  getParentPost,
-  getPostById,
-  getPostReadingTime,
-  getSubpostsForParent,
-  isSubpost,
-} from '@/lib/data-utils'
+import { isSubpost, getParentId } from '@/lib/data-utils'
+import * as dataUtils from '@/lib/data-utils'
 import { Icon } from 'astro-icon/components'
 
-const { parentId } = Astro.props
+interface Props {
+  parentId?: string
+  collection?: 'thoughts' | 'maths'
+}
+
+const { parentId, collection = 'thoughts' } = Astro.props
 const currentPostId = Astro.params.id as string
 const isCurrentSubpost = isSubpost(currentPostId)
-const rootParentId = isCurrentSubpost ? getParentId(currentPostId) : parentId
+const rootParentId = (isCurrentSubpost ? getParentId(currentPostId) : parentId) || ''
+
+const getPostById = collection === 'thoughts' ? dataUtils.getPostById : dataUtils.getMathsPostById
+const getSubpostsForParent = collection === 'thoughts' ? dataUtils.getSubpostsForParent : dataUtils.getSubpostsForMathsParent
+const getParentPost = collection === 'thoughts' ? dataUtils.getParentPost : dataUtils.getParentMathsPost
+const getPostReadingTime = collection === 'thoughts' ? dataUtils.getPostReadingTime : dataUtils.getMathsPostReadingTime
+const getCombinedReadingTime = collection === 'thoughts' ? dataUtils.getCombinedReadingTime : dataUtils.getMathsCombinedReadingTime
 
 const currentPost = !isCurrentSubpost ? await getPostById(currentPostId) : null
 const subposts = await getSubpostsForParent(rootParentId)
@@ -114,7 +118,7 @@ const currentSubpostDetails = isCurrentSubpost
                     </div>
                   ) : (
                     <a
-                      href={`/thoughts/${activePost.id}`}
+                      href={`/${collection}/${activePost.id}`}
                       class="mobile-subposts-link hover:text-foreground text-muted-foreground hover:bg-muted/50 flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors"
                     >
                       <Icon
@@ -164,7 +168,7 @@ const currentSubpostDetails = isCurrentSubpost
                       </div>
                     ) : (
                       <a
-                        href={`/thoughts/${subpost.id}`}
+                        href={`/${collection}/${subpost.id}`}
                         class="mobile-subposts-link hover:text-foreground text-muted-foreground hover:bg-muted/50 flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors"
                       >
                         <Icon

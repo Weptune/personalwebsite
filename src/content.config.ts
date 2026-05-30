@@ -13,6 +13,7 @@ const thoughts = defineCollection({
       tags: z.array(z.string()).optional(),
       authors: z.array(z.string()).optional(),
       draft: z.boolean().optional(),
+      readingTimeOverride: z.string().optional(),
     }),
 })
 
@@ -61,4 +62,21 @@ const movies = defineCollection({
     }),
 })
 
-export const collections = { thoughts, projects, albums, movies }
+const maths = defineCollection({
+  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/maths' }),
+  schema: ({ image }) =>
+    z.object({
+      title: z.string(),
+      description: z.string(),
+      date: z.coerce.date(),
+      order: z.number().optional(),
+      image: image().optional(),
+      tags: z.array(z.string()).optional(),
+      authors: z.array(z.string()).optional(),
+      draft: z.boolean().optional(),
+      pinned: z.boolean().optional(),
+      readingTimeOverride: z.string().optional(),
+    }),
+})
+
+export const collections = { thoughts, projects, albums, movies, maths }

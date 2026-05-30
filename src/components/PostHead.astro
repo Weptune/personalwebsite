@@ -4,7 +4,7 @@ import { isSubpost } from '@/lib/data-utils'
 import type { CollectionEntry } from 'astro:content'
 
 interface Props {
-  post: CollectionEntry<'thoughts'>
+  post: CollectionEntry<'thoughts'> | CollectionEntry<'maths'>
 }
 
 const { post } = Astro.props

@@ -5,7 +5,7 @@ date: 2026-04-25
 year: 2026
 directors:
   - 'Zach Cregger'
-rating: 82
+rating: 22
 image: './poster.jpg'
 ---
 

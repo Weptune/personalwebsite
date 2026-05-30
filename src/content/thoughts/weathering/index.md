@@ -3,6 +3,7 @@ title: Weathering
 description: Site inauguration note.
 date: 2026-05-18
 tags: ['meta']
+readingTimeOverride: '3 min read'
 ---
 
 In the city of cyclones, hearts live in fear,  

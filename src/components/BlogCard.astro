@@ -4,6 +4,8 @@ import {
   getCombinedReadingTime,
   getSubpostCount,
   isSubpost,
+  getMathsCombinedReadingTime,
+  getMathsSubpostCount,
 } from '@/lib/data-utils'
 import { formatDate } from '@/lib/utils'
 import { Icon } from 'astro-icon/components'
@@ -12,14 +14,19 @@ import type { CollectionEntry } from 'astro:content'
 import Link from './Link.astro'
 
 interface Props {
-  entry: CollectionEntry<'thoughts'>
+  entry: CollectionEntry<'thoughts'> | CollectionEntry<'maths'>
 }
 
 const { entry } = Astro.props
 const formattedDate = formatDate(entry.data.date)
-const readTime = await getCombinedReadingTime(entry.id)
+const isThoughts = entry.collection === 'thoughts'
+
+const readTime = isThoughts
+  ? await getCombinedReadingTime(entry.id)
+  : await getMathsCombinedReadingTime(entry.id)
+
 const subpostCount = !isSubpost(entry.id)
-  ? await getSubpostCount(entry.id)
+  ? (isThoughts ? await getSubpostCount(entry.id) : await getMathsSubpostCount(entry.id))
   : 0
 ---
 
@@ -27,7 +34,7 @@ const subpostCount = !isSubpost(entry.id)
   class="rounded-xl border p-4 transition-all duration-500 ease-out hover:-translate-y-1 hover:bg-muted/40"
 >
   <Link
-    href={`/thoughts/${entry.id}`}
+    href={`/${entry.collection}/${entry.id}`}
     class="flex flex-col gap-4 sm:flex-row"
   >
     {

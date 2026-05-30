@@ -1,0 +1,216 @@
+---
+import Breadcrumbs from '@/components/Breadcrumbs.astro'
+import PostHead from '@/components/PostHead.astro'
+import PostNavigation from '@/components/PostNavigation.astro'
+import SubpostsHeader from '@/components/SubpostsHeader.astro'
+import SubpostsSidebar from '@/components/SubpostsSidebar.astro'
+import TOCSidebar from '@/components/TOCSidebar.astro'
+import Layout from '@/layouts/Layout.astro'
+import {
+  getAdjacentMathsPosts,
+  getAllMathsPostsAndSubposts,
+  getMathsCombinedReadingTime,
+  getParentId,
+  getParentMathsPost,
+  getMathsPostReadingTime,
+  getMathsSubpostCount,
+  getMathsTOCSections,
+  hasMathsSubposts,
+  isSubpost,
+} from '@/lib/data-utils'
+import { formatDate } from '@/lib/utils'
+import { Image } from 'astro:assets'
+import { render } from 'astro:content'
+
+export async function getStaticPaths() {
+  const posts = await getAllMathsPostsAndSubposts()
+  return posts.map((post) => ({
+    params: { id: post.id },
+    props: post,
+  }))
+}
+
+const post = Astro.props
+const currentPostId = Astro.params.id
+const { Content } = await render(post)
+
+const isCurrentSubpost = isSubpost(currentPostId)
+const navigation = await getAdjacentMathsPosts(currentPostId)
+const parentPost = isCurrentSubpost ? await getParentMathsPost(currentPostId) : null
+
+const hasChildPosts = await hasMathsSubposts(currentPostId)
+const subpostCount = !isCurrentSubpost
+  ? await getMathsSubpostCount(currentPostId)
+  : 0
+const postReadingTime = await getMathsPostReadingTime(currentPostId)
+const combinedReadingTime =
+  hasChildPosts && !isCurrentSubpost
+    ? await getMathsCombinedReadingTime(currentPostId)
+    : null
+
+const tocSections = await getMathsTOCSections(currentPostId)
+/* Only show TOC for longer posts (3+ headings) to reduce clutter for casual thoughts */
+const showTOC = tocSections.length > 0 && tocSections.some((s) => s.headings.length >= 2)
+---
+
+<Layout>
+  <PostHead slot="head" post={post} />
+  {
+    (hasChildPosts || isCurrentSubpost) && (
+      <SubpostsHeader
+        slot="subposts-navigation"
+        parentId={isCurrentSubpost ? getParentId(currentPostId) : currentPostId}
+        collection="maths"
+      />
+    )
+  }
+
+  <section
+    class="grid gap-y-8 px-4 xl:grid-cols-[minmax(0,1fr)_min(65ch,100%)_minmax(0,1fr)] xl:gap-x-8"
+  >
+    <div class="hidden xl:block" />
+    <div class="min-w-0 xl:col-start-2">
+      <Breadcrumbs
+        items={[
+          { href: '/maths', label: 'Maths', icon: 'lucide:binary' },
+          ...(isCurrentSubpost && parentPost
+            ? [
+                {
+                  href: `/maths/${parentPost.id}`,
+                  label: parentPost.data.title,
+                  icon: 'lucide:book-open',
+                },
+                {
+                  href: `/maths/${currentPostId}`,
+                  label: post.data.title,
+                  icon: 'lucide:file-text',
+                },
+              ]
+            : [
+                {
+                  href: `/maths/${currentPostId}`,
+                  label: post.data.title,
+                  icon: 'lucide:book-open-text',
+                },
+              ]),
+        ]}
+      />
+    </div>
+    <div class="hidden xl:block" />
+
+    {
+      post.data.image && (
+        <Image
+          src={post.data.image}
+          alt={post.data.title}
+          width={1200}
+          height={630}
+          class="col-span-full mx-auto w-full max-w-3xl rounded-lg object-cover"
+        />
+      )
+    }
+
+    <aside class="hidden xl:col-start-1 xl:row-start-3 xl:block" aria-label="Table of contents">
+      {showTOC && (
+        <TOCSidebar sections={tocSections} currentPostId={currentPostId} collection="maths" />
+      )}
+    </aside>
+
+    <article class="min-w-0 xl:col-start-2 xl:row-start-3">
+      <header class="mb-8 text-center">
+        <h1
+          class="mb-3 scroll-mt-24 text-2xl font-medium leading-tight sm:text-3xl normal-case"
+          id="post-title"
+        >
+          {post.data.title}
+        </h1>
+        <p class="text-muted-foreground text-sm">
+          {formatDate(post.data.date)}
+          {' · '}
+          {postReadingTime}
+          {
+            combinedReadingTime &&
+              combinedReadingTime !== postReadingTime && (
+                <span> ({combinedReadingTime} total)</span>
+              )
+          }
+          {
+            subpostCount > 0 && (
+              <span> · {subpostCount} subpost{subpostCount === 1 ? '' : 's'}</span>
+            )
+          }
+        </p>
+      </header>
+
+      <div class="prose max-w-none">
+        <Content />
+      </div>
+
+      <footer class="mt-12">
+        <PostNavigation
+          newerPost={navigation.newer}
+          olderPost={navigation.older}
+          parentPost={isCurrentSubpost ? navigation.parent : undefined}
+        />
+      </footer>
+    </article>
+
+    <aside class="hidden xl:col-start-3 xl:row-start-3 xl:block" aria-label="Related">
+      {
+        (hasChildPosts || isCurrentSubpost) && (
+          <SubpostsSidebar
+            parentId={
+              isCurrentSubpost ? getParentId(currentPostId) : currentPostId
+            }
+            collection="maths"
+          />
+        )
+      }
+    </aside>
+  </section>
+
+  <button
+    type="button"
+    id="scroll-to-top"
+    class="fixed right-6 bottom-6 z-50 hidden rounded-full border border-border bg-background/80 p-2 backdrop-blur-sm transition-opacity hover:opacity-80"
+    title="Scroll to top"
+    aria-label="Scroll to top"
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <path d="m18 15-6-6-6 6" />
+    </svg>
+  </button>
+
+  <script>
+    document.addEventListener('astro:page-load', () => {
+      const btn = document.getElementById('scroll-to-top')
+      const footer = document.querySelector('footer')
+      if (btn && footer) {
+        btn.addEventListener('click', () =>
+          window.scrollTo({ top: 0, behavior: 'smooth' })
+        )
+        window.addEventListener(
+          'scroll',
+          () => {
+            const footerRect = footer.getBoundingClientRect()
+            btn.classList.toggle(
+              'hidden',
+              window.scrollY <= 300 || footerRect.top <= window.innerHeight
+            )
+          },
+          { passive: true }
+        )
+      }
+    })
+  </script>
+</Layout>

@@ -6,6 +6,10 @@ import { Icon } from 'astro-icon/components'
 
 const { newerPost, olderPost, parentPost } = Astro.props
 const isSubpost = !!parentPost
+const collection = olderPost?.collection || newerPost?.collection || parentPost?.collection || 'thoughts'
+const olderHref = olderPost ? `/${collection}/${olderPost.id}#post-title` : '#'
+const parentHref = parentPost ? `/${collection}/${parentPost.id}#post-title` : '#'
+const newHref = newerPost ? `/${collection}/${newerPost.id}#post-title` : '#'
 ---
 
 <nav
@@ -15,7 +19,7 @@ const isSubpost = !!parentPost
   )}
 >
   <Link
-    href={olderPost ? `/thoughts/${olderPost.id}#post-title` : '#'}
+    href={olderHref}
     class={cn(
       buttonVariants({ variant: 'outline' }),
       'rounded-lg group flex items-center justify-start size-full',
@@ -43,7 +47,7 @@ const isSubpost = !!parentPost
   {
     isSubpost && (
       <Link
-        href={parentPost ? `/thoughts/${parentPost.id}#post-title` : '#'}
+        href={parentHref}
         class={cn(
           buttonVariants({ variant: 'outline' }),
           'group flex size-full items-center justify-center rounded-lg',
@@ -67,7 +71,7 @@ const isSubpost = !!parentPost
   }
 
   <Link
-    href={newerPost ? `/thoughts/${newerPost.id}#post-title` : '#'}
+    href={newHref}
     class={cn(
       buttonVariants({ variant: 'outline' }),
       'rounded-lg group flex items-center justify-end size-full',

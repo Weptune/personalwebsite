@@ -1,0 +1,74 @@
+---
+import BlogCard from '@/components/BlogCard.astro'
+import Breadcrumbs from '@/components/Breadcrumbs.astro'
+import PageHead from '@/components/PageHead.astro'
+import Search from '@/components/Search'
+import PaginationComponent from '@/components/ui/pagination'
+import { SITE } from '@/consts'
+import Layout from '@/layouts/Layout.astro'
+import { getAllMathsPosts, groupMathsPostsByYear } from '@/lib/data-utils'
+import type { PaginateFunction } from 'astro'
+
+export async function getStaticPaths({
+  paginate,
+}: {
+  paginate: PaginateFunction
+}) {
+  const allPosts = await getAllMathsPosts()
+  return paginate(allPosts, { pageSize: SITE.postsPerPage })
+}
+
+const { page } = Astro.props
+
+const postsByYear = groupMathsPostsByYear(page.data)
+const years = Object.keys(postsByYear).sort((a, b) => parseInt(b) - parseInt(a))
+
+const mathsSearchData = page.data.map((post) => ({
+  id: post.id,
+  title: post.data.title,
+  url: `/maths/${post.id}`,
+  description: post.data.description,
+}))
+---
+
+<Layout class="max-w-3xl">
+  <PageHead slot="head" title="Maths" />
+  <Breadcrumbs
+    items={[
+      { label: 'Maths', href: '/maths', icon: 'lucide:binary' },
+      { label: `Page ${page.currentPage}`, icon: 'lucide:book-copy' },
+    ]}
+  />
+
+  <div class="mb-8">
+    <Search
+      client:load
+      items={mathsSearchData}
+      placeholder="Search maths writeups..."
+    />
+  </div>
+
+  <div class="flex min-h-[calc(100vh-18rem)] flex-col gap-y-8">
+    {
+      years.map((year) => (
+        <section class="flex flex-col gap-y-4">
+          <div class="font-medium">{year}</div>
+          <ul class="flex flex-col gap-4">
+            {postsByYear[year].map((post) => (
+              <li>
+                <BlogCard entry={post} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))
+    }
+  </div>
+
+  <PaginationComponent
+    currentPage={page.currentPage}
+    totalPages={page.lastPage}
+    baseUrl="/maths/"
+    client:load
+  />
+</Layout>
