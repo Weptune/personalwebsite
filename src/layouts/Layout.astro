@@ -19,7 +19,7 @@ const { class: className } = Astro.props
 
 <!doctype html>
 <html
-  class="bg-background text-foreground scheme-light-dark"
+  class="bg-background text-foreground scheme-light-dark overflow-x-hidden w-full"
   lang={SITE.locale}
   data-theme="dark"
 >
@@ -30,7 +30,7 @@ const { class: className } = Astro.props
     />
     <slot name="head" />
   </Head>
-  <body class="flex h-fit min-h-screen flex-col font-sans">
+  <body class="flex h-fit min-h-screen flex-col font-sans overflow-x-hidden w-full">
     <CursorTrail />
     <canvas
       id="starfield"
