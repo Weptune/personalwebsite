@@ -1,0 +1,34 @@
+---
+title: the unending bureaucracy present in indian systems
+description: Site inauguration note.
+date: 2026-06-02
+tags: ['rant']
+---
+
+This is mostly a vent post
+
+I study in a private engineering college, one that is known for its relative freedom and lax rules. College too, before I joined it, was described to me as a place to explore hobbies and interests, passions and skills. If that's the case, why does every single academic action have to have a million preceding rules assigned to it.
+
+I get that in a university with thousands of students, you need to have a set of ground rules and regulations to keep the cogs turning. But these rules are fundamentally created for just that: to create a fair, just, and efficient system. Rules start to lose meaning when their sole purpose is to uphold archaic and anti-progress systems.
+
+Recently, I was working on a research project under a prof. The way it worked was that the main authors would be a PHD student from a sibling college and the prof, and I would be cited as one of the contributors. Totally fair, I was only in charge of coding the product they needed, I was doing none of the research. To publish it under the name of the college, I needed to get signs from, and im not making this up, 5 different people.
+
+My branch coordinator, the assistant director of academics, the prof I was working under (duh), and 2 others with equally as vague roles. Out of all 5 of them, only 1, the prof, had anything to do with the paper. I had to print out 3 forms, walk to their cabins (that were situated in different builings), and wait for hours at a time for their meetings to finish only to get some form of vague dismissal or redirection. And without fail, every single one of them treated the interaction as them doing me a favour by giving the signature, and had the air of me taking up their precious time.
+
+Yes, I'm aware. I'm aware that profs have a ton of responsibilities and workload, and this isn't an attempt to diminish their work. But how are you gonna be pissy about rules YOU made. You made it so that every single action needs to get personal approval from yourself, yet get mad when that starts to naturally infringe upon your time. Make it make sense.
+
+My hunch is that the main culprit behind every bureaucratic hellspace is power dynamics. Power really does corrupt, and it corrupts in a grotesque, parasitic manner that I rarely see in other mediums. I'm sure I also fall victim to it's spell, no matter how much I'd like to think otherwise.
+
+Once again, before going on with a tirade about how administrators are evil and professors are power-hungry tyrants, I should clarify that I don't actually think most people involved in these systems are bad people. In fact, that's probably what confuses me the most. Every single person I talk to seems to hate bureaucracy. Students hate it because it wastes their time. Professors hate it because students keep showing up asking for signatures and approvals. Administrators hate it because they have a backlog of requests sitting on their desks. Yet somehow, despite nobody liking it, the machine keeps getting bigger every year. It boggles my mind.
+
+I think Indian institutions in particular have developed a strange obsession with approval. Nothing can simply happen. Every action needs to be validated by somebody. Sometimes multiple somebodies. Sometimes people who are so detached from whatever you're doing that you're not entirely sure why they're involved in the first place. The publication example wasn't even unique, I've had to get signatures from people who had absolutely no idea what the project was about, what my role was, or even what they were signing. They'd glance at the form for three seconds, scribble their name somewhere near the bottom, and hand it back. Which raises an obvious question: If the approval is meaningful, surely you should actually evaluate the thing you're approving. If it isn't meaningful, why are we pretending otherwise?
+
+And that's the part that gets me. The sheer amount of theatre involved. So much of bureaucracy feels less like a system designed to achieve an outcome and more like a ritual that everyone has agreed to participate in. Print this form. Fill this section. Get this signature. Make three copies. Scan them. Email them. Bring the original anyway. Wait for a meeting to finish. Come back tomorrow. At no point does anyone stop and ask whether any of this is actually helping the thing move forward. The process becomes the goal.
+
+The irony is that the people most affected by this are usually the people trying to do something beyond the bare minimum. If you're just attending classes, writing exams, and going home, you'll probably never notice most of these problems. The moment you try to organize something, publish something, build something, represent the college somewhere, or work on a project outside the predefined academic conveyor belt, suddenly you discover the labyrinth hidden underneath. It's almost as if initiative is treated as an exception that the system reluctantly tolerates rather than something it actively wants.
+
+Again, a lot of this, in my opinion, comes down to power. Not power in some dramatic, movie-villain sense. Just the small, everyday kind. The kind where you become the person whose signature is required. The person who can say yes, no, maybe, come back later, send me an email, or my personal favourite, "why did they send you to me?" There's something about authority, even in tiny amounts, that seems to encourage people to protect the existence of that authority. Processes become harder to remove because every step in the process belongs to somebody. Every approval stage justifies someone's position in the chain. And before long, removing a pointless step becomes harder than simply forcing everyone to continue following it.
+
+Maybe that's just what happens when systems get large enough. Maybe every institution eventually drifts towards self-preservation. The rules stop existing to help people accomplish things and start existing because the rules themselves have become part of the institution's identity. Nobody remembers why a particular requirement exists anymore, but nobody wants to be the person responsible for removing it either. So it stays. Then another rule gets added on top of it. Then another. And another.
+
+The end result is that some of the most motivated people I know don't get exhausted by the actual work. Building things is fun. Research is fun. Competitions are fun. Starting projects is fun. What's exhausting is spending days navigating a maze of approvals before you're even allowed to begin. Eventually people stop trying, not because they're lazy or incapable, but because they've realized that for every hour spent doing something meaningful, there'll be another hour spent convincing five different people that they're allowed to do it in the first place.
