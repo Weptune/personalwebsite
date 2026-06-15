@@ -324,6 +324,7 @@ export default function OceanDescent() {
   const [webglOk, setWebglOk] = useState(true)
   const [zoneFlash, setZoneFlash] = useState('')
   const [redirectCountdown, setRedirectCountdown] = useState(6)
+  const [objectivesOpen, setObjectivesOpen] = useState(false)
 
   useEffect(() => {
     if (gameState === 'victory') {
@@ -1967,9 +1968,21 @@ export default function OceanDescent() {
 
       {/* HUD Objective Checklist - Left */}
       {gameState === 'playing' && (
-        <div className="pointer-events-none absolute left-6 bottom-6 z-30 space-y-1 font-mono text-xs">
-          <div className="min-w-[220px] border border-teal-700/50 bg-black/85 px-4 py-3 shadow-lg shadow-black/50 backdrop-blur-sm">
-            <p className="text-[10px] uppercase tracking-widest text-teal-400 font-bold mb-2">✦ Mission Objectives</p>
+        <div className="pointer-events-none absolute left-6 bottom-6 z-30 space-y-1 font-mono text-xs max-w-[240px]">
+          {/* Mobile Toggle Button */}
+          <button
+            onClick={() => setObjectivesOpen(!objectivesOpen)}
+            className="pointer-events-auto flex items-center justify-between w-full border border-teal-700/50 bg-black/85 px-3 py-1.5 text-[9px] uppercase tracking-wider text-teal-400 md:hidden shadow-lg backdrop-blur-sm font-bold"
+          >
+            <span>✦ Objectives</span>
+            <span>{objectivesOpen ? '▼' : '▲'}</span>
+          </button>
+
+          {/* Checklist content */}
+          <div className={`min-w-[220px] border border-teal-700/50 bg-black/85 px-4 py-3 shadow-lg shadow-black/50 backdrop-blur-sm transition-all duration-200
+            ${objectivesOpen ? 'block' : 'hidden md:block'}`}
+          >
+            <p className="text-[10px] uppercase tracking-widest text-teal-400 font-bold mb-2 hidden md:block">✦ Mission Objectives</p>
             
             <div className="space-y-2 text-[10px]">
               {/* Objective 1: Depth */}
@@ -2008,7 +2021,7 @@ export default function OceanDescent() {
 
       {/* HUD status - Right */}
       {gameState === 'playing' && (
-        <div className="pointer-events-none absolute right-6 top-[5.25rem] z-30 space-y-1 font-mono text-xs">
+        <div className="pointer-events-none absolute right-6 top-[5.25rem] z-30 space-y-1 font-mono text-xs scale-80 origin-top-right md:scale-100">
           <div className="min-w-[190px] border border-teal-700/50 bg-black/85 px-4 py-3 shadow-lg shadow-black/50 backdrop-blur-sm">
             <p className="text-2xl font-bold tabular-nums text-white drop-shadow-md">
               {Math.floor(hud.depth)}
@@ -2049,9 +2062,9 @@ export default function OceanDescent() {
               </div>
             </div>
 
-            <p className="pt-0.5">▸ Descent Speed <span className="float-right text-teal-300">{hud.rate} m/s</span></p>
-            <p>▸ Pressure <span className="float-right text-teal-300">{hud.pressure.toFixed(0)} ATM</span></p>
-            <p>▸ Temp / Light <span className="float-right text-teal-300">{hud.temp.toFixed(1)}°C / {hud.light.toFixed(1)}%</span></p>
+            <p className="pt-0.5 hidden md:block">▸ Descent Speed <span className="float-right text-teal-300">{hud.rate} m/s</span></p>
+            <p className="hidden md:block">▸ Pressure <span className="float-right text-teal-300">{hud.pressure.toFixed(0)} ATM</span></p>
+            <p className="hidden md:block">▸ Temp / Light <span className="float-right text-teal-300">{hud.temp.toFixed(1)}°C / {hud.light.toFixed(1)}%</span></p>
           </div>
         </div>
       )}
