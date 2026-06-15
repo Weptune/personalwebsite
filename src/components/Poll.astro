@@ -7,33 +7,38 @@ const OPTIONS = ['The Stars', 'The Sun', 'The Ocean', 'The Sky', 'The Moon'] as 
     <p class="text-foreground mb-4 font-serif italic text-base">
       Which of these do you relate to the most?
     </p>
-    <form id="poll-form" class="flex flex-col gap-3">
-      {
-        OPTIONS.map((opt) => (
-          <label class="flex cursor-pointer items-center gap-3 text-muted-foreground font-serif italic transition-colors hover:text-foreground">
-            <input type="radio" name="poll" value={opt} class="border-border accent-primary size-4" />
-            <span>{opt}</span>
-          </label>
-        ))
-      }
-    </form>
-    <div class="mt-4 flex flex-wrap gap-3">
+    <div id="poll-vote-area">
+      <form id="poll-form" class="flex flex-col gap-3">
+        {
+          OPTIONS.map((opt) => (
+            <label class="flex cursor-pointer items-center gap-3 text-muted-foreground font-serif italic transition-colors hover:text-foreground">
+              <input type="radio" name="poll" value={opt} class="border-border accent-primary size-4" />
+              <span>{opt}</span>
+            </label>
+          ))
+        }
+      </form>
+      <div class="mt-4 flex flex-wrap gap-3" id="poll-actions">
+        <button
+          type="button"
+          id="poll-view"
+          class="border-border text-foreground hover:bg-muted/50 rounded border px-3 py-1.5 font-serif italic text-sm transition-colors"
+        >
+          View results
+        </button>
+      </div>
+    </div>
+    <div id="poll-results-area" class="text-muted-foreground mt-3 font-serif italic text-sm space-y-3" role="status" aria-live="polite" hidden>
+      <div id="poll-results-header" class="mb-2"></div>
+      <div id="poll-results-bars" class="text-sm space-y-1.5"></div>
       <button
         type="button"
-        id="poll-vote"
-        class="border-border text-foreground hover:bg-muted/50 rounded border px-3 py-1.5 font-serif italic text-sm transition-colors"
+        id="poll-change-vote"
+        class="mt-4 border-[var(--primary)]/30 bg-[var(--primary)]/5 text-[var(--primary)] hover:bg-[var(--primary)]/15 rounded border px-3 py-1.5 font-serif italic text-xs transition-all duration-300 cursor-pointer"
       >
-        Vote
-      </button>
-      <button
-        type="button"
-        id="poll-view"
-        class="border-border text-foreground hover:bg-muted/50 rounded border px-3 py-1.5 font-serif italic text-sm transition-colors"
-      >
-        View results
+        Change vote
       </button>
     </div>
-    <div id="poll-message" class="text-muted-foreground mt-3 font-serif italic text-sm space-y-2" role="status" aria-live="polite" hidden></div>
   </div>
 </section>
 
@@ -41,41 +46,92 @@ const OPTIONS = ['The Stars', 'The Sun', 'The Ocean', 'The Sky', 'The Moon'] as 
   const OPTIONS = ['The Stars', 'The Sun', 'The Ocean', 'The Sky', 'The Moon']
   const POLL_KEY = 'poll-choice'
   const POLL_HAS_VOTED_KEY = 'poll-has-voted'
-  const POLL_COUNTS_KEY = 'poll-counts'
+  const POLL_ROW_ID_KEY = 'poll-row-id'
+  const POLL_CAST_IDS_KEY = 'poll-cast-ids'
   const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL as string | undefined
   const SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string | undefined
 
-  function getLocalCounts(): Record<string, number> {
-    try {
-      const raw = localStorage.getItem(POLL_COUNTS_KEY)
-      if (raw) {
-        const parsed = JSON.parse(raw) as Record<string, number>
-        const out: Record<string, number> = {}
-        for (const o of OPTIONS) out[o] = parsed[o] ?? 0
-        return out
-      }
-    } catch {}
-    return Object.fromEntries(OPTIONS.map((o) => [o, 0]))
+  const BASELINE_COUNTS: Record<string, number> = {
+    'The Stars': 58,
+    'The Sun': 28,
+    'The Ocean': 24,
+    'The Sky': 33,
+    'The Moon': 41
   }
 
-  function addLocalVote(choice: string) {
-    const counts = getLocalCounts()
-    counts[choice] = (counts[choice] ?? 0) + 1
+  // The starting DB counts before our new votes are counted
+  const DB_ANCHOR_COUNTS: Record<string, number> = {
+    'The Stars': 58,
+    'The Sun': 25,
+    'The Ocean': 31,
+    'The Sky': 27,
+    'The Moon': 38
+  }
+
+  function getLocalCounts(): Record<string, number> {
+    const activeChoice = localStorage.getItem(POLL_KEY)
+    const out = { ...BASELINE_COUNTS }
+    if (activeChoice && BASELINE_COUNTS[activeChoice] !== undefined) {
+      out[activeChoice] = out[activeChoice] + 1
+    }
+    return out
+  }
+
+  function getLocalCastIds(): string[] {
     try {
-      localStorage.setItem(POLL_COUNTS_KEY, JSON.stringify(counts))
+      const raw = localStorage.getItem(POLL_CAST_IDS_KEY)
+      if (raw) {
+        return JSON.parse(raw) as string[]
+      }
     } catch {}
+    return []
+  }
+
+  function addLocalCastId(id: string) {
+    const ids = getLocalCastIds()
+    if (!ids.includes(id)) {
+      ids.push(id)
+      try {
+        localStorage.setItem(POLL_CAST_IDS_KEY, JSON.stringify(ids))
+      } catch {}
+    }
+  }
+
+  function adjustGlobalCounts(rows: { id: string, choice: string }[]): Record<string, number> {
+    const myCastIds = getLocalCastIds()
+    const activeChoice = localStorage.getItem(POLL_KEY)
+
+    const otherUsersCounts: Record<string, number> = {}
+    for (const o of OPTIONS) otherUsersCounts[o] = 0
+
+    for (const r of rows) {
+      if (!OPTIONS.includes(r.choice)) continue
+      if (myCastIds.includes(r.id)) continue
+      otherUsersCounts[r.choice] = (otherUsersCounts[r.choice] ?? 0) + 1
+    }
+
+    const out: Record<string, number> = {}
+    for (const option of OPTIONS) {
+      const otherCount = otherUsersCounts[option] ?? 0
+      const anchor = DB_ANCHOR_COUNTS[option] ?? 0
+      const otherDelta = Math.max(0, otherCount - anchor)
+      const hasActiveVote = (option === activeChoice) ? 1 : 0
+      out[option] = BASELINE_COUNTS[option] + otherDelta + hasActiveVote
+    }
+    return out
   }
 
   function initPoll() {
+    const voteArea = document.getElementById('poll-vote-area') as HTMLDivElement
+    const resultsArea = document.getElementById('poll-results-area') as HTMLDivElement
     const form = document.getElementById('poll-form') as HTMLFormElement | null
-    const voteBtn = document.getElementById('poll-vote')
     const viewBtn = document.getElementById('poll-view')
-    const messageEl = document.getElementById('poll-message') as HTMLDivElement | null
+    const changeBtn = document.getElementById('poll-change-vote') as HTMLButtonElement | null
 
-    if (!form || !voteBtn || !viewBtn || !messageEl) return
+    if (!form || !viewBtn || !voteArea || !resultsArea || !changeBtn) return
 
-    const msg = messageEl
     const f = form
+    let pollingIntervalId: any = null
 
     function hasVoted(): boolean {
       try {
@@ -89,31 +145,132 @@ const OPTIONS = ['The Stars', 'The Sun', 'The Ocean', 'The Sky', 'The Moon'] as 
       } catch {}
     }
 
-    function lockPoll() {
-      voteBtn!.setAttribute('disabled', '')
-      voteBtn!.classList.add('opacity-50', 'cursor-not-allowed', 'pointer-events-none')
-      voteBtn!.textContent = 'Voted'
-      f.querySelectorAll('input[type="radio"]').forEach((el) => {
-        ;(el as HTMLInputElement).disabled = true
-      })
-    }
-
-    if (hasVoted()) {
-      lockPoll()
-    }
-
-    function showMessage(html: string) {
-      msg.innerHTML = html
-      msg.hidden = false
-    }
+    // Set initial checked radio based on active theme
+    try {
+      const storedTheme = localStorage.getItem('celestial-theme') || 'stars'
+      const revMap: Record<string, string> = {
+        stars: 'The Stars',
+        sun: 'The Sun',
+        ocean: 'The Ocean',
+        sky: 'The Sky',
+        moon: 'The Moon'
+      }
+      const radio = f.querySelector(`input[value="${revMap[storedTheme]}"]`) as HTMLInputElement | null
+      if (radio) radio.checked = true
+    } catch {}
 
     function getSelected(): string | null {
       const data = new FormData(f)
       return data.get('poll') as string | null
     }
 
+    // Function to apply variables dynamically
+    function applyThemeVars(themeKey: string) {
+      const palettes: Record<string, Record<string, string>> = {
+        stars: {
+          p: 'oklch(0.82 0 0)',
+          c1: 'oklch(0.35 0.18 280)',
+          c2: 'oklch(0.28 0.15 200)',
+          c3: 'oklch(0.2 0.1 270)',
+          c4: 'oklch(0.22 0.12 300)',
+          c5: 'oklch(0.20 0.1 210)',
+          ds1: 'oklch(0.06 0.01 260)',
+          ds2: 'oklch(0.03 0 0)'
+        },
+        sun: {
+          p: 'oklch(0.85 0.08 75)',
+          c1: 'oklch(0.12 0.02 30)',
+          c2: 'oklch(0.10 0.015 50)',
+          c3: 'oklch(0.08 0.01 25)',
+          c4: 'oklch(0.11 0.02 35)',
+          c5: 'oklch(0.07 0.01 15)',
+          ds1: 'oklch(0.05 0.015 35)',
+          ds2: 'oklch(0.02 0.005 20)'
+        },
+        ocean: {
+          p: 'oklch(0.82 0.08 185)',
+          c1: 'oklch(0.24 0.10 195)',
+          c2: 'oklch(0.18 0.08 175)',
+          c3: 'oklch(0.15 0.06 210)',
+          c4: 'oklch(0.22 0.09 190)',
+          c5: 'oklch(0.14 0.05 230)',
+          ds1: 'oklch(0.05 0.02 200)',
+          ds2: 'oklch(0.02 0.01 220)'
+        },
+        sky: {
+          p: 'oklch(0.82 0.18 345)',
+          c1: 'oklch(0.24 0.09 340)',
+          c2: 'oklch(0.20 0.07 300)',
+          c3: 'oklch(0.18 0.06 320)',
+          c4: 'oklch(0.25 0.08 355)',
+          c5: 'oklch(0.16 0.05 270)',
+          ds1: 'oklch(0.05 0.02 280)',
+          ds2: 'oklch(0.02 0.01 300)'
+        },
+        moon: {
+          p: 'oklch(0.82 0 0)',
+          c1: 'oklch(0.08 0.01 240)',
+          c2: 'oklch(0.06 0.008 240)',
+          c3: 'oklch(0.04 0.005 240)',
+          c4: 'oklch(0.07 0.009 240)',
+          c5: 'oklch(0.05 0.006 240)',
+          ds1: 'oklch(0.03 0.005 240)',
+          ds2: 'oklch(0.01 0.002 240)'
+        }
+      }
+      const active = palettes[themeKey] || palettes.stars
+      const root = document.documentElement
+      root.setAttribute('data-celestial-theme', themeKey)
+      root.style.setProperty('--primary', active.p)
+      root.style.setProperty('--nebula-color-1', active.c1)
+      root.style.setProperty('--nebula-color-2', active.c2)
+      root.style.setProperty('--nebula-color-3', active.c3)
+      root.style.setProperty('--nebula-color-4', active.c4)
+      root.style.setProperty('--nebula-color-5', active.c5)
+      root.style.setProperty('--deep-space-1', active.ds1)
+      root.style.setProperty('--deep-space-2', active.ds2)
+    }
+
     async function submitVote(choice: string): Promise<boolean> {
       if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return false
+      
+      const savedRowId = localStorage.getItem(POLL_ROW_ID_KEY)
+      
+      if (savedRowId) {
+        try {
+          const checkRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/poll_votes?id=eq.${savedRowId}`,
+            {
+              cache: 'no-cache',
+              headers: {
+                'apikey': SUPABASE_ANON_KEY,
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+              }
+            }
+          )
+          if (checkRes.ok) {
+            const checkData = await checkRes.json()
+            if (Array.isArray(checkData) && checkData.length > 0) {
+              const patchRes = await fetch(
+                `${SUPABASE_URL}/rest/v1/poll_votes?id=eq.${savedRowId}`,
+                {
+                  method: 'PATCH',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                  },
+                  body: JSON.stringify({ choice }),
+                }
+              )
+              if (patchRes.ok) {
+                return true
+              }
+            }
+          }
+        } catch {}
+      }
+
       try {
         const res = await fetch(`${SUPABASE_URL}/rest/v1/poll_votes`, {
           method: 'POST',
@@ -121,22 +278,31 @@ const OPTIONS = ['The Stars', 'The Sun', 'The Ocean', 'The Sky', 'The Moon'] as 
             'Content-Type': 'application/json',
             'apikey': SUPABASE_ANON_KEY,
             'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-            'Prefer': 'return=minimal',
+            'Prefer': 'return=representation',
           },
           body: JSON.stringify({ choice }),
         })
+        if (res.ok) {
+          const data = await res.json()
+          if (Array.isArray(data) && data.length > 0 && data[0].id) {
+            localStorage.setItem(POLL_ROW_ID_KEY, data[0].id)
+            addLocalCastId(data[0].id)
+            return true
+          }
+        }
         return res.ok
       } catch {
         return false
       }
     }
 
-    async function fetchResults(): Promise<Record<string, number> | null> {
+    async function fetchResults(): Promise<{ id: string; choice: string }[] | null> {
       if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null
       try {
         const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/poll_votes?select=choice`,
+          `${SUPABASE_URL}/rest/v1/poll_votes?select=id,choice`,
           {
+            cache: 'no-cache',
             headers: {
               apikey: SUPABASE_ANON_KEY,
               Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
@@ -144,13 +310,7 @@ const OPTIONS = ['The Stars', 'The Sun', 'The Ocean', 'The Sky', 'The Moon'] as 
           }
         )
         if (!res.ok) return null
-        const rows = (await res.json()) as { choice: string }[]
-        const counts: Record<string, number> = {}
-        for (const o of OPTIONS) counts[o] = 0
-        for (const r of rows) {
-          if (OPTIONS.includes(r.choice as any)) counts[r.choice] = (counts[r.choice] ?? 0) + 1
-        }
-        return counts
+        return (await res.json()) as { id: string; choice: string }[]
       } catch {
         return null
       }
@@ -168,55 +328,176 @@ const OPTIONS = ['The Stars', 'The Sun', 'The Ocean', 'The Sky', 'The Moon'] as 
       }).join('')
     }
 
-    voteBtn.onclick = async () => {
-      if (hasVoted()) return
-      const choice = getSelected()
-      if (!choice) {
-        showMessage('<p>Pick one first.</p>')
+    function updateResultsBars(counts: Record<string, number>, userChoice?: string) {
+      const headerArea = document.getElementById('poll-results-header')
+      const barsArea = document.getElementById('poll-results-bars')
+      if (!headerArea || !barsArea) return
+
+      const choice = userChoice || localStorage.getItem(POLL_KEY)
+      if (choice) {
+        headerArea.textContent = `Thanks — you chose ${choice}.`
+      } else {
+        const saved = localStorage.getItem(POLL_KEY)
+        if (saved) {
+          headerArea.textContent = `You chose: ${saved}.`
+        } else {
+          headerArea.textContent = 'Which of these do you relate to the most?'
+        }
+      }
+
+      barsArea.innerHTML = renderResults(counts)
+    }
+
+    function showResultsUI(counts: Record<string, number>, userChoice?: string) {
+      voteArea.hidden = true
+      resultsArea.hidden = false
+      updateResultsBars(counts, userChoice)
+      startPolling()
+    }
+
+    async function fetchAndRender() {
+      if (resultsArea.hidden) {
+        stopPolling()
         return
       }
-      const ok = await submitVote(choice)
+      const rows = await fetchResults()
+      if (rows) {
+        const adjusted = adjustGlobalCounts(rows)
+        updateResultsBars(adjusted)
+      }
+    }
+
+    function startPolling() {
+      if (pollingIntervalId) return
+      fetchAndRender()
+      pollingIntervalId = setInterval(fetchAndRender, 3000)
+    }
+
+    function stopPolling() {
+      if (pollingIntervalId) {
+        clearInterval(pollingIntervalId)
+        pollingIntervalId = null
+      }
+    }
+
+    changeBtn.onclick = () => {
+      localStorage.removeItem(POLL_HAS_VOTED_KEY)
+      voteArea.hidden = false
+      resultsArea.hidden = true
+      stopPolling()
+      
+      try {
+        const savedChoice = localStorage.getItem(POLL_KEY)
+        if (savedChoice) {
+          const radio = f.querySelector(`input[value="${savedChoice}"]`) as HTMLInputElement | null
+          if (radio) radio.checked = true
+        }
+      } catch {}
+    }
+
+    // Main action when a vote is cast
+    async function castVote(choice: string) {
+      setVoted()
       try {
         localStorage.setItem(POLL_KEY, choice)
-        setVoted()
-        if (!ok) addLocalVote(choice)
-        lockPoll()
       } catch {}
+      
+      const themeMap: Record<string, string> = {
+        'The Stars': 'stars',
+        'The Sun': 'sun',
+        'The Ocean': 'ocean',
+        'The Sky': 'sky',
+        'The Moon': 'moon'
+      }
+      const themeKey = themeMap[choice]
+      if (themeKey) {
+        localStorage.setItem('celestial-theme', themeKey)
+        applyThemeVars(themeKey)
+        document.dispatchEvent(new CustomEvent('celestial-theme-change', {
+          detail: { theme: themeKey }
+        }))
+      }
+
+      const localCounts = getLocalCounts()
+      showResultsUI(localCounts, choice)
+
+      const ok = await submitVote(choice)
+      
       if (ok) {
-        const counts = await fetchResults()
-        if (counts) {
-          showMessage(`<p class="mb-2">Thanks — you chose ${choice}.</p><div class="text-sm space-y-1.5">${renderResults(counts)}</div>`)
-        } else {
-          showMessage(`<p>Thanks — you chose ${choice}.</p>`)
+        const rows = await fetchResults()
+        if (rows && hasVoted()) {
+          const adjusted = adjustGlobalCounts(rows)
+          showResultsUI(adjusted, choice)
         }
-      } 
+      }
+    }
+
+    // Bind change listener to dynamically cast vote on radio click
+    f.onchange = () => {
+      const choice = getSelected()
+      if (choice && !hasVoted()) {
+        castVote(choice)
+      }
     }
 
     viewBtn.onclick = async () => {
-      const counts = await fetchResults()
-      if (counts) {
-        const saved = localStorage.getItem(POLL_KEY)
-        let msg = ''
-        if (saved) msg = `<p class="mb-2">You chose: ${saved}.</p>`
-        showMessage(msg + `<div class="text-sm space-y-1.5">${renderResults(counts)}</div>`)
+      const rows = await fetchResults()
+      if (rows) {
+        const adjusted = adjustGlobalCounts(rows)
+        showResultsUI(adjusted)
       } else {
         const localCounts = getLocalCounts()
-        const total = Object.values(localCounts).reduce((a, b) => a + b, 0)
-        if (total > 0) {
-          const saved = localStorage.getItem(POLL_KEY)
-          let h = ''
-          if (saved) h = `<p class="mb-2">You chose: ${saved}.</p>`
-          showMessage(h + `<div class="text-sm space-y-1.5">${renderResults(localCounts)}</div>`)
-        } else {
-          try {
-            const saved = localStorage.getItem(POLL_KEY)
-            if (saved) showMessage(`<p>You chose: ${saved}. Add Supabase for shared results.</p>`)
-            else showMessage("<p>You haven't voted yet. Cast a vote to see your choice here.</p>")
-          } catch {
-            showMessage("<p>You haven't voted yet.</p>")
-          }
+        showResultsUI(localCounts)
+      }
+    }
+
+    // Visibility-aware polling
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        stopPolling()
+      } else if (!resultsArea.hidden) {
+        startPolling()
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+
+    // Astro transition cleanup
+    document.addEventListener('astro:before-swap', () => {
+      stopPolling()
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }, { once: true })
+
+    // Restore results instantly if already voted
+    if (hasVoted()) {
+      const themeMap: Record<string, string> = {
+        'The Stars': 'stars',
+        'The Sun': 'sun',
+        'The Ocean': 'ocean',
+        'The Sky': 'sky',
+        'The Moon': 'moon'
+      }
+      const savedChoice = localStorage.getItem(POLL_KEY)
+      if (savedChoice) {
+        const expectedTheme = themeMap[savedChoice]
+        const currentStoredTheme = localStorage.getItem('celestial-theme')
+        if (expectedTheme && currentStoredTheme !== expectedTheme) {
+          localStorage.setItem('celestial-theme', expectedTheme)
+          applyThemeVars(expectedTheme)
+          document.dispatchEvent(new CustomEvent('celestial-theme-change', {
+            detail: { theme: expectedTheme }
+          }))
         }
       }
+
+      const localCounts = getLocalCounts()
+      showResultsUI(localCounts)
+      
+      fetchResults().then((rows) => {
+        if (rows && hasVoted()) {
+          const adjusted = adjustGlobalCounts(rows)
+          showResultsUI(adjusted)
+        }
+      }).catch(() => {})
     }
   }
 

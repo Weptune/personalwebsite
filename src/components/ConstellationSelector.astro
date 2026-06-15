@@ -1,0 +1,285 @@
+---
+// src/components/ConstellationSelector.astro
+// Renders the Celestial Astrolabe, a fluid interactive dial
+// for dynamically customizing the background hue and site accent color.
+---
+
+<div class="gothic-panel p-6 flex flex-col items-center space-y-5 max-w-md w-full mx-auto relative overflow-hidden transition-all duration-300">
+  <div class="w-full flex items-center justify-between border-b pb-2 mb-2 border-border/40">
+    <div class="flex items-center gap-2">
+      <svg class="size-4 text-primary animate-pulse" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
+      </svg>
+      <h3 class="text-xs font-semibold tracking-wider text-muted-foreground uppercase font-mono">celestial astrolabe</h3>
+    </div>
+    <span class="text-[9px] font-mono text-primary/80 uppercase tracking-widest" id="astrolabe-status">ready</span>
+  </div>
+
+  <!-- Interactive Astrolabe Dial -->
+  <div class="relative w-full aspect-square flex items-center justify-center bg-black/20 rounded-full border border-border/20 p-2 touch-none select-none" id="astrolabe-container">
+    <svg id="astrolabe-svg" class="w-full h-full max-w-[280px] select-none" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Outer Dial Shadow / Backdrop -->
+      <circle cx="150" cy="150" r="140" fill="url(#bg-gradient)" />
+      
+      <!-- Concentric Coordinate Circles -->
+      <circle cx="150" cy="150" r="130" stroke="var(--border)" stroke-width="1.5" opacity="0.3" />
+      <circle cx="150" cy="150" r="105" stroke="var(--border)" stroke-width="1" opacity="0.2" stroke-dasharray="2 2" />
+      <circle cx="150" cy="150" r="80" stroke="var(--border)" stroke-width="1" opacity="0.15" />
+      
+      <!-- Coordinate Axis Crosshairs -->
+      <line x1="150" y1="10" x2="150" y2="290" stroke="var(--border)" stroke-width="1" opacity="0.15" />
+      <line x1="10" y1="150" x2="290" y2="150" stroke="var(--border)" stroke-width="1" opacity="0.15" />
+
+      <!-- Major & Minor Tick Marks (Dynamic Angle Generation) -->
+      {Array.from({ length: 36 }).map((_, i) => {
+        const angle = i * 10;
+        const isMajor = angle % 30 === 0;
+        return (
+          <line
+            x1="150"
+            y1={isMajor ? "14" : "18"}
+            x2="150"
+            y2="24"
+            stroke="var(--primary)"
+            stroke-width={isMajor ? "1.5" : "0.75"}
+            opacity={isMajor ? "0.6" : "0.3"}
+            transform={`rotate(${angle}, 150, 150)`}
+          />
+        );
+      })}
+
+      <!-- Compass Cardinal Marks -->
+      <text x="150" y="38" text-anchor="middle" class="fill-primary text-[10px] font-mono opacity-80 font-bold tracking-widest select-none">N</text>
+      <text x="264" y="153" text-anchor="middle" class="fill-primary text-[10px] font-mono opacity-80 font-bold tracking-widest select-none">E</text>
+      <text x="150" y="272" text-anchor="middle" class="fill-primary text-[10px] font-mono opacity-80 font-bold tracking-widest select-none">S</text>
+      <text x="36" y="153" text-anchor="middle" class="fill-primary text-[10px] font-mono opacity-80 font-bold tracking-widest select-none">W</text>
+
+      <!-- Star nodes on the astrolabe face that react to alidade sweep -->
+      {Array.from({ length: 8 }).map((_, i) => {
+        const angle = i * 45;
+        const rad = angle * Math.PI / 180;
+        const cx = 150 + 90 * Math.cos(rad);
+        const cy = 150 + 90 * Math.sin(rad);
+        return (
+          <g class="astrolabe-star" data-angle={angle} transform={`translate(${cx}, ${cy})`}>
+            <circle r="8" fill="var(--primary)" class="star-halo opacity-0 transition-opacity duration-300" style="filter: blur(4px);" />
+            <circle r="2.5" fill="#ffffff" class="star-core" style="filter: drop-shadow(0 0 2px var(--primary));" />
+          </g>
+        );
+      })}
+
+      <!-- Rotating Alidade Pointer Needle -->
+      <g id="astrolabe-needle" class="transition-transform duration-100 ease-out" style="transform-origin: 150px 150px; cursor: grab;">
+        <!-- Pointer line -->
+        <line x1="150" y1="150" x2="250" y2="150" stroke="var(--primary)" stroke-width="2.5" style="filter: drop-shadow(0 0 4px var(--primary));" />
+        <!-- Arrow pointer -->
+        <polygon points="248,146 258,150 248,154" fill="var(--primary)" />
+        <!-- Counterweight tail -->
+        <line x1="150" y1="150" x2="80" y2="150" stroke="var(--primary)" stroke-width="1.5" opacity="0.5" />
+        <circle cx="80" cy="150" r="3.5" fill="var(--primary)" opacity="0.6" />
+        <!-- Center pivot brass plate -->
+        <circle cx="150" cy="150" r="9" fill="#111" stroke="var(--primary)" stroke-width="2.5" />
+        <circle cx="150" cy="150" r="3" fill="var(--primary)" />
+      </g>
+
+      <!-- Gradients definitions -->
+      <defs>
+        <radialGradient id="bg-gradient" cx="50%" cy="50%" r="50%">
+          <stop offset="70%" stop-color="rgba(1,1,2,0)" />
+          <stop offset="100%" stop-color="rgba(1,1,2,0.65)" />
+        </radialGradient>
+      </defs>
+    </svg>
+  </div>
+
+  <!-- Live Telescope Target Info -->
+  <div class="w-full bg-black/30 rounded-md p-3 border border-border/20 min-h-[84px] flex flex-col justify-center select-none">
+    <div class="flex justify-between items-center mb-1">
+      <div id="target-name" class="text-xs font-semibold text-primary uppercase tracking-widest font-mono">Telescope Target</div>
+      <div id="target-azimuth" class="text-[9px] font-mono text-primary/70 uppercase">AZ: 0°</div>
+    </div>
+    <div id="target-coords" class="text-[10px] font-mono text-muted-foreground tracking-wider">RA 00h 00m / DEC +00°</div>
+    <div id="target-desc" class="text-[10px] italic text-muted-foreground/80 mt-1">Interstellar coordinate calibrator active.</div>
+  </div>
+</div>
+
+<style>
+  #astrolabe-container:active #astrolabe-needle {
+    cursor: grabbing;
+  }
+  
+  .astrolabe-star {
+    pointer-events: none;
+  }
+</style>
+
+<script>
+  // @ts-nocheck
+  document.addEventListener('astro:page-load', () => {
+    const container = document.getElementById('astrolabe-container');
+    const svg = document.getElementById('astrolabe-svg');
+    const needle = document.getElementById('astrolabe-needle');
+    const status = document.getElementById('astrolabe-status');
+    const nameText = document.getElementById('target-name');
+    const coordsText = document.getElementById('target-coords');
+    const descText = document.getElementById('target-desc');
+    const azText = document.getElementById('target-azimuth');
+    const stars = document.querySelectorAll('.astrolabe-star');
+
+    if (!container || !needle || !svg) return;
+
+    let isDragging = false;
+    let currentAngle = 221.5; // Default corresponding to hue 280
+
+    // Coordinate text generator based on current sector
+    const celestialSectors = [
+      {
+        minAngle: 0,
+        maxAngle: 72,
+        name: 'Andromeda Spiral',
+        coords: 'RA 00h 42m / DEC +41°',
+        desc: 'Vast spiral galaxy radiating emerald and cold cyan nebula gases.'
+      },
+      {
+        minAngle: 72,
+        maxAngle: 144,
+        name: 'Pleiades Cluster',
+        coords: 'RA 03h 47m / DEC +24°',
+        desc: 'The Seven Sisters enveloped by sapphire reflection dust clouds.'
+      },
+      {
+        minAngle: 144,
+        maxAngle: 216,
+        name: 'Orion Stellar Core',
+        coords: 'RA 05h 35m / DEC -05°',
+        desc: 'Interstellar nursery brimming with hot ultraviolet infant stars.'
+      },
+      {
+        minAngle: 216,
+        maxAngle: 288,
+        name: 'Lagoon H-II Region',
+        coords: 'RA 18h 03m / DEC -24°',
+        desc: 'Interstellar cloud illuminated by massive neon magenta giants.'
+      },
+      {
+        minAngle: 288,
+        maxAngle: 360,
+        name: 'Helix Ring Nebula',
+        coords: 'RA 22h 29m / DEC -20°',
+        desc: 'Planetary gas envelope radiating crimson solar flares.'
+      }
+    ];
+
+    // Read stored hue and convert to initial angle
+    const storedHue = localStorage.getItem('celestial-hue');
+    if (storedHue) {
+      const hue = parseFloat(storedHue);
+      if (hue >= 200 && hue <= 330) {
+        currentAngle = ((hue - 200) / 130) * 360;
+      }
+    }
+
+    // Apply rotation and color update
+    function updateAstrolabe(angle) {
+      needle.style.transform = `rotate(${angle}deg)`;
+      
+      // Compute OKLCH hue bound to [200, 330]
+      const hue = 200 + (angle / 360) * 130;
+      
+      // Apply CSS variables on document.documentElement (root)
+      const root = document.documentElement;
+      root.style.setProperty('--primary', `oklch(0.86 0.025 ${hue})`);
+      root.style.setProperty('--nebula-color-1', `oklch(0.22 0.05 ${hue})`);
+      root.style.setProperty('--nebula-color-2', `oklch(0.18 0.04 ${(hue - 45 + 360) % 360})`);
+      root.style.setProperty('--nebula-color-3', `oklch(0.14 0.03 ${(hue + 30) % 360})`);
+      root.style.setProperty('--nebula-color-4', `oklch(0.16 0.04 ${(hue - 90 + 360) % 360})`);
+      root.style.setProperty('--nebula-color-5', `oklch(0.14 0.03 ${(hue + 60) % 360})`);
+
+      // Store in localStorage
+      localStorage.setItem('celestial-hue', hue.toFixed(1));
+
+      // Dispatch change event for starfield or other components
+      const event = new CustomEvent('celestial-change', { detail: { hue } });
+      document.dispatchEvent(event);
+
+      // Update active target data based on angle
+      const sector = celestialSectors.find(s => angle >= s.minAngle && angle <= s.maxAngle) || celestialSectors[0];
+      if (nameText) nameText.textContent = sector.name;
+      if (coordsText) coordsText.textContent = sector.coords;
+      if (descText) descText.textContent = sector.desc;
+      if (azText) azText.textContent = `AZ: ${Math.round(angle)}°`;
+
+      // Trigger coordinate numbers update
+      const computedRAHours = Math.floor(angle / 15);
+      const computedRAMins = Math.floor((angle / 15 - computedRAHours) * 60);
+      const computedDEC = Math.round(60 * Math.sin(angle * Math.PI / 180));
+      if (coordsText && sector) {
+        coordsText.textContent = `RA ${String(computedRAHours).padStart(2, '0')}h ${String(computedRAMins).padStart(2, '0')}m / DEC ${computedDEC >= 0 ? '+' : ''}${computedDEC}°`;
+      }
+
+      // Proximity-based star glowing animation
+      stars.forEach(star => {
+        const starAngle = parseFloat(star.getAttribute('data-angle'));
+        let diff = Math.abs(angle - starAngle);
+        if (diff > 180) diff = 360 - diff;
+        
+        // Glow scales from 0 to 1 inside a 30-degree radius
+        const intensity = Math.max(0, 1 - diff / 30);
+        const halo = star.querySelector('.star-halo');
+        if (halo) {
+          halo.style.opacity = intensity;
+          halo.style.transform = `scale(${1 + intensity * 0.6})`;
+        }
+      });
+    }
+
+    // Initialize state
+    updateAstrolabe(currentAngle);
+
+    // Coordinate math mapping pointer to angle
+    function handlePointer(e) {
+      const rect = svg.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+
+      // Pointer offsets relative to center
+      const dx = e.clientX - cx;
+      const dy = e.clientY - cy;
+
+      // Calculate angle in degrees
+      let angle = Math.atan2(dy, dx) * (180 / Math.PI);
+      if (angle < 0) angle += 360;
+
+      currentAngle = angle;
+      updateAstrolabe(currentAngle);
+    }
+
+    // Pointer Event Listeners (supports mouse and touch smoothly)
+    container.addEventListener('pointerdown', (e) => {
+      isDragging = true;
+      container.setPointerCapture(e.pointerId);
+      if (status) status.textContent = 'tracking...';
+      handlePointer(e);
+      e.preventDefault();
+    });
+
+    container.addEventListener('pointermove', (e) => {
+      if (!isDragging) return;
+      handlePointer(e);
+      e.preventDefault();
+    });
+
+    container.addEventListener('pointerup', (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+      container.releasePointerCapture(e.pointerId);
+      if (status) {
+        status.textContent = 'aligned';
+        setTimeout(() => {
+          if (!isDragging) status.textContent = 'ready';
+        }, 1500);
+      }
+      e.preventDefault();
+    });
+  });
+</script>

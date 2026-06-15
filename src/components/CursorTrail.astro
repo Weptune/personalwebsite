@@ -1,78 +1,444 @@
 ---
-// Gothic cursor trail - desktop only, subtle but noticeable
+// Theme-aware canvas cursor trails — desktop only
 ---
 
-<div id="cursor-trail-root" aria-hidden="true" class="pointer-events-none fixed inset-0 z-[9999] overflow-hidden" style="display: none"></div>
+<canvas
+  id="cursor-trail-canvas"
+  aria-hidden="true"
+  class="pointer-events-none fixed inset-0 z-[9999]"
+  style="display: none"
+></canvas>
 
 <script>
-  const TRAIL_COUNT = 8
-  const SMOOTH = 0.22
+  type Theme = 'stars' | 'sun' | 'ocean' | 'sky' | 'moon'
+
+  interface Particle {
+    x: number
+    y: number
+    vx: number
+    vy: number
+    life: number
+    maxLife: number
+    size: number
+    hue?: number
+    angle?: number
+    spinSpeed?: number
+    kind: string
+  }
+
+  function getTheme(): Theme {
+    const t = document.documentElement.getAttribute('data-celestial-theme')
+    if (t === 'sun' || t === 'ocean' || t === 'sky' || t === 'moon') return t as Theme
+    return 'stars'
+  }
 
   function initTrail() {
-    const root = document.getElementById('cursor-trail-root')
-    if (!root || window.matchMedia('(pointer: coarse)').matches) return
+    const canvas = document.getElementById('cursor-trail-canvas') as HTMLCanvasElement | null
+    if (!canvas || window.matchMedia('(pointer: coarse)').matches) return
 
-    root.style.display = ''
-    const dots: { el: HTMLDivElement; x: number; y: number }[] = []
+    const ctx = canvas.getContext('2d', { alpha: true })
+    if (!ctx) return
 
-    for (let i = 0; i < TRAIL_COUNT; i++) {
-      const el = document.createElement('div')
-      el.className = 'cursor-trail-dot'
-      el.style.cssText = `
-        position: fixed;
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: color-mix(in oklch, var(--foreground) 45%, transparent);
-        border: 1px solid color-mix(in oklch, var(--foreground) 25%, transparent);
-        box-shadow: 0 0 8px color-mix(in oklch, var(--foreground) 20%, transparent);
-        pointer-events: none;
-        transform: translate(-50%, -50%);
-        left: -999px;
-        top: -999px;
-        opacity: ${1 - i * 0.1};
-      `
-      root.appendChild(el)
-      dots.push({ el, x: -999, y: -999 })
+    canvas.style.display = 'block'
+    let w = 0
+    let h = 0
+    let theme: Theme = getTheme()
+
+    const resize = () => {
+      w = window.innerWidth
+      h = window.innerHeight
+      canvas.width = w
+      canvas.height = h
     }
+    resize()
 
     let mx = -999
     let my = -999
+    let pmx = -999
+    let pmy = -999
     let raf = 0
+    const particles: Particle[] = []
+    const history: { x: number; y: number }[] = []
+    const MAX_HISTORY = 12
+    const MAX_PARTICLES = 72
+    let pendingX = -999
+    let pendingY = -999
 
-    function update() {
-      let px = mx
-      let py = my
-      for (let i = 0; i < dots.length; i++) {
-        const d = dots[i]
-        d.x += (px - d.x) * SMOOTH
-        d.y += (py - d.y) * SMOOTH
-        d.el.style.left = `${d.x}px`
-        d.el.style.top = `${d.y}px`
-        px = d.x
-        py = d.y
+    const capParticles = () => {
+      while (particles.length > MAX_PARTICLES) particles.shift()
+    }
+
+    const spawnStars = (x: number, y: number, vx: number, vy: number) => {
+      const speed = Math.sqrt(vx * vx + vy * vy)
+      const count = speed > 2 ? 3 : 1
+      for (let i = 0; i < count; i++) {
+        const angle = Math.atan2(vy, vx) + (Math.random() - 0.5) * 1.0
+        const sp = 0.5 + Math.random() * 2.0
+        particles.push({
+          x: x + (Math.random() - 0.5) * 5,
+          y: y + (Math.random() - 0.5) * 5,
+          vx: Math.cos(angle) * sp,
+          vy: Math.sin(angle) * sp,
+          life: 1,
+          maxLife: 0.6 + Math.random() * 0.7,
+          size: 0.6 + Math.random() * 1.8,
+          kind: Math.random() > 0.82 ? 'sparkle' : 'dust',
+        })
       }
-      raf = requestAnimationFrame(update)
+      capParticles()
+    }
+
+    const spawnSun = (x: number, y: number) => {
+      for (let i = 0; i < 3; i++) {
+        particles.push({
+          x: x + (Math.random() - 0.5) * 7,
+          y: y + (Math.random() - 0.5) * 7,
+          vx: (Math.random() - 0.5) * 1.0,
+          vy: -0.5 - Math.random() * 1.3,
+          life: 1,
+          maxLife: 0.65 + Math.random() * 0.85,
+          size: 0.9 + Math.random() * 2.4,
+          hue: 15 + Math.random() * 22,
+          kind: 'ember',
+        })
+      }
+      capParticles()
+    }
+
+    const spawnOcean = (x: number, y: number, vx: number, vy: number) => {
+      for (let i = 0; i < 2; i++) {
+        particles.push({
+          x: x + (Math.random() - 0.5) * 8,
+          y: y + (Math.random() - 0.5) * 8,
+          vx: (Math.random() - 0.5) * 0.35 + vx * 0.015,
+          vy: -0.4 - Math.random() * 0.65,
+          life: 1,
+          maxLife: 0.85 + Math.random() * 1.1,
+          size: 1.0 + Math.random() * 2.8,
+          kind: 'bubble',
+        })
+      }
+      if (Math.random() > 0.55) {
+        particles.push({
+          x, y,
+          vx: (Math.random() - 0.5) * 0.08,
+          vy: -0.12 - Math.random() * 0.2,
+          life: 1,
+          maxLife: 0.4 + Math.random() * 0.5,
+          size: 0.8 + Math.random() * 1.2,
+          kind: 'bio',
+        })
+      }
+      capParticles()
+    }
+
+    const spawnSky = (x: number, y: number, vx: number, vy: number) => {
+      const speed = Math.sqrt(vx * vx + vy * vy)
+      const count = speed > 2.5 ? 2 : 1
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          x: x + (Math.random() - 0.5) * 6,
+          y: y + (Math.random() - 0.5) * 6,
+          vx: (Math.random() - 0.5) * 0.4 - 0.2,
+          vy: (Math.random() - 0.5) * 0.4 + 0.1,
+          life: 1,
+          maxLife: 1.2 + Math.random() * 0.8,
+          size: 3.2 + Math.random() * 2.4,
+          kind: 'sky-petal',
+          hue: 340 + Math.random() * 25,
+          angle: Math.random() * Math.PI * 2,
+          spinSpeed: (Math.random() - 0.5) * 1.5,
+        })
+      }
+      if (Math.random() > 0.4) {
+        particles.push({
+          x,
+          y,
+          vx: (Math.random() - 0.5) * 0.15,
+          vy: (Math.random() - 0.5) * 0.15,
+          life: 1,
+          maxLife: 0.8 + Math.random() * 0.6,
+          size: 4 + Math.random() * 4,
+          kind: 'sky-cloudlet',
+        })
+      }
+      capParticles()
+    }
+
+    const spawnMoon = (x: number, y: number, vx: number, vy: number) => {
+      const speed = Math.sqrt(vx * vx + vy * vy)
+      const count = speed > 2 ? 3 : 1
+      for (let i = 0; i < count; i++) {
+        const angle = Math.atan2(vy, vx) + (Math.random() - 0.5) * 0.8
+        const sp = 0.35 + Math.random() * 1.6
+        const rand = Math.random()
+        let kind = 'lunar-dust'
+        let size = 1.0 + Math.random() * 1.5
+        if (rand > 0.85) {
+          kind = 'lunar-crescent'
+          size = 3.6 + Math.random() * 2.4
+        } else if (rand > 0.55) {
+          kind = 'lunar-glow'
+          size = 2.0 + Math.random() * 2.0
+        }
+        particles.push({
+          x: x + (Math.random() - 0.5) * 4,
+          y: y + (Math.random() - 0.5) * 4,
+          vx: Math.cos(angle) * sp,
+          vy: Math.sin(angle) * sp,
+          life: 1,
+          maxLife: 0.9 + Math.random() * 0.9,
+          size,
+          kind,
+          angle: Math.random() * Math.PI * 2,
+          spinSpeed: (Math.random() - 0.5) * 2.5
+        })
+      }
+      capParticles()
     }
 
     const onMove = (e: MouseEvent) => {
-      mx = e.clientX
-      my = e.clientY
-      if (dots[0].x === -999) {
-        for (const d of dots) {
-          d.x = mx
-          d.y = my
-        }
-      }
+      pendingX = e.clientX
+      pendingY = e.clientY
     }
 
+    const onThemeChange = () => {
+      theme = getTheme()
+      particles.length = 0
+      history.length = 0
+    }
+
+    const draw = () => {
+      if (pendingX > 0) {
+        pmx = mx
+        pmy = my
+        mx = pendingX
+        my = pendingY
+        pendingX = -999
+        pendingY = -999
+
+        if (pmx === -999) { pmx = mx; pmy = my }
+
+        history.unshift({ x: mx, y: my })
+        if (history.length > MAX_HISTORY) history.pop()
+
+        const vx = mx - pmx
+        const vy = my - pmy
+        const moved = vx * vx + vy * vy > 0.5
+
+        if (moved) {
+          if (theme === 'stars') spawnStars(mx, my, vx, vy)
+          else if (theme === 'sun') spawnSun(mx, my)
+          else if (theme === 'ocean') spawnOcean(mx, my, vx, vy)
+          else if (theme === 'sky') spawnSky(mx, my, vx, vy)
+          else if (theme === 'moon') spawnMoon(mx, my, vx, vy)
+        }
+      }
+
+      ctx.clearRect(0, 0, w, h)
+
+      if (mx > 0 && theme === 'stars' && history.length > 2) {
+        ctx.globalCompositeOperation = 'lighter'
+        ctx.beginPath()
+        ctx.moveTo(history[0].x, history[0].y)
+        for (let i = 1; i < history.length; i++) ctx.lineTo(history[i].x, history[i].y)
+        ctx.strokeStyle = 'rgba(190, 215, 255, 0.55)'
+        ctx.lineWidth = 2.4
+        ctx.lineCap = 'round'
+        ctx.stroke()
+        ctx.globalCompositeOperation = 'source-over'
+      }
+
+      if (mx > 0 && theme === 'moon' && history.length > 2) {
+        ctx.globalCompositeOperation = 'lighter'
+        
+        // Outer glowing wide blur line
+        ctx.beginPath()
+        ctx.moveTo(history[0].x, history[0].y)
+        for (let i = 1; i < history.length; i++) ctx.lineTo(history[i].x, history[i].y)
+        ctx.strokeStyle = 'rgba(99, 102, 241, 0.22)'
+        ctx.lineWidth = 5.5
+        ctx.lineCap = 'round'
+        ctx.lineJoin = 'round'
+        ctx.stroke()
+        
+        // Inner sharp silver-indigo core line
+        ctx.beginPath()
+        ctx.moveTo(history[0].x, history[0].y)
+        for (let i = 1; i < history.length; i++) ctx.lineTo(history[i].x, history[i].y)
+        ctx.strokeStyle = 'rgba(129, 140, 248, 0.75)'
+        ctx.lineWidth = 1.6
+        ctx.lineCap = 'round'
+        ctx.lineJoin = 'round'
+        ctx.stroke()
+        
+        ctx.globalCompositeOperation = 'source-over'
+      }
+
+      if (mx > 0 && theme === 'sun') {
+        // Embers only — no cursor halo or trail line
+      }
+
+      if (mx > 0 && theme === 'ocean') {
+        // Bubbles only — no cursor halo or thick trail line
+      }
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i]
+        p.x += p.vx
+        p.y += p.vy
+        p.life -= 1 / (p.maxLife * 60)
+
+        if (p.life <= 0) {
+          particles.splice(i, 1)
+          continue
+        }
+
+        const a = p.life
+
+        if (p.kind === 'dust') {
+          p.vx *= 0.97
+          p.vy *= 0.97
+          ctx.globalCompositeOperation = 'lighter'
+          ctx.beginPath()
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
+          ctx.fillStyle = `rgba(210, 225, 255, ${a * 0.8})`
+          ctx.fill()
+          ctx.globalCompositeOperation = 'source-over'
+        } else if (p.kind === 'sparkle') {
+          ctx.globalCompositeOperation = 'lighter'
+          const len = p.size * 2.8 * a
+          ctx.strokeStyle = `rgba(180, 220, 255, ${a * 0.95})`
+          ctx.lineWidth = 0.9
+          ctx.beginPath()
+          ctx.moveTo(p.x - len, p.y)
+          ctx.lineTo(p.x + len, p.y)
+          ctx.moveTo(p.x, p.y - len)
+          ctx.lineTo(p.x, p.y + len)
+          ctx.stroke()
+          ctx.globalCompositeOperation = 'source-over'
+        } else if (p.kind === 'ember') {
+          p.vy -= 0.01
+          p.vx *= 0.98
+          ctx.globalCompositeOperation = 'lighter'
+          ctx.beginPath()
+          ctx.arc(p.x, p.y, p.size * a, 0, Math.PI * 2)
+          ctx.fillStyle = `hsla(${p.hue}, 95%, 58%, ${a * 0.85})`
+          ctx.fill()
+          ctx.globalCompositeOperation = 'source-over'
+        } else if (p.kind === 'bubble') {
+          ctx.beginPath()
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
+          ctx.strokeStyle = `rgba(130, 225, 240, ${a * 0.7})`
+          ctx.lineWidth = 1
+          ctx.stroke()
+          ctx.beginPath()
+          ctx.arc(p.x - p.size * 0.22, p.y - p.size * 0.22, p.size * 0.15, 0, Math.PI * 2)
+          ctx.fillStyle = `rgba(255, 255, 255, ${a * 0.4})`
+          ctx.fill()
+        } else if (p.kind === 'bio') {
+          ctx.globalCompositeOperation = 'lighter'
+          ctx.beginPath()
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
+          ctx.fillStyle = `rgba(35, 170, 190, ${a * 0.8})`
+          ctx.fill()
+          ctx.globalCompositeOperation = 'source-over'
+        } else if (p.kind === 'sky-petal') {
+          p.vx *= 0.98
+          ctx.save()
+          ctx.translate(p.x, p.y)
+          ctx.rotate(p.angle || 0)
+          ctx.beginPath()
+          ctx.moveTo(-p.size, 0)
+          ctx.quadraticCurveTo(0, -p.size * 0.45, p.size, 0)
+          ctx.quadraticCurveTo(0, p.size * 0.45, -p.size, 0)
+          ctx.closePath()
+          ctx.fillStyle = `hsla(${p.hue || 345}, 85%, 75%, ${a * 0.75})`
+          ctx.fill()
+          ctx.restore()
+          if (p.angle !== undefined && p.spinSpeed !== undefined) {
+            p.angle += p.spinSpeed * 0.016
+          }
+        } else if (p.kind === 'sky-cloudlet') {
+          p.vx *= 0.97
+          p.vy *= 0.97
+          const currentSize = p.size * (1.0 + (1.0 - a) * 1.2)
+          const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, currentSize)
+          grad.addColorStop(0, `rgba(245, 248, 255, ${a * 0.35})`)
+          grad.addColorStop(0.5, `rgba(224, 242, 254, ${a * 0.18})`)
+          grad.addColorStop(1, 'rgba(255, 255, 255, 0)')
+          ctx.fillStyle = grad
+          ctx.beginPath()
+          ctx.arc(p.x, p.y, currentSize, 0, Math.PI * 2)
+          ctx.fill()
+        } else if (p.kind === 'lunar-dust') {
+          p.vx *= 0.96
+          p.vy *= 0.96
+          ctx.globalCompositeOperation = 'lighter'
+          ctx.beginPath()
+          ctx.arc(p.x, p.y, p.size * a, 0, Math.PI * 2)
+          ctx.fillStyle = `rgba(224, 231, 255, ${a * 0.7})` // soft silver-indigo dust
+          ctx.fill()
+          ctx.globalCompositeOperation = 'source-over'
+        } else if (p.kind === 'lunar-glow') {
+          p.vx *= 0.96
+          ctx.globalCompositeOperation = 'lighter'
+          ctx.save()
+          ctx.translate(p.x, p.y)
+          ctx.rotate(p.angle || 0)
+          ctx.beginPath()
+          const size = p.size * 2.2 * a
+          ctx.moveTo(0, -size)
+          ctx.lineTo(size * 0.45, 0)
+          ctx.lineTo(0, size)
+          ctx.lineTo(-size * 0.45, 0)
+          ctx.closePath()
+          ctx.fillStyle = `rgba(165, 180, 252, ${a * 0.75})`
+          ctx.fill()
+          ctx.strokeStyle = `rgba(224, 231, 255, ${a * 0.5})`
+          ctx.lineWidth = 1.0
+          ctx.stroke()
+          ctx.restore()
+          ctx.globalCompositeOperation = 'source-over'
+          if (p.angle !== undefined && p.spinSpeed !== undefined) {
+            p.angle += p.spinSpeed * 0.016
+          }
+        } else if (p.kind === 'lunar-crescent') {
+          p.vx *= 0.96
+          p.vy *= 0.96
+          ctx.save()
+          ctx.translate(p.x, p.y)
+          ctx.rotate(p.angle || 0)
+          ctx.beginPath()
+          const r = p.size * a
+          ctx.arc(0, 0, r, -Math.PI / 2, Math.PI / 2, false)
+          ctx.arc(r * 0.36, 0, r * 0.92, Math.PI / 2, -Math.PI / 2, true)
+          ctx.closePath()
+          ctx.fillStyle = `rgba(199, 210, 254, ${a * 0.9})`
+          ctx.fill()
+          ctx.fillStyle = `rgba(241, 245, 249, ${a * 0.45})`
+          ctx.fill()
+          ctx.restore()
+          if (p.angle !== undefined && p.spinSpeed !== undefined) {
+            p.angle += p.spinSpeed * 0.016
+          }
+        }
+      }
+
+      raf = requestAnimationFrame(draw)
+    }
+
+    window.addEventListener('resize', resize)
     document.addEventListener('mousemove', onMove, { passive: true })
-    raf = requestAnimationFrame(update)
+    document.addEventListener('celestial-theme-change', onThemeChange)
+    raf = requestAnimationFrame(draw)
 
     return () => {
+      window.removeEventListener('resize', resize)
       document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('celestial-theme-change', onThemeChange)
       cancelAnimationFrame(raf)
-      root.style.display = 'none'
+      canvas.style.display = 'none'
     }
   }
 

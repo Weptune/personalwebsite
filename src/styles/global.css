@@ -2,6 +2,50 @@
 
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
+@property --primary {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0.82 0 0);
+}
+
+@property --nebula-color-1 {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0.35 0.18 280);
+}
+@property --nebula-color-2 {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0.28 0.15 200);
+}
+@property --nebula-color-3 {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0.2 0.1 270);
+}
+@property --nebula-color-4 {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0.22 0.12 300);
+}
+@property --nebula-color-5 {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0.20 0.1 210);
+}
+
+@property --deep-space-1 {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0.06 0.01 260);
+}
+
+@property --deep-space-2 {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0.03 0 0);
+}
+
 /* ------------------------------------------------ */
 /* THEME TOKEN MAPPING (UNCHANGED STRUCTURE)       */
 /* ------------------------------------------------ */
@@ -52,26 +96,10 @@
 }
 
 /* ------------------------------------------------ */
-/* LIGHT MODE (unchanged — keep clean minimal)     */
+/* THEME VARIABLES (FORCED DARK MODE)               */
 /* ------------------------------------------------ */
 
 :root {
-  --background: oklch(0.98 0 0);
-  --foreground: oklch(0.18 0 0);
-  --primary: oklch(0.25 0 0);
-  --primary-foreground: oklch(0.98 0 0);
-  --muted: oklch(0.94 0 0);
-  --muted-foreground: oklch(0.45 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.9 0 0);
-  --ring: oklch(0.6 0 0);
-}
-
-/* ------------------------------------------------ */
-/* DARK MODE — GOTHIC REFINEMENT                   */
-/* ------------------------------------------------ */
-
-[data-theme='dark'] {
   --background: oklch(0.08 0 0);
   --foreground: oklch(0.95 0 0);
 
@@ -83,6 +111,17 @@
 
   --border: oklch(1 0 0 / 8%);
   --ring: oklch(0.45 0 0);
+
+  /* Nebula Colors Default (Original Starry values) */
+  --nebula-color-1: oklch(0.35 0.18 280);
+  --nebula-color-2: oklch(0.28 0.15 200);
+  --nebula-color-3: oklch(0.2 0.1 270);
+  --nebula-color-4: oklch(0.22 0.12 300);
+  --nebula-color-5: oklch(0.20 0.1 210);
+
+  /* Deep Space Default */
+  --deep-space-1: oklch(0.06 0.01 260);
+  --deep-space-2: oklch(0.03 0 0);
 }
 
 /* ------------------------------------------------ */
@@ -106,7 +145,7 @@
     text-rendering: optimizeLegibility;
   }
 
-  h1, h2, h3, h4 {
+  h1, h2, h3, h4, h5, h6 {
     letter-spacing: 0.08em;
     font-weight: 600;
     text-transform: uppercase;
@@ -140,28 +179,31 @@
   }
 
   ::selection {
-    background: color-mix(in oklch, var(--foreground) 18%, transparent);
-    color: var(--foreground);
+    background: color-mix(in oklch, var(--primary) 22%, transparent);
+    color: #ffffff;
+  }
+
+  /* Style scrollbar to match theme */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in oklch, var(--primary) 25%, transparent);
+    border-radius: 3px;
+    transition: background 1.5s ease;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in oklch, var(--primary) 50%, transparent);
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
   }
 }
 
 @layer utilities {
   .fade-in-up-soft {
     animation: fade-in-up-soft 600ms ease-out both;
-  }
-
-  .gothic-panel {
-    background:
-      linear-gradient(
-        180deg,
-        color-mix(in oklch, var(--background) 30%, transparent),
-        color-mix(in oklch, var(--background) 65%, transparent)
-      );
-    border: 1px solid var(--border);
-    border-radius: 0.75rem;
-    box-shadow:
-      0 1px 0 color-mix(in oklch, var(--foreground) 10%, transparent),
-      0 16px 60px color-mix(in oklch, black 55%, transparent);
   }
 }
 
@@ -186,32 +228,93 @@
 /* STARFIELD / NIGHT SKY (dark theme)              */
 /* ------------------------------------------------ */
 
-[data-theme='dark'] body {
+body {
   position: relative;
   overflow-x: hidden;
+
   background:
     /* Upper purple nebula */
-    radial-gradient(circle at 20% 5%, oklch(0.35 0.18 280) 0%, transparent 40%),
+    radial-gradient(circle at 20% 5%, var(--nebula-color-1) 0%, transparent 40%),
     /* Upper cyan nebula */
-    radial-gradient(circle at 85% 15%, oklch(0.28 0.15 200) 0%, transparent 45%),
+    radial-gradient(circle at 85% 15%, var(--nebula-color-2) 0%, transparent 45%),
     /* Central aurora-like glow */
-    radial-gradient(ellipse 800px 400px at 50% 25%, oklch(0.2 0.1 270) 0%, transparent 50%),
+    radial-gradient(ellipse 800px 400px at 50% 25%, var(--nebula-color-3) 0%, transparent 50%),
     /* Lower magenta nebula */
-    radial-gradient(circle at 30% 90%, oklch(0.22 0.12 300) 0%, transparent 50%),
+    radial-gradient(circle at 30% 90%, var(--nebula-color-4) 0%, transparent 50%),
     /* Lower cyan nebula */
-    radial-gradient(circle at 75% 95%, oklch(0.20 0.1 210) 0%, transparent 55%),
+    radial-gradient(circle at 75% 95%, var(--nebula-color-5) 0%, transparent 55%),
     /* Deep space background */
-    radial-gradient(circle at 50% 50%, oklch(0.06 0.01 260) 0%, oklch(0.03 0 0) 100%);
+    radial-gradient(circle at 50% 50%, var(--deep-space-1) 0%, var(--deep-space-2) 100%);
   background-attachment: fixed;
   background-size: cover;
+  
+  transition: 
+    --primary 1.2s ease-in-out,
+    --nebula-color-1 1.2s ease-in-out,
+    --nebula-color-2 1.2s ease-in-out,
+    --nebula-color-3 1.2s ease-in-out,
+    --nebula-color-4 1.2s ease-in-out,
+    --nebula-color-5 1.2s ease-in-out,
+    --deep-space-1 1.2s ease-in-out,
+    --deep-space-2 1.2s ease-in-out;
 
   /* Global text glow to combat starfield darkness */
-  --text-shadow: 0 0 8px rgba(255, 255, 255, 0.5), 0 0 15px rgba(255, 255, 255, 0.3), 0 0 20px rgba(255, 255, 255, 0.15);
+  --text-shadow: 0 0 8px rgba(255, 255, 255, 0.2), 0 0 15px rgba(255, 255, 255, 0.1);
 }
 
-/* Gothic panels - gentle pulse */
+/* Ocean: kill nebula gradients — WebGL + canvas layers ARE the background */
+[data-celestial-theme="ocean"] body,
+[data-celestial-theme="ocean"] html {
+  background: #010c14 !important;
+  background-image: none !important;
+}
+
+[data-celestial-theme="ocean"] main {
+  background: transparent !important;
+}
+
+/* Gothic panels - spotlight hover effect */
 .gothic-panel {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--background) 30%, transparent),
+      color-mix(in oklch, var(--background) 65%, transparent)
+    );
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  box-shadow:
+    0 1px 0 color-mix(in oklch, var(--foreground) 10%, transparent),
+    0 16px 60px color-mix(in oklch, black 55%, transparent);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
   animation: gothic-panel-idle 8s ease-in-out infinite;
+}
+
+.gothic-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    300px circle at var(--mouse-x, -999px) var(--mouse-y, -999px),
+    color-mix(in oklch, var(--primary) 12%, transparent),
+    transparent 70%
+  );
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.gothic-panel:hover::before {
+  opacity: 1;
+}
+
+.gothic-panel > * {
+  position: relative;
+  z-index: 1;
 }
 
 @keyframes gothic-panel-idle {
@@ -253,6 +356,18 @@
 
 /* About page background panel */
 .about-hero {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  padding: 1.5rem;
+  min-height: 60vh;
+}
+
+.about-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
   background-image:
     linear-gradient(
       180deg,
@@ -264,9 +379,910 @@
   background-position: center;
   background-repeat: no-repeat;
   background-attachment: fixed;
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-  overflow: hidden;
-  padding: 1.5rem;
-  min-height: 60vh;
+  z-index: 0;
+  pointer-events: none;
 }
+
+.about-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Glassmorphism panel for muting starfield behind text content */
+.text-canvas {
+  background: color-mix(in oklch, var(--background) 75%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  padding: 1.25rem;
+  box-shadow: 
+    0 4px 30px rgba(0, 0, 0, 0.05),
+    0 1px 0 color-mix(in oklch, var(--foreground) 6%, transparent);
+  transition: background-color 0.5s ease, border-color 0.5s ease;
+}
+
+[data-theme='dark'] .text-canvas {
+  background: color-mix(in oklch, var(--background) 82%, transparent);
+}
+
+@media (min-width: 640px) {
+  .text-canvas {
+    padding: 2.25rem;
+  }
+}
+
+/* Constellation Customizer keyframe animations */
+@keyframes constellation-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 2px var(--star-color, currentColor)) opacity(0.85);
+  }
+  50% {
+    filter: drop-shadow(0 0 10px var(--star-color, currentColor)) opacity(1);
+  }
+}
+
+.star-node-glow {
+  animation: constellation-glow 4s ease-in-out infinite;
+}
+
+/* Shifting title animation */
+.twinkle-title span {
+  display: inline-block;
+  transition: transform 0.3s ease, text-shadow 0.3s ease, color 0.3s ease;
+}
+
+.twinkle-title:hover span {
+  animation: title-letter-twinkle 0.8s ease-in-out infinite alternate;
+}
+
+/* Stagger delay for letters */
+.twinkle-title span:nth-child(1) { animation-delay: 0.05s; }
+.twinkle-title span:nth-child(2) { animation-delay: 0.10s; }
+.twinkle-title span:nth-child(3) { animation-delay: 0.15s; }
+.twinkle-title span:nth-child(4) { animation-delay: 0.20s; }
+.twinkle-title span:nth-child(5) { animation-delay: 0.25s; }
+.twinkle-title span:nth-child(6) { animation-delay: 0.30s; }
+.twinkle-title span:nth-child(7) { animation-delay: 0.35s; }
+.twinkle-title span:nth-child(8) { animation-delay: 0.40s; }
+
+@keyframes title-letter-twinkle {
+  0% {
+    transform: translateY(0);
+    text-shadow: none;
+  }
+  100% {
+    transform: translateY(-3px);
+    color: var(--primary);
+    text-shadow: 0 0 10px var(--primary);
+  }
+}
+
+/* ------------------------------------------------ */
+/* THE SUN THEME COMPLETE CUSTOMIZATION             */
+/* ------------------------------------------------ */
+
+[data-celestial-theme="sun"] {
+  /* Keep background dark and clean, but with a subtle warm undertone */
+  --background: oklch(0.06 0.005 30);
+  --foreground: oklch(0.95 0 0); /* Keep body text white/grey for clean readability */
+
+  --primary: oklch(0.85 0.08 75); /* Soft champagne/gold accent */
+  --primary-foreground: oklch(0.12 0.01 25);
+  
+  --muted: oklch(0.12 0.01 25);
+  --muted-foreground: oklch(0.65 0.02 65);
+  
+  --border: rgba(180, 100, 40, 0.12); /* Very subtle warm bronze edge */
+  --ring: oklch(0.65 0.06 60);
+
+  /* Deep space gradients: very dark, low chroma warm tones */
+  --deep-space-1: oklch(0.05 0.003 30);
+  --deep-space-2: oklch(0.03 0.001 20);
+
+  /* Muted nebula colors: low chroma and low lightness to prevent harsh bright spots */
+  --nebula-color-1: oklch(0.12 0.02 30);
+  --nebula-color-2: oklch(0.10 0.015 50);
+  --nebula-color-3: oklch(0.08 0.01 25);
+  --nebula-color-4: oklch(0.11 0.02 35);
+  --nebula-color-5: oklch(0.07 0.01 15);
+}
+
+[data-celestial-theme="sun"] h1,
+[data-celestial-theme="sun"] h2,
+[data-celestial-theme="sun"] h3,
+[data-celestial-theme="sun"] h4,
+[data-celestial-theme="sun"] h5,
+[data-celestial-theme="sun"] h6 {
+  font-family: 'Playfair Display', Georgia, serif;
+  color: oklch(0.88 0.06 75) !important; /* Force champagne gold headings */
+  text-shadow: 0 0 12px rgba(245, 158, 11, 0.15) !important; /* Extremely soft, premium glow */
+}
+
+[data-celestial-theme="sun"] .gothic-panel {
+  /* Translucent black background, not muddy brown! Matches the starry layout but slightly warm */
+  background: linear-gradient(
+    180deg,
+    rgba(10, 5, 2, 0.45),
+    rgba(5, 2, 1, 0.72)
+  ) !important;
+  border-color: rgba(180, 100, 40, 0.12) !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.65),
+    inset 0 0 1px rgba(255, 255, 255, 0.02) !important;
+  transition: border-color 0.4s ease, box-shadow 0.4s ease !important;
+}
+
+[data-celestial-theme="sun"] .gothic-panel:hover {
+  border-color: rgba(245, 158, 11, 0.35) !important; /* Soft warm glow edge on hover */
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.8),
+    0 0 15px rgba(245, 158, 11, 0.04) !important;
+}
+
+[data-celestial-theme="sun"] .gothic-panel::before {
+  /* Very soft warm cursor spotlight */
+  background: radial-gradient(
+    250px circle at var(--mouse-x, -999px) var(--mouse-y, -999px),
+    rgba(245, 158, 11, 0.06) 0%,
+    rgba(245, 158, 11, 0.02) 50%,
+    transparent 100%
+  ) !important;
+}
+
+[data-celestial-theme="sun"] a:not(.no-underline) {
+  background-image: linear-gradient(to right, oklch(0.85 0.06 75) 0%, oklch(0.85 0.06 75) 100%) !important;
+  color: oklch(0.85 0.06 75) !important;
+}
+
+[data-celestial-theme="sun"] ::selection {
+  background: rgba(245, 158, 11, 0.22) !important; /* Soft gold selection */
+  color: #ffffff !important;
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.5) !important;
+}
+
+[data-celestial-theme="sun"]::-webkit-scrollbar-thumb {
+  background: rgba(245, 158, 11, 0.15) !important;
+}
+
+[data-celestial-theme="sun"]::-webkit-scrollbar-thumb:hover {
+  background: rgba(245, 158, 11, 0.35) !important;
+}
+
+[data-celestial-theme="sun"] .text-canvas {
+  /* Translucent black glassmorphic backdrop to overlay the background elements */
+  background: rgba(8, 4, 2, 0.85) !important;
+  border-color: rgba(180, 100, 40, 0.1) !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.65),
+    inset 0 0 1px rgba(255, 255, 255, 0.02) !important;
+}
+
+[data-celestial-theme="sun"] button#poll-vote,
+[data-celestial-theme="sun"] button#poll-view {
+  background: rgba(245, 158, 11, 0.04) !important;
+  border-color: rgba(180, 100, 40, 0.18) !important;
+  color: oklch(0.85 0.06 75) !important;
+  box-shadow: none !important;
+  transition: all 0.3s ease !important;
+}
+
+[data-celestial-theme="sun"] button#poll-vote:hover,
+[data-celestial-theme="sun"] button#poll-view:hover {
+  background: rgba(245, 158, 11, 0.1) !important;
+  border-color: rgba(245, 158, 11, 0.4) !important;
+  color: #ffffff !important;
+}
+
+[data-celestial-theme="sun"] input[type="radio"] {
+  accent-color: oklch(0.85 0.06 75) !important;
+}
+
+/* Theme-specific visibility utility */
+.theme-sun-text {
+  display: none;
+}
+[data-celestial-theme="sun"] .theme-sun-text {
+  display: inline-block !important;
+}
+[data-celestial-theme="sun"] .theme-stars-text,
+[data-celestial-theme="sun"] .theme-ocean-text {
+  display: none !important;
+}
+
+/* About page theme-specific background overrides */
+[data-celestial-theme="sun"] .about-hero::before {
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(6, 3, 1, 0.55),
+      rgba(6, 3, 1, 0.82)
+    ),
+    url('/static/sun-about-bg.gif') !important;
+  filter: none !important;
+}
+
+[data-celestial-theme="stars"] .about-hero::before {
+  background-image:
+    linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--background) 55%, transparent),
+      color-mix(in oklch, var(--background) 78%, transparent)
+    ),
+    url('/static/stars-about-bg.gif') !important;
+  filter: none !important;
+}
+
+
+[data-celestial-theme="moon"] .about-hero::before {
+  background-image:
+    linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--background) 55%, transparent),
+      color-mix(in oklch, var(--background) 78%, transparent)
+    ),
+    url('/static/about-bg.gif') !important;
+  filter: none !important;
+}
+
+/* Sophisticated champagne-gold color filter for the logo */
+[data-celestial-theme="sun"] img[alt="Logo"] {
+  filter: sepia(60%) saturate(100%) hue-rotate(10deg) brightness(95%) contrast(105%);
+  transition: filter 1.2s ease-in-out;
+}
+
+/* Sun Theme Typography overrides for warm gold glow (overriding typography.css white glows) */
+[data-celestial-theme="sun"] .prose p,
+[data-celestial-theme="sun"] .prose li,
+[data-celestial-theme="sun"] .prose td {
+  text-shadow: 0 0 6px rgba(245, 158, 11, 0.25), 0 0 15px rgba(245, 158, 11, 0.12) !important;
+  color: oklch(0.92 0.02 65) !important; /* Soft warm white text */
+}
+
+[data-celestial-theme="sun"] .prose h1,
+[data-celestial-theme="sun"] .prose h2,
+[data-celestial-theme="sun"] .prose h3,
+[data-celestial-theme="sun"] .prose h4,
+[data-celestial-theme="sun"] .prose h5,
+[data-celestial-theme="sun"] .prose h6 {
+  text-shadow: 0 0 10px rgba(245, 158, 11, 0.35), 0 0 20px rgba(245, 158, 11, 0.15) !important;
+  color: oklch(0.88 0.06 75) !important; /* Champagne gold headings */
+}
+
+[data-celestial-theme="sun"] .prose a,
+[data-celestial-theme="sun"] .prose strong {
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.3), 0 0 16px rgba(245, 158, 11, 0.15) !important;
+  color: oklch(0.85 0.08 75) !important;
+}
+
+/* Sun Theme Breadcrumbs and Meta Text overrides */
+[data-celestial-theme="sun"] [data-slot="breadcrumb-page"],
+[data-celestial-theme="sun"] [data-slot="breadcrumb-link"],
+[data-celestial-theme="sun"] [data-slot="breadcrumb-link"] span {
+  color: oklch(0.88 0.06 75) !important; /* Warm gold breadcrumbs */
+}
+[data-celestial-theme="sun"] [data-slot="breadcrumb-separator"] {
+  color: rgba(245, 158, 11, 0.4) !important; /* Muted warm separator */
+}
+[data-celestial-theme="sun"] .text-muted-foreground {
+  color: oklch(0.84 0.04 65) !important;
+}
+
+/* ------------------------------------------------ */
+/* THE OCEAN THEME COMPLETE CUSTOMIZATION           */
+/* ------------------------------------------------ */
+
+[data-celestial-theme="ocean"] {
+  --background: oklch(0.05 0.02 210);
+  --foreground: oklch(0.94 0.01 200);
+
+  --primary: oklch(0.82 0.08 185);
+  --primary-foreground: oklch(0.10 0.02 210);
+
+  --muted: oklch(0.11 0.02 200);
+  --muted-foreground: oklch(0.62 0.04 190);
+
+  --border: rgba(60, 180, 200, 0.12);
+  --ring: oklch(0.55 0.06 185);
+
+  --deep-space-1: oklch(0.04 0.025 215);
+  --deep-space-2: oklch(0.02 0.015 230);
+
+  --nebula-color-1: oklch(0.20 0.08 195);
+  --nebula-color-2: oklch(0.15 0.06 175);
+  --nebula-color-3: oklch(0.12 0.05 210);
+  --nebula-color-4: oklch(0.18 0.07 190);
+  --nebula-color-5: oklch(0.10 0.04 230);
+}
+
+[data-celestial-theme="ocean"] h1,
+[data-celestial-theme="ocean"] h2,
+[data-celestial-theme="ocean"] h3,
+[data-celestial-theme="ocean"] h4,
+[data-celestial-theme="ocean"] h5,
+[data-celestial-theme="ocean"] h6 {
+  font-family: 'Playfair Display', Georgia, serif;
+  color: oklch(0.84 0.07 185) !important;
+  text-shadow: 0 0 14px rgba(34, 211, 238, 0.18) !important;
+}
+
+[data-celestial-theme="ocean"] .gothic-panel {
+  background: linear-gradient(
+    180deg,
+    rgba(2, 12, 18, 0.22),
+    rgba(1, 8, 14, 0.48)
+  ) !important;
+  border-color: rgba(60, 180, 200, 0.14) !important;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.65),
+    inset 0 0 1px rgba(120, 220, 240, 0.03) !important;
+  transition: border-color 0.4s ease, box-shadow 0.4s ease !important;
+}
+
+[data-celestial-theme="ocean"] header {
+  background: rgba(1, 10, 16, 0.35) !important;
+}
+
+[data-celestial-theme="ocean"] .gothic-panel:hover {
+  border-color: rgba(34, 211, 238, 0.32) !important;
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.8),
+    0 0 18px rgba(34, 211, 238, 0.05) !important;
+}
+
+[data-celestial-theme="ocean"] .gothic-panel::before {
+  background: radial-gradient(
+    250px circle at var(--mouse-x, -999px) var(--mouse-y, -999px),
+    rgba(34, 211, 238, 0.07) 0%,
+    rgba(20, 160, 190, 0.02) 50%,
+    transparent 100%
+  ) !important;
+}
+
+[data-celestial-theme="ocean"] a:not(.no-underline) {
+  background-image: linear-gradient(to right, oklch(0.82 0.07 185) 0%, oklch(0.82 0.07 185) 100%) !important;
+  color: oklch(0.82 0.07 185) !important;
+}
+
+[data-celestial-theme="ocean"] ::selection {
+  background: rgba(34, 211, 238, 0.22) !important;
+  color: #ffffff !important;
+  text-shadow: 0 0 4px rgba(180, 240, 255, 0.5) !important;
+}
+
+[data-celestial-theme="ocean"]::-webkit-scrollbar-thumb {
+  background: rgba(34, 211, 238, 0.15) !important;
+}
+
+[data-celestial-theme="ocean"]::-webkit-scrollbar-thumb:hover {
+  background: rgba(34, 211, 238, 0.35) !important;
+}
+
+[data-celestial-theme="ocean"] .text-canvas {
+  background: rgba(2, 10, 16, 0.86) !important;
+  border-color: rgba(60, 180, 200, 0.12) !important;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.65),
+    inset 0 0 1px rgba(120, 220, 240, 0.03) !important;
+}
+
+[data-celestial-theme="ocean"] button#poll-vote,
+[data-celestial-theme="ocean"] button#poll-view {
+  background: rgba(34, 211, 238, 0.04) !important;
+  border-color: rgba(60, 180, 200, 0.2) !important;
+  color: oklch(0.82 0.07 185) !important;
+  box-shadow: none !important;
+  transition: all 0.3s ease !important;
+}
+
+[data-celestial-theme="ocean"] button#poll-vote:hover,
+[data-celestial-theme="ocean"] button#poll-view:hover {
+  background: rgba(34, 211, 238, 0.1) !important;
+  border-color: rgba(34, 211, 238, 0.4) !important;
+  color: #ffffff !important;
+}
+
+[data-celestial-theme="ocean"] input[type="radio"] {
+  accent-color: oklch(0.82 0.07 185) !important;
+}
+
+.theme-ocean-text {
+  display: none;
+}
+[data-celestial-theme="ocean"] .theme-ocean-text {
+  display: inline-block !important;
+}
+[data-celestial-theme="ocean"] .theme-stars-text,
+[data-celestial-theme="ocean"] .theme-sun-text {
+  display: none !important;
+}
+
+[data-celestial-theme="ocean"] .about-hero::before {
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(2, 12, 18, 0.55),
+      rgba(1, 6, 12, 0.88)
+    ),
+    url('/static/ocean-about-bg.gif') !important;
+  filter: none !important;
+}
+
+[data-celestial-theme="ocean"] img[alt="Logo"] {
+  filter: sepia(30%) saturate(120%) hue-rotate(140deg) brightness(92%) contrast(105%);
+  transition: filter 1.2s ease-in-out;
+}
+
+[data-celestial-theme="ocean"] .prose p,
+[data-celestial-theme="ocean"] .prose li,
+[data-celestial-theme="ocean"] .prose td {
+  text-shadow: 0 0 6px rgba(34, 211, 238, 0.2), 0 0 14px rgba(20, 160, 190, 0.1) !important;
+  color: oklch(0.90 0.02 195) !important;
+}
+
+[data-celestial-theme="ocean"] .prose h1,
+[data-celestial-theme="ocean"] .prose h2,
+[data-celestial-theme="ocean"] .prose h3,
+[data-celestial-theme="ocean"] .prose h4,
+[data-celestial-theme="ocean"] .prose h5,
+[data-celestial-theme="ocean"] .prose h6 {
+  text-shadow: 0 0 10px rgba(34, 211, 238, 0.3), 0 0 22px rgba(20, 160, 190, 0.12) !important;
+  color: oklch(0.84 0.07 185) !important;
+}
+
+[data-celestial-theme="ocean"] .prose a,
+[data-celestial-theme="ocean"] .prose strong {
+  text-shadow: 0 0 8px rgba(34, 211, 238, 0.25), 0 0 16px rgba(20, 160, 190, 0.1) !important;
+  color: oklch(0.82 0.08 185) !important;
+}
+
+[data-celestial-theme="ocean"] [data-slot="breadcrumb-page"],
+[data-celestial-theme="ocean"] [data-slot="breadcrumb-link"],
+[data-celestial-theme="ocean"] [data-slot="breadcrumb-link"] span {
+  color: oklch(0.82 0.06 185) !important;
+}
+[data-celestial-theme="ocean"] [data-slot="breadcrumb-separator"] {
+  color: rgba(34, 211, 238, 0.4) !important;
+}
+[data-celestial-theme="ocean"] .text-muted-foreground {
+  color: oklch(0.84 0.04 190) !important;
+}
+
+/* Readable surfaces over animated sun/ocean backgrounds */
+[data-celestial-theme="ocean"] main .rounded-xl.border,
+[data-celestial-theme="sun"] main .rounded-xl.border {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.45);
+}
+
+[data-celestial-theme="ocean"] main .rounded-xl.border {
+  background: linear-gradient(
+    180deg,
+    rgba(2, 14, 22, 0.72),
+    rgba(1, 10, 16, 0.82)
+  ) !important;
+  border-color: rgba(60, 180, 200, 0.24) !important;
+}
+
+[data-celestial-theme="sun"] main .rounded-xl.border {
+  background: linear-gradient(
+    180deg,
+    rgba(22, 12, 4, 0.72),
+    rgba(14, 8, 2, 0.82)
+  ) !important;
+  border-color: rgba(245, 158, 11, 0.22) !important;
+}
+
+[data-celestial-theme="ocean"] main > section:not(:has(.gothic-panel)) > h2,
+[data-celestial-theme="sun"] main > section:not(:has(.gothic-panel)) > h2 {
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.65);
+}
+
+[data-celestial-theme="ocean"] footer,
+[data-celestial-theme="sun"] footer {
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+[data-celestial-theme="ocean"] footer {
+  background: rgba(1, 10, 16, 0.55);
+  border: 1px solid rgba(60, 180, 200, 0.14);
+}
+
+[data-celestial-theme="sun"] footer {
+  background: rgba(18, 10, 4, 0.55);
+  border: 1px solid rgba(245, 158, 11, 0.14);
+}
+
+[data-celestial-theme="ocean"] footer .text-muted-foreground,
+[data-celestial-theme="sun"] footer .text-muted-foreground {
+  color: oklch(0.88 0.03 190) !important;
+}
+
+[data-celestial-theme="sun"] footer .text-muted-foreground {
+  color: oklch(0.88 0.04 65) !important;
+}
+
+/* ------------------------------------------------ */
+/* THE SKY THEME COMPLETE CUSTOMIZATION             */
+/* ------------------------------------------------ */
+
+[data-celestial-theme="sky"] {
+  --background: oklch(0.06 0.015 280);
+  --foreground: oklch(0.95 0.01 340);
+
+  --primary: oklch(0.82 0.18 345);
+  --primary-foreground: oklch(0.12 0.02 280);
+
+  --muted: oklch(0.12 0.02 280);
+  --muted-foreground: oklch(0.65 0.06 340);
+
+  --border: rgba(236, 72, 153, 0.12);
+  --ring: oklch(0.65 0.14 345);
+
+  --deep-space-1: oklch(0.05 0.02 280);
+  --deep-space-2: oklch(0.02 0.01 300);
+
+  --nebula-color-1: oklch(0.24 0.09 340);
+  --nebula-color-2: oklch(0.20 0.07 300);
+  --nebula-color-3: oklch(0.18 0.06 320);
+  --nebula-color-4: oklch(0.25 0.08 355);
+  --nebula-color-5: oklch(0.16 0.05 270);
+}
+
+[data-celestial-theme="sky"] h1,
+[data-celestial-theme="sky"] h2,
+[data-celestial-theme="sky"] h3,
+[data-celestial-theme="sky"] h4,
+[data-celestial-theme="sky"] h5,
+[data-celestial-theme="sky"] h6 {
+  font-family: 'Playfair Display', Georgia, serif;
+  color: oklch(0.82 0.18 345) !important;
+  text-shadow: 0 0 14px rgba(236, 72, 153, 0.22) !important;
+}
+
+[data-celestial-theme="sky"] .gothic-panel {
+  background: linear-gradient(
+    180deg,
+    rgba(20, 4, 14, 0.22),
+    rgba(12, 2, 10, 0.48)
+  ) !important;
+  border-color: rgba(236, 72, 153, 0.14) !important;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.65),
+    inset 0 0 1px rgba(249, 168, 212, 0.03) !important;
+  transition: border-color 0.4s ease, box-shadow 0.4s ease !important;
+}
+
+[data-celestial-theme="sky"] header {
+  background: rgba(14, 2, 10, 0.35) !important;
+}
+
+[data-celestial-theme="sky"] .gothic-panel:hover {
+  border-color: rgba(236, 72, 153, 0.32) !important;
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.8),
+    0 0 18px rgba(236, 72, 153, 0.06) !important;
+}
+
+[data-celestial-theme="sky"] .gothic-panel::before {
+  background: radial-gradient(
+    250px circle at var(--mouse-x, -999px) var(--mouse-y, -999px),
+    rgba(236, 72, 153, 0.07) 0%,
+    rgba(219, 39, 119, 0.02) 50%,
+    transparent 100%
+  ) !important;
+}
+
+[data-celestial-theme="sky"] a:not(.no-underline) {
+  background-image: linear-gradient(to right, oklch(0.82 0.18 345) 0%, oklch(0.82 0.18 345) 100%) !important;
+  color: oklch(0.82 0.18 345) !important;
+}
+
+[data-celestial-theme="sky"] ::selection {
+  background: rgba(236, 72, 153, 0.28) !important;
+  color: #ffffff !important;
+  text-shadow: 0 0 4px rgba(249, 168, 212, 0.6) !important;
+}
+
+[data-celestial-theme="sky"]::-webkit-scrollbar-thumb {
+  background: rgba(236, 72, 153, 0.18) !important;
+}
+
+[data-celestial-theme="sky"]::-webkit-scrollbar-thumb:hover {
+  background: rgba(236, 72, 153, 0.38) !important;
+}
+
+[data-celestial-theme="sky"] .text-canvas {
+  background: rgba(14, 4, 12, 0.86) !important;
+  border-color: rgba(236, 72, 153, 0.12) !important;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.65),
+    inset 0 0 1px rgba(249, 168, 212, 0.03) !important;
+}
+
+[data-celestial-theme="sky"] button#poll-vote,
+[data-celestial-theme="sky"] button#poll-view {
+  background: rgba(236, 72, 153, 0.04) !important;
+  border-color: rgba(236, 72, 153, 0.2) !important;
+  color: oklch(0.82 0.18 345) !important;
+  box-shadow: none !important;
+  transition: all 0.3s ease !important;
+}
+
+[data-celestial-theme="sky"] button#poll-vote:hover,
+[data-celestial-theme="sky"] button#poll-view:hover {
+  background: rgba(236, 72, 153, 0.12) !important;
+  border-color: rgba(236, 72, 153, 0.4) !important;
+  color: #ffffff !important;
+}
+
+[data-celestial-theme="sky"] input[type="radio"] {
+  accent-color: oklch(0.82 0.18 345) !important;
+}
+
+.theme-sky-text {
+  display: none;
+}
+[data-celestial-theme="sky"] .theme-sky-text {
+  display: inline-block !important;
+}
+[data-celestial-theme="sky"] .theme-stars-text,
+[data-celestial-theme="sky"] .theme-sun-text,
+[data-celestial-theme="sky"] .theme-ocean-text {
+  display: none !important;
+}
+
+.theme-moon-text {
+  display: none;
+}
+[data-celestial-theme="moon"] .theme-moon-text {
+  display: inline-block !important;
+}
+[data-celestial-theme="moon"] .theme-stars-text,
+[data-celestial-theme="moon"] .theme-sun-text,
+[data-celestial-theme="moon"] .theme-ocean-text,
+[data-celestial-theme="moon"] .theme-sky-text {
+  display: none !important;
+}
+
+[data-celestial-theme="sky"] .about-hero::before {
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(12, 4, 10, 0.55),
+      rgba(6, 2, 6, 0.88)
+    ),
+    url('/static/sky-about-bg.gif') !important;
+  filter: none !important;
+}
+
+[data-celestial-theme="sky"] img[alt="Logo"] {
+  filter: sepia(20%) saturate(140%) hue-rotate(280deg) brightness(88%) contrast(108%);
+  transition: filter 1.2s ease-in-out;
+}
+
+[data-celestial-theme="sky"] .prose p,
+[data-celestial-theme="sky"] .prose li,
+[data-celestial-theme="sky"] .prose td {
+  text-shadow: 0 0 6px rgba(236, 72, 153, 0.15), 0 0 14px rgba(219, 39, 119, 0.08) !important;
+  color: oklch(0.92 0.02 340) !important;
+}
+
+[data-celestial-theme="sky"] .prose h1,
+[data-celestial-theme="sky"] .prose h2,
+[data-celestial-theme="sky"] .prose h3,
+[data-celestial-theme="sky"] .prose h4,
+[data-celestial-theme="sky"] .prose h5,
+[data-celestial-theme="sky"] .prose h6 {
+  text-shadow: 0 0 10px rgba(236, 72, 153, 0.30), 0 0 22px rgba(219, 39, 119, 0.12) !important;
+  color: oklch(0.82 0.18 345) !important;
+}
+
+[data-celestial-theme="sky"] .prose a,
+[data-celestial-theme="sky"] .prose strong {
+  text-shadow: 0 0 8px rgba(236, 72, 153, 0.25), 0 0 16px rgba(219, 39, 119, 0.10) !important;
+  color: oklch(0.82 0.18 345) !important;
+}
+
+[data-celestial-theme="sky"] [data-slot="breadcrumb-page"],
+[data-celestial-theme="sky"] [data-slot="breadcrumb-link"],
+[data-celestial-theme="sky"] [data-slot="breadcrumb-link"] span {
+  color: oklch(0.82 0.16 345) !important;
+}
+[data-celestial-theme="sky"] [data-slot="breadcrumb-separator"] {
+  color: rgba(236, 72, 153, 0.4) !important;
+}
+[data-celestial-theme="sky"] .text-muted-foreground {
+  color: oklch(0.84 0.06 345) !important;
+}
+
+/* Readable surfaces over animated sky backgrounds */
+[data-celestial-theme="sky"] main .rounded-xl.border {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.45);
+  background: linear-gradient(
+    180deg,
+    rgba(18, 4, 14, 0.72),
+    rgba(12, 2, 10, 0.82)
+  ) !important;
+  border-color: rgba(236, 72, 153, 0.22) !important;
+}
+
+[data-celestial-theme="sky"] main > section:not(:has(.gothic-panel)) > h2 {
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.65);
+}
+
+[data-celestial-theme="sky"] footer {
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background: rgba(12, 2, 10, 0.55);
+  border: 1px solid rgba(236, 72, 153, 0.14);
+}
+
+[data-celestial-theme="sky"] footer .text-muted-foreground {
+  color: oklch(0.88 0.05 345) !important;
+}
+
+/* ── Moon Theme CSS Overrides ─────────────────────────────────────── */
+[data-celestial-theme="moon"] {
+  --background: oklch(0.03 0.008 250);
+  --foreground: oklch(0.95 0 0);
+
+  --primary: oklch(0.82 0 0);
+  --primary-foreground: oklch(0.18 0 0);
+
+  --muted: oklch(0.12 0.015 250);
+  --muted-foreground: oklch(0.6 0 0);
+
+  --border: oklch(0.16 0.02 250);
+  --ring: oklch(0.55 0.04 240);
+
+  --deep-space-1: oklch(0.025 0.01 260);
+  --deep-space-2: oklch(0.015 0.005 280);
+
+  --nebula-color-1: oklch(0.10 0.04 260);
+  --nebula-color-2: oklch(0.08 0.03 240);
+  --nebula-color-3: oklch(0.06 0.02 280);
+  --nebula-color-4: oklch(0.09 0.035 250);
+  --nebula-color-5: oklch(0.05 0.02 270);
+}
+
+[data-celestial-theme="moon"] input[type="radio"] {
+  accent-color: oklch(0.82 0 0) !important;
+}
+
+[data-celestial-theme="moon"] h1,
+[data-celestial-theme="moon"] h2,
+[data-celestial-theme="moon"] h3,
+[data-celestial-theme="moon"] h4,
+[data-celestial-theme="moon"] h5,
+[data-celestial-theme="moon"] h6 {
+  color: oklch(0.95 0 0) !important;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.45), 0 0 20px rgba(224, 231, 255, 0.2) !important;
+}
+
+[data-celestial-theme="moon"] .gothic-panel {
+  background: linear-gradient(
+    180deg,
+    rgba(8, 8, 12, 0.76),
+    rgba(4, 4, 6, 0.88)
+  ) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 
+    0 1px 0 rgba(255, 255, 255, 0.05),
+    0 16px 60px rgba(0, 0, 0, 0.65) !important;
+}
+
+[data-celestial-theme="moon"] .gothic-panel:hover {
+  border-color: rgba(255, 255, 255, 0.45) !important;
+  box-shadow: 
+    0 0 16px rgba(255, 255, 255, 0.08),
+    0 16px 60px rgba(0, 0, 0, 0.7) !important;
+}
+
+[data-celestial-theme="moon"] .gothic-panel::before {
+  background: radial-gradient(
+    300px circle at var(--mouse-x, -999px) var(--mouse-y, -999px),
+    rgba(255, 255, 255, 0.08),
+    transparent 70%
+  ) !important;
+}
+
+[data-celestial-theme="moon"] a:not(.no-underline) {
+  color: oklch(0.82 0 0) !important;
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.3) !important;
+}
+
+[data-celestial-theme="moon"] ::selection {
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: oklch(0.95 0 0) !important;
+}
+
+[data-celestial-theme="moon"]::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(8, 8, 12, 0.8) !important;
+}
+
+[data-celestial-theme="moon"]::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35) !important;
+}
+
+[data-celestial-theme="moon"] img[alt="Logo"] {
+  filter: grayscale(80%) brightness(110%) contrast(100%);
+  transition: filter 1.2s ease-in-out;
+}
+
+/* Typography elements */
+[data-celestial-theme="moon"] .prose p,
+[data-celestial-theme="moon"] .prose li,
+[data-celestial-theme="moon"] .prose td {
+  color: oklch(0.95 0 0) !important;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.15) !important;
+}
+
+[data-celestial-theme="moon"] [data-slot="breadcrumb-page"],
+[data-celestial-theme="moon"] [data-slot="breadcrumb-link"],
+[data-celestial-theme="moon"] [data-slot="breadcrumb-link"] span {
+  color: oklch(0.95 0 0) !important;
+}
+
+[data-celestial-theme="moon"] [data-slot="breadcrumb-separator"] {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+[data-celestial-theme="moon"] .text-muted-foreground {
+  color: oklch(0.6 0 0) !important;
+}
+
+[data-celestial-theme="moon"] .text-foreground {
+  color: oklch(0.95 0 0) !important;
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.25) !important;
+}
+
+[data-celestial-theme="moon"] header {
+  background: rgba(4, 4, 6, 0.35) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-celestial-theme="moon"] header nav a {
+  color: oklch(0.6 0 0) !important;
+}
+
+[data-celestial-theme="moon"] header nav a:hover {
+  color: oklch(0.95 0 0) !important;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.45) !important;
+}
+
+[data-celestial-theme="moon"] footer {
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background: rgba(8, 8, 12, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+[data-celestial-theme="moon"] footer .text-muted-foreground {
+  color: #ffffff !important;
+}
+
+[data-celestial-theme="moon"] .text-muted-foreground,
+[data-celestial-theme="moon"] #poll-results-area,
+[data-celestial-theme="moon"] #poll-results-header,
+[data-celestial-theme="moon"] #poll-results-bars,
+[data-celestial-theme="moon"] #poll-results-bars span,
+[data-celestial-theme="moon"] #poll-form label,
+[data-celestial-theme="moon"] footer,
+[data-celestial-theme="moon"] footer a {
+  color: #ffffff !important;
+}
+
+
+

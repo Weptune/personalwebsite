@@ -13,15 +13,42 @@ const recentThoughts = await getRecentPosts(SITE.featuredPostCount)
 
 <Layout class="max-w-3xl">
   <PageHead slot="head" title="Home" />
-  <section class="gothic-panel fade-in-up-soft">
-    <div class="flex flex-col space-y-1.5 p-6">
+  <section class="gothic-panel fade-in-up-soft relative">
+    <div class="flex flex-col space-y-1.5 p-6 pb-2 relative">
+      <!-- Dynamic celestial icon in the top right corner -->
+      <div class="absolute top-6 right-6 text-primary/70 animate-pulse">
+        <!-- Star Icon for Stars theme -->
+        <svg class="size-6 theme-stars-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+        </svg>
+        <!-- Sun Icon for Sun theme -->
+        <svg class="size-6 theme-sun-text hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+        </svg>
+        <!-- Wave Icon for Ocean theme -->
+        <svg class="size-6 theme-ocean-text hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 6c.6 0 1.2-.2 1.6-.6L6 3.3c.8-.8 2-.8 2.8 0l2.3 2.1c.4.4 1 .6 1.6.6.6 0 1.2-.2 1.6-.6L16.6 3.3c.8-.8 2-.8 2.8 0l2.3 2.1c.4.4 1 .6 1.6.6" />
+          <path d="M2 12c.6 0 1.2-.2 1.6-.6l2.4-2.1c.8-.8 2-.8 2.8 0l2.3 2.1c.4.4 1 .6 1.6.6.6 0 1.2-.2 1.6-.6l2.4-2.1c.8-.8 2-.8 2.8 0l2.3 2.1c.4.4 1 .6 1.6.6" />
+        </svg>
+        <!-- Cloud Icon for Sky theme -->
+        <svg class="size-6 theme-sky-text hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17.5 19A3.5 3.5 0 0 0 21 15.5c0-2.79-2.54-4.5-5-4.5-.48 0-.92.07-1.34.2-1.13-2.36-3.72-3.7-6.16-3.7C5.16 7.5 2 10.4 2 14c0 2.76 2.24 5 5 5h10.5z" />
+        </svg>
+        <!-- Moon Icon for Moon theme -->
+        <svg class="size-6 theme-moon-text hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+        </svg>
+      </div>
       <h3 class="text-3xl leading-none font-medium normal-case">ab·hi·nav</h3>
       <p class="text-muted-foreground text-sm">
         /ˈʌb.hɪ.nɑːv/ &bull; <span class="font-medium">noun</span>
       </p>
+      <!-- Subtle premium decorative divider -->
+      <div class="h-[1px] w-full bg-gradient-to-r from-transparent via-primary/25 to-transparent mt-4 mb-2"></div>
     </div>
     <div class="p-6 pt-0">
-      <p class="text-muted-foreground mb-2 text-sm">
+      <p class="text-muted-foreground mb-2 text-sm leading-relaxed italic border-l-2 border-primary/20 pl-4">
         All the being and the doing, expansive, glittering, vocal, evaporated;
         and one shrunk, with a sense of solemnity, to being oneself, a
         wedge-shaped core of darkness, something invisible to others.<br />
@@ -39,14 +66,37 @@ const recentThoughts = await getRecentPosts(SITE.featuredPostCount)
 
   <section class="fade-in-up-soft">
     <a
+      id="stargazing-link"
       href="/stargazing"
-      class="gothic-panel group block cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg"
+      data-astro-reload
+      class="gothic-panel group block cursor-pointer transition-all duration-300 hover:scale-[1.03] hover:shadow-lg no-underline"
     >
-      <div class="p-8 text-center">
-        <h2 class="mb-2 text-xl font-medium">in the mood for stargazing?</h2>
+      <div class="p-8 text-center flex items-center justify-center">
+        <h2 class="text-xl font-medium flex items-center gap-2">
+          <span>
+            <span class="theme-stars-text">in the mood for stargazing?</span>
+            <span class="theme-sun-text hidden">chasing solar storms?</span>
+            <span class="theme-ocean-text hidden">lost in the deep?</span>
+            <span class="theme-sky-text hidden">drifting in the clouds?</span>
+            <span class="theme-moon-text hidden">voyaging to the moon?</span>
+          </span>
+          <span class="inline-block transition-transform duration-300 group-hover:translate-x-1.5 text-primary">&rarr;</span>
+        </h2>
       </div>
     </a>
   </section>
+
+  <script is:inline>
+    function syncStargazingLink() {
+      const link = document.getElementById('stargazing-link')
+      if (!link) return
+      const theme = localStorage.getItem('celestial-theme') || 'stars'
+      link.href = `/stargazing?theme=${theme}`
+    }
+    syncStargazingLink()
+    document.addEventListener('celestial-theme-change', syncStargazingLink)
+    document.addEventListener('astro:page-load', syncStargazingLink)
+  </script>
 
   <section class="fade-in-up-soft flex flex-col gap-y-4">
     <h2 class="text-2xl font-medium">Latest posts</h2>

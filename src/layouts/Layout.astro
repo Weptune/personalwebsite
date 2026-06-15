@@ -32,12 +32,18 @@ const { class: className } = Astro.props
   </Head>
   <body class="flex h-fit min-h-screen flex-col font-sans overflow-x-hidden w-full">
     <CursorTrail />
-    <canvas
-      id="starfield"
-      class="pointer-events-none fixed inset-0 z-0"
-      aria-hidden="true"></canvas>
+    <div id="celestial-bg" class="pointer-events-none fixed inset-0 z-0" aria-hidden="true">
+      <canvas
+        id="starfield-webgl"
+        class="absolute inset-0 h-full w-full opacity-0 transition-opacity duration-1000"
+      ></canvas>
+      <canvas
+        id="starfield"
+        class="absolute inset-0 h-full w-full"
+      ></canvas>
+    </div>
     <header
-      class="bg-background/50 relative sticky top-0 z-10 divide-y backdrop-blur-sm xl:divide-none"
+      class="bg-background/50 relative sticky top-0 z-20 divide-y backdrop-blur-sm xl:divide-none"
     >
       <Header />
       <slot name="subposts-navigation" />
@@ -45,7 +51,7 @@ const { class: className } = Astro.props
     </header>
     <main
       class={cn(
-        'relative z-10 w-full mx-auto flex grow flex-col gap-y-6 px-4',
+        'relative z-20 w-full mx-auto flex grow flex-col gap-y-6 px-4',
         className,
       )}
     >
@@ -54,253 +60,2629 @@ const { class: className } = Astro.props
     <Footer />
     <script>
       // @ts-nocheck
-      const STAR_COUNT = 140
-      const DUST_COUNT = 60
-      const METEOR_COUNT = 2
+      import { initOceanLife, updateOceanLife, drawOceanLife } from '@/lib/oceanWildlife'
+
+      let mx = -9999
+      let my = -9999
+      let currentTheme = 'stars'
+      let starfieldCleanup = null
+      let webglCleanup = null
+
+      function startWebGLSun() {
+        const canvas = document.getElementById('starfield-webgl')
+        if (!canvas) return null
+        const gl = canvas.getContext('webgl')
+        if (!gl) return null
+
+        let width = window.innerWidth
+        let height = window.innerHeight
+        canvas.width = width
+        canvas.height = height
+
+        const vsSource = `
+          attribute vec2 position;
+          void main() {
+            gl_Position = vec4(position, 0.0, 1.0);
+          }
+        `
+
+        const fsSource = `
+          precision highp float;
+          uniform vec2 u_resolution;
+          uniform float u_time;
+          uniform vec2 u_mouse;
+          uniform vec2 u_sunCenter;
+          uniform float u_sunRadius;
+
+          float hash(vec2 p) {
+            return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+          }
+
+          float noise(vec2 p) {
+            vec2 i = floor(p);
+            vec2 f = fract(p);
+            vec2 u = f*f*(3.0-2.0*f);
+            return mix(mix(hash(i + vec2(0.0,0.0)), hash(i + vec2(1.0,0.0)), u.x),
+                       mix(hash(i + vec2(0.0,1.0)), hash(i + vec2(1.0,1.0)), u.x), u.y);
+          }
+
+          float fbm(vec2 p) {
+            float value = 0.0;
+            float amplitude = 0.5;
+            float frequency = 1.0;
+            for (int i = 0; i < 4; i++) {
+              value += amplitude * noise(p * frequency);
+              frequency *= 2.0;
+              amplitude *= 0.5;
+            }
+            return value;
+          }
+
+          void main() {
+            vec2 uv = gl_FragCoord.xy;
+            float t = u_time * 0.001;
+            
+            float d = distance(uv, u_sunCenter);
+            
+            vec2 mouseNorm = u_mouse / u_resolution;
+            vec2 uvNorm = uv / u_resolution;
+            float mouseDist = distance(uvNorm, mouseNorm);
+            
+            vec2 warpUv = uv;
+            if (mouseDist < 0.35) {
+              float strength = (1.0 - mouseDist / 0.35) * 15.0;
+              vec2 dir = normalize(uvNorm - mouseNorm);
+              warpUv += dir * strength;
+            }
+
+            float n1 = fbm(warpUv * 0.004 - vec2(0.0, t * 0.18));
+            float n2 = fbm(warpUv * 0.012 + vec2(t * 0.12, t * 0.08));
+            float n3 = fbm(warpUv * 0.03 + vec2(-t * 0.2, t * 0.15));
+            float combinedNoise = (n1 * 0.5 + n2 * 0.3 + n3 * 0.2);
+            
+            float perturbedRadius = u_sunRadius + (combinedNoise - 0.5) * 85.0;
+            
+            float spaceNoise = fbm(warpUv * 0.0012 + vec2(t * 0.03, -t * 0.015));
+            vec3 spaceBg = mix(vec3(0.012, 0.005, 0.002), vec3(0.065, 0.022, 0.004), spaceNoise);
+            
+            float threadVal = sin(warpUv.y * 0.025 - t * 0.45 + fbm(warpUv * 0.008) * 5.0) * 0.5 + 0.5;
+            float threads = smoothstep(0.92, 1.0, threadVal);
+            vec3 threadColor = vec3(0.95, 0.45, 0.08) * threads * 0.035 * (1.0 - smoothstep(0.0, u_resolution.y * 0.8, uv.y));
+            spaceBg += threadColor;
+
+            float coronaNoise = fbm(warpUv * 0.008 - vec2(0.0, t * 0.15));
+            float distAbove = d - perturbedRadius;
+            float corona1 = exp(-distAbove * (0.015 - coronaNoise * 0.004));
+            float corona2 = exp(-distAbove * (0.003 - coronaNoise * 0.0008));
+            
+            vec3 coronaInnerColor = vec3(1.0, 0.42, 0.04) * corona1 * 1.3;
+            vec3 coronaOuterColor = vec3(0.85, 0.2, 0.01) * corona2 * 0.55;
+            vec3 glowColor = coronaInnerColor + coronaOuterColor;
+            
+            // Convection cells granulation details
+            vec2 surfaceUv = uv * 0.035;
+            float g1 = fbm(surfaceUv + vec2(t * 0.08, t * 0.04));
+            float g2 = fbm(surfaceUv * 1.8 - vec2(t * 0.03, t * 0.08));
+            float gran = mix(g1, g2, 0.5);
+            
+            float cell = 1.0 - abs(gran - 0.5) * 2.0;
+            cell = pow(cell, 1.6); // Soft, glowing convection lanes (less harsh than power 3)
+            
+            // Sunspots / Magnetic active regions (smaller, more sparse, beautiful)
+            float spotNoise = fbm(uv * 0.005 + vec2(t * 0.015, t * 0.008));
+            float spotVal = smoothstep(0.68, 0.78, spotNoise); // Sparse, clean spots
+            float penumbraVal = smoothstep(0.55, 0.68, spotNoise) * (1.0 - spotVal);
+            float activeRegion = smoothstep(0.42, 0.55, spotNoise) * (1.0 - spotVal - penumbraVal);
+            
+            // Highly glowing, pleasing plasma color scheme
+            vec3 plasmaDark = vec3(0.82, 0.25, 0.02);   // Glowing red-orange lanes instead of dark brown
+            vec3 plasmaMid = vec3(0.98, 0.55, 0.05);    // Soft warm orange
+            vec3 plasmaBright = vec3(1.0, 0.88, 0.38);  // Brilliant gold granules
+            vec3 sunspotColor = vec3(0.22, 0.03, 0.0);  // Soft, hot maroon umbra instead of pitch black
+            vec3 penumbraColor = vec3(0.65, 0.18, 0.01); // Warm transition penumbra
+            
+            // Blend base plasma
+            vec3 finalSurface = mix(plasmaDark, plasmaMid, cell);
+            finalSurface = mix(finalSurface, plasmaBright, gran * cell * 0.85);
+            
+            // Blend sunspots and penumbra
+            finalSurface = mix(finalSurface, penumbraColor, penumbraVal * 0.75);
+            finalSurface = mix(finalSurface, sunspotColor, spotVal * 0.85);
+            
+            // Add active region flares glow
+            finalSurface += activeRegion * vec3(0.35, 0.18, 0.02);
+            
+            float depth = (perturbedRadius - d) / 100.0;
+            float limbDarkening = smoothstep(0.0, 1.0, depth);
+            finalSurface = mix(finalSurface * 0.35, finalSurface, limbDarkening);
+            
+            float edgeBlend = smoothstep(perturbedRadius - 4.5, perturbedRadius + 4.5, d); // Softer limb blend
+            vec3 finalColor = mix(finalSurface, spaceBg + glowColor, edgeBlend);
+            
+            finalColor = pow(finalColor, vec3(0.92));
+            
+            gl_FragColor = vec4(finalColor, 1.0);
+          }
+        `
+
+        function compileShader(source, type) {
+          const shader = gl.createShader(type)
+          gl.shaderSource(shader, source)
+          gl.compileShader(shader)
+          if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            console.error('Shader compilation error:', gl.getShaderInfoLog(shader))
+            gl.deleteShader(shader)
+            return null
+          }
+          return shader
+        }
+
+        const vs = compileShader(vsSource, gl.VERTEX_SHADER)
+        const fs = compileShader(fsSource, gl.FRAGMENT_SHADER)
+        const program = gl.createProgram()
+        gl.attachShader(program, vs)
+        gl.attachShader(program, fs)
+        gl.linkProgram(program)
+
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+          console.error('Program link error:', gl.getProgramInfoLog(program))
+          return null
+        }
+
+        const positionLocation = gl.getAttribLocation(program, 'position')
+        const resolutionLocation = gl.getUniformLocation(program, 'u_resolution')
+        const timeLocation = gl.getUniformLocation(program, 'u_time')
+        const mouseLocation = gl.getUniformLocation(program, 'u_mouse')
+        const sunCenterLocation = gl.getUniformLocation(program, 'u_sunCenter')
+        const sunRadiusLocation = gl.getUniformLocation(program, 'u_sunRadius')
+
+        const buffer = gl.createBuffer()
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+          -1, -1,
+           1, -1,
+          -1,  1,
+          -1,  1,
+           1, -1,
+           1,  1
+        ]), gl.STATIC_DRAW)
+
+        let frameId = 0
+        const startTime = performance.now()
+
+        function render() {
+          if (currentTheme !== 'sun') return
+
+          const now = performance.now() - startTime
+          gl.viewport(0, 0, canvas.width, canvas.height)
+          gl.clearColor(0, 0, 0, 0)
+          gl.clear(gl.COLOR_BUFFER_BIT)
+
+          gl.useProgram(program)
+          gl.enableVertexAttribArray(positionLocation)
+          gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+          gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0)
+
+          const H = Math.min(canvas.height * 0.25, 200)
+          const radius = (canvas.width * canvas.width) / (8 * H) + H / 2
+          const center = [canvas.width / 2, H - radius]
+
+          gl.uniform2f(resolutionLocation, canvas.width, canvas.height)
+          gl.uniform1f(timeLocation, now)
+          gl.uniform2f(mouseLocation, mx, canvas.height - my) // Invert Y
+          gl.uniform2f(sunCenterLocation, center[0], center[1])
+          gl.uniform1f(sunRadiusLocation, radius)
+
+          gl.drawArrays(gl.TRIANGLES, 0, 6)
+
+          frameId = requestAnimationFrame(render)
+        }
+
+        frameId = requestAnimationFrame(render)
+
+        function handleResize() {
+          width = window.innerWidth
+          height = window.innerHeight
+          canvas.width = width
+          canvas.height = height
+        }
+        window.addEventListener('resize', handleResize)
+
+        return () => {
+          cancelAnimationFrame(frameId)
+          window.removeEventListener('resize', handleResize)
+          gl.deleteProgram(program)
+          gl.deleteShader(vs)
+          gl.deleteShader(fs)
+          gl.deleteBuffer(buffer)
+        }
+      }
+
+      function startWebGLOcean() {
+        const canvas = document.getElementById('starfield-webgl')
+        if (!canvas) return null
+        const gl = canvas.getContext('webgl')
+        if (!gl) return null
+
+        let width = window.innerWidth
+        let height = window.innerHeight
+        canvas.width = width
+        canvas.height = height
+
+        const vsSource = `
+          attribute vec2 position;
+          void main() {
+            gl_Position = vec4(position, 0.0, 1.0);
+          }
+        `
+
+        const fsSource = `
+          precision highp float;
+          uniform vec2 u_resolution;
+          uniform float u_time;
+          uniform vec2 u_mouse;
+
+          float hash(vec2 p) {
+            return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+          }
+
+          float hash3(vec3 p) {
+            return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453123);
+          }
+
+          float noise(vec2 p) {
+            vec2 i = floor(p);
+            vec2 f = fract(p);
+            vec2 u = f * f * (3.0 - 2.0 * f);
+            return mix(
+              mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
+              mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
+              u.y
+            );
+          }
+
+          float fbm(vec2 p) {
+            float v = 0.0;
+            float a = 0.5;
+            mat2 rot = mat2(0.8, -0.6, 0.6, 0.8);
+            for (int i = 0; i < 4; i++) {
+              v += a * noise(p);
+              p = rot * p * 2.03 + 0.07;
+              a *= 0.48;
+            }
+            return v;
+          }
+
+          float causticLayer(vec2 p, float t, float scale, vec2 drift) {
+            vec2 q = p * scale + drift * t;
+            float a = fbm(q);
+            float b = fbm(q * 1.07 + 1.7);
+            return pow(abs(a - b), 1.65);
+          }
+
+          float caustics(vec2 uv, float t) {
+            float c = 0.0;
+            c += causticLayer(uv, t, 0.011, vec2(0.22, 0.14)) * 0.45;
+            c += causticLayer(uv, t, 0.019, vec2(-0.16, 0.20)) * 0.30;
+            c += causticLayer(uv, t, 0.034, vec2(0.10, -0.18)) * 0.18;
+            c += causticLayer(uv, t, 0.058, vec2(-0.08, 0.12)) * 0.07;
+            return smoothstep(0.04, 0.72, c);
+          }
+
+          void main() {
+            vec2 uv = gl_FragCoord.xy;
+            vec2 uvNorm = uv / u_resolution;
+            float t = u_time * 0.001;
+            float depth = pow(clamp(uvNorm.y, 0.0, 1.0), 1.12);
+            float surfZone = 1.0 - smoothstep(0.0, 0.55, depth);
+
+            vec2 refractUv = uv;
+
+            refractUv += vec2(
+              sin(uvNorm.y * 14.0 - t * 2.8) * 5.0,
+              cos(uvNorm.x * 11.0 + t * 2.1) * 3.5
+            ) * surfZone;
+
+            float current = fbm(vec2(uvNorm.x * 3.0 - t * 0.35, uvNorm.y * 2.0 + t * 0.12));
+            refractUv.x += current * 12.0 * surfZone;
+
+            vec3 shallow = vec3(0.07, 0.32, 0.42);
+            vec3 mid     = vec3(0.025, 0.14, 0.22);
+            vec3 deep    = vec3(0.008, 0.05, 0.10);
+            vec3 abyss   = vec3(0.002, 0.015, 0.035);
+
+            vec3 water = mix(shallow, mid, smoothstep(0.0, 0.38, depth));
+            water = mix(water, deep, smoothstep(0.28, 0.72, depth));
+            water = mix(water, abyss, smoothstep(0.62, 1.0, depth));
+
+            float fog = 1.0 - exp(-depth * 2.0);
+            water = mix(water, abyss * 0.7, fog * 0.25);
+
+            float caust = caustics(refractUv, t * 1.35);
+            vec3 causticLight = vec3(0.45, 0.88, 0.95) * caust * surfZone * 0.72;
+
+            float chroma = caustics(refractUv + vec2(4.0, -3.0), t * 1.02);
+            causticLight += vec3(0.25, 0.65, 0.75) * chroma * surfZone * 0.18;
+
+            float rays = 0.0;
+            for (float i = 0.0; i < 5.0; i++) {
+              float seed = i * 1.618;
+              float xOff = (hash(vec2(i, 0.0)) - 0.5) * 0.85;
+              float shaft = exp(-pow((uvNorm.x - 0.5 - xOff) * (2.8 + depth * 3.5), 2.0));
+              shaft *= fbm(vec2(uvNorm.x * 5.0 + seed, depth * 5.0 - t * 0.22));
+              shaft *= 1.0 - smoothstep(0.0, 0.78, depth);
+              rays += shaft * (0.08 + hash(vec2(seed, 1.0)) * 0.06);
+            }
+            vec3 rayLight = vec3(0.22, 0.62, 0.72) * rays;
+
+            float surfaceBand = smoothstep(0.10, 0.0, uvNorm.y);
+            vec3 surfaceGlow = vec3(0.30, 0.75, 0.85) * surfaceBand * 0.55;
+
+            float turb = fbm(refractUv * 0.0007 + vec2(t * 0.008, depth * 0.5));
+            water += vec3(0.02, 0.04, 0.05) * turb * depth * 0.4;
+
+            vec3 particulate = vec3(0.0);
+            for (float layer = 0.0; layer < 3.0; layer++) {
+              float scale = 0.0022 + layer * 0.0014;
+              vec2 gv = refractUv * scale + vec2(t * 0.004 * (layer + 1.0), -t * 0.006);
+              vec2 id = floor(gv);
+              float h = hash(id + layer * 31.0);
+              if (h > 0.86 - layer * 0.008) {
+                vec2 p = (id + vec2(hash(id + 1.0), hash(id + 2.0))) / scale;
+                float d = length(uv - p);
+                float sz = 0.6 + hash(id + 3.0) * 2.0;
+                float point = exp(-d * d / (sz * sz)) * (0.06 + depth * 0.08);
+                particulate += vec3(0.72, 0.80, 0.86) * point;
+              }
+            }
+
+            float bioZone = smoothstep(0.50, 0.95, depth);
+            vec3 bio = vec3(0.0);
+            for (float b = 0.0; b < 2.0; b++) {
+              vec2 bv = refractUv * (0.0010 + b * 0.00035) + vec2(-t * 0.018, t * 0.010 + b);
+              vec2 bid = floor(bv);
+              float bh = hash3(vec3(bid, b + 7.0));
+              if (bh > 0.955) {
+                vec2 bp = (bid + vec2(hash(bid + 4.0), hash(bid + 5.0))) / (0.0010 + b * 0.00035);
+                float bd = length(uv - bp);
+                float pulse = 0.55 + 0.45 * sin(t * 1.8 + bh * 20.0);
+                bio += vec3(0.04, 0.35, 0.42) * exp(-bd * bd * 0.05) * pulse * bioZone * 0.35;
+              }
+            }
+
+            vec3 finalColor = water + causticLight + rayLight + surfaceGlow + particulate + bio;
+            finalColor = finalColor / (finalColor + vec3(0.22));
+            finalColor = pow(finalColor, vec3(0.92));
+
+            gl_FragColor = vec4(finalColor, 1.0);
+          }
+        `
+
+        function compileShader(source, type) {
+          const shader = gl.createShader(type)
+          gl.shaderSource(shader, source)
+          gl.compileShader(shader)
+          if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            console.error('Shader compilation error:', gl.getShaderInfoLog(shader))
+            gl.deleteShader(shader)
+            return null
+          }
+          return shader
+        }
+
+        const vs = compileShader(vsSource, gl.VERTEX_SHADER)
+        const fs = compileShader(fsSource, gl.FRAGMENT_SHADER)
+        const program = gl.createProgram()
+        gl.attachShader(program, vs)
+        gl.attachShader(program, fs)
+        gl.linkProgram(program)
+
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+          console.error('Program link error:', gl.getProgramInfoLog(program))
+          return null
+        }
+
+        const positionLocation = gl.getAttribLocation(program, 'position')
+        const resolutionLocation = gl.getUniformLocation(program, 'u_resolution')
+        const timeLocation = gl.getUniformLocation(program, 'u_time')
+        const mouseLocation = gl.getUniformLocation(program, 'u_mouse')
+
+        const buffer = gl.createBuffer()
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+          -1, -1,  1, -1,  -1,  1,
+          -1,  1,  1, -1,   1,  1
+        ]), gl.STATIC_DRAW)
+
+        let frameId = 0
+        const startTime = performance.now()
+
+        function render() {
+          if (currentTheme !== 'ocean' || document.hidden) return
+
+          const now = performance.now() - startTime
+          gl.viewport(0, 0, canvas.width, canvas.height)
+          gl.clearColor(0.01, 0.05, 0.08, 1.0)
+          gl.clear(gl.COLOR_BUFFER_BIT)
+
+          gl.useProgram(program)
+          gl.enableVertexAttribArray(positionLocation)
+          gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+          gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0)
+
+          gl.uniform2f(resolutionLocation, canvas.width, canvas.height)
+          gl.uniform1f(timeLocation, now)
+          gl.uniform2f(mouseLocation, mx, canvas.height - my)
+
+          gl.drawArrays(gl.TRIANGLES, 0, 6)
+          frameId = requestAnimationFrame(render)
+        }
+
+        frameId = requestAnimationFrame(render)
+
+        function handleResize() {
+          width = window.innerWidth
+          height = window.innerHeight
+          canvas.width = width
+          canvas.height = height
+        }
+        window.addEventListener('resize', handleResize)
+
+        return () => {
+          cancelAnimationFrame(frameId)
+          window.removeEventListener('resize', handleResize)
+          gl.deleteProgram(program)
+          gl.deleteShader(vs)
+          gl.deleteShader(fs)
+          gl.deleteBuffer(buffer)
+        }
+      }
+
+      function startWebGLSky() {
+        const canvas = document.getElementById('starfield-webgl')
+        if (!canvas) return null
+        const gl = canvas.getContext('webgl')
+        if (!gl) return null
+
+        let width = window.innerWidth
+        let height = window.innerHeight
+        canvas.width = width
+        canvas.height = height
+
+        const vsSource = `
+          attribute vec2 position;
+          void main() {
+            gl_Position = vec4(position, 0.0, 1.0);
+          }
+        `
+
+        const fsSource = `
+          precision highp float;
+          uniform vec2 u_resolution;
+          uniform float u_time;
+          uniform vec2 u_mouse;
+
+          float hash(vec2 p) {
+            p = fract(p * vec2(234.34, 435.345));
+            p += dot(p, p + 34.23);
+            return fract(p.x * p.y);
+          }
+
+          float noise(vec2 p) {
+            vec2 i = floor(p);
+            vec2 f = fract(p);
+            vec2 u = f * f * (3.0 - 2.0 * f);
+            return mix(
+              mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
+              mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
+              u.y
+            );
+          }
+
+          float fbm(vec2 p) {
+            float v = 0.0, a = 0.5;
+            mat2 rot = mat2(0.80, -0.60, 0.60, 0.80);
+            for (int i = 0; i < 7; i++) {
+              v += a * noise(p);
+              p = rot * p * 2.02 + vec2(0.14, 0.08);
+              a *= 0.50;
+            }
+            return v;
+          }
+
+          void main() {
+            vec2 uvNorm = gl_FragCoord.xy / u_resolution;
+            float h = uvNorm.y;
+            // Slow time — two different rates for parallax feel
+            float ts = u_time * 0.00055;   // slow drift
+            float tf = u_time * 0.0018;    // faster shimmer
+
+            // ─── Base dusk gradient (more blue, less pink) ───────────────────
+            vec3 colZenith  = vec3(0.01,  0.025, 0.10);   // deep twilight blue
+            vec3 colUpper   = vec3(0.03,  0.05,  0.16);   // indigo blue
+            vec3 colMidSky  = vec3(0.06,  0.08,  0.22);   // slate blue
+            vec3 colLow     = vec3(0.12,  0.10,  0.24);   // soft lavender
+            vec3 colHorizon = vec3(0.42,  0.18,  0.06);   // warm golden amber
+            vec3 colGround  = vec3(0.02,  0.015, 0.03);   // base ground
+
+            vec3 skyBg;
+            if (h > 0.72) {
+              skyBg = mix(colUpper, colZenith, smoothstep(0.72, 1.0, h));
+            } else if (h > 0.48) {
+              skyBg = mix(colMidSky, colUpper, smoothstep(0.48, 0.72, h));
+            } else if (h > 0.26) {
+              skyBg = mix(colLow, colMidSky, smoothstep(0.26, 0.48, h));
+            } else if (h > 0.08) {
+              skyBg = mix(colHorizon, colLow, smoothstep(0.08, 0.26, h));
+            } else {
+              skyBg = mix(colGround, colHorizon, smoothstep(0.0, 0.08, h));
+            }
+
+            // Slow-cycling colour breath — colours pulse subtly over ~30s
+            float breathA = sin(ts * 0.28) * 0.5 + 0.5;
+            float breathB = sin(ts * 0.19 + 1.6) * 0.5 + 0.5;
+            skyBg.r += breathA * 0.02 * (1.0 - h);
+            skyBg.b += breathB * 0.04 * h;
+            skyBg.g += sin(ts * 0.13 + 3.0) * 0.01 * (0.3 + h * 0.7);
+
+            // ─── Mouse-driven cloud warp ──────────────────────────────────
+            vec2 mouseNorm = u_mouse / u_resolution;
+            vec2 warpUv = uvNorm;
+            float md = distance(uvNorm, mouseNorm);
+            if (md < 0.42) {
+              float str = (1.0 - md / 0.42) * 0.16;
+              vec2 dir = normalize(uvNorm - mouseNorm);
+              vec2 swirl = vec2(-dir.y, dir.x);
+              warpUv += mix(dir, swirl, 0.6) * str;
+            }
+
+            // ─── 3-layer clouds (different scales, speeds) ────────────────
+            vec2 c1 = warpUv * vec2(3.8, 2.6) + vec2(ts * 0.028, ts * 0.006);
+            vec2 c2 = warpUv * vec2(7.5, 5.2) - vec2(ts * 0.048, -ts * 0.010);
+            vec2 c3 = warpUv * vec2(14.0, 9.0) + vec2(ts * 0.082, ts * 0.015);
+
+            float n1 = fbm(c1);
+            float n2 = fbm(c2 + n1 * 0.45);
+            float n3 = fbm(c3 + n2 * 0.30);
+
+            // High wispy cirrus (top 40% only)
+            float cirrus = smoothstep(0.44, 0.80, n1) * smoothstep(0.40, 1.0, h) * 0.55;
+            // Mid cumulus (upper-mid region)
+            float cumulus = smoothstep(0.38, 0.76, n2) * smoothstep(0.14, 0.60, h) * (1.0 - h * 0.7);
+            // Low horizon clouds
+            float lowCloud = smoothstep(0.36, 0.74, n3) * smoothstep(0.0, 0.28, h) * (1.0 - h * 1.6);
+            float clouds = clamp(cirrus + cumulus * 0.9 + lowCloud * 0.6, 0.0, 1.0);
+
+            // Cloud colour — dark bottom, orange-pink lit edge, amber-glow top
+            vec3 cloudDark    = vec3(0.04, 0.025, 0.055);    // near-black underside
+            vec3 cloudMid     = vec3(0.22, 0.10, 0.10);      // dark burgundy mid
+            vec3 cloudSunlit  = vec3(0.65, 0.28, 0.10) * 1.5; // orange sunlit rim
+            // Animated cloud brightness pulse
+            float cloudPulse = 0.85 + 0.15 * sin(tf * 0.6 + uvNorm.x * 2.8);
+            float litFactor = smoothstep(0.1, 0.9, (1.0 - n2) + h * 0.6) * cloudPulse;
+            vec3 cloudColor = mix(cloudDark, cloudMid, litFactor);
+            cloudColor = mix(cloudColor, cloudSunlit, smoothstep(0.55, 1.0, litFactor));
+
+            // ─── Setting sun (low on horizon, slightly left of center) ────
+            vec2 sunPos = vec2(0.42, 0.10);
+            float distSun = length(uvNorm - sunPos);
+            float sunCore = exp(-distSun * 20.0) * 1.2;
+            float sunHalo = exp(-distSun * 4.5) * 0.35;
+            float sunOuter = exp(-distSun * 1.2) * 0.10;
+            vec3 sunColor = vec3(1.0, 0.82, 0.30) * sunCore
+                          + vec3(0.90, 0.40, 0.10) * sunHalo
+                          + vec3(0.60, 0.15, 0.05) * sunOuter;
+
+            // Animated god-rays fanning from sun
+            float rays = 0.0;
+            vec2 rayOrigin = uvNorm - sunPos;
+            for (float i = 0.0; i < 6.0; i++) {
+              float ang = sin(ts * 0.12 + i * 1.047) * 0.22;
+              float cosA = cos(ang), sinA = sin(ang);
+              vec2 rDir = vec2(rayOrigin.x * cosA - rayOrigin.y * sinA,
+                               rayOrigin.x * sinA + rayOrigin.y * cosA);
+              float shaft = exp(-pow(rDir.y * (9.0 + i * 3.5), 2.0));
+              shaft *= exp(-distSun * 1.5) * (1.0 - clouds * 0.65);
+              shaft *= (0.6 + 0.4 * sin(ts * 0.4 + i));  // shimmer
+              rays += shaft * 0.08;
+            }
+
+            // ─── Aurora shimmer band at top (animates left/right) ─────────
+            float auroraH = smoothstep(0.55, 1.0, h);
+            float auroraWave = sin(uvNorm.x * 6.0 + ts * 0.9) * 0.5 + 0.5;
+            float aurora2 = sin(uvNorm.x * 9.5 - ts * 0.65 + 1.5) * 0.5 + 0.5;
+            float auroraStrength = auroraH * (auroraWave * 0.55 + aurora2 * 0.45);
+            float auroraMask = noise(vec2(uvNorm.x * 4.5 + ts * 0.35, h * 2.5)) * 0.6;
+            auroraStrength *= (0.5 + auroraMask) * (1.0 - clouds * 0.8);
+            // Subtle blue-indigo aurora glow
+            vec3 auroraColor = mix(
+              vec3(0.02, 0.05, 0.20),   // deep blue
+              vec3(0.06, 0.04, 0.25),   // deep indigo-violet
+              sin(ts * 0.35 + uvNorm.x * 3.0) * 0.5 + 0.5
+            );
+            auroraColor = mix(auroraColor, vec3(0.08, 0.03, 0.22), auroraWave * 0.4);
+
+            // ─── Subtle star shimmer in darkest zone ─────────────────────
+            float starZone = smoothstep(0.6, 1.0, h) * (1.0 - clouds * 1.2);
+            float starNoise = noise(uvNorm * 180.0 + vec2(12.4, 66.1));
+            float stars = smoothstep(0.92, 1.0, starNoise) * starZone;
+            stars *= 0.35 + 0.65 * sin(tf * 2.0 + uvNorm.x * 40.0);  // twinkle
+
+            // ─── Horizon atmospheric scatter ──────────────────────────────
+            float scatter = exp(-h * 7.0) * 0.5;
+            vec3 scatterColor = vec3(0.52, 0.22, 0.06);
+
+            // ─── Compose final ────────────────────────────────────────────
+            vec3 col = mix(skyBg, cloudColor, clouds * 0.82);
+            col += sunColor;
+            col += vec3(0.85, 0.52, 0.18) * rays;
+            col = mix(col, scatterColor, scatter * (1.0 - clouds * 0.5));
+            col += auroraColor * auroraStrength * 0.10;
+            col += vec3(0.92, 0.88, 0.80) * stars;
+
+            // Vignette
+            float vig = 1.0 - 0.22 * pow(length(uvNorm - vec2(0.5, 0.5)) * 1.25, 2.0);
+            col *= vig;
+
+            // Tone-map + gamma
+            col = col / (col + vec3(0.16));
+            col = pow(clamp(col, 0.0, 1.0), vec3(0.90));
+
+            gl_FragColor = vec4(col, 1.0);
+          }
+        `
+
+
+        function compileShader(source, type) {
+          const shader = gl.createShader(type)
+          gl.shaderSource(shader, source)
+          gl.compileShader(shader)
+          if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            console.error('Shader compilation error:', gl.getShaderInfoLog(shader))
+            gl.deleteShader(shader)
+            return null
+          }
+          return shader
+        }
+
+        const vs = compileShader(vsSource, gl.VERTEX_SHADER)
+        const fs = compileShader(fsSource, gl.FRAGMENT_SHADER)
+        const program = gl.createProgram()
+        gl.attachShader(program, vs)
+        gl.attachShader(program, fs)
+        gl.linkProgram(program)
+
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+          console.error('Program link error:', gl.getProgramInfoLog(program))
+          return null
+        }
+
+        const positionLocation = gl.getAttribLocation(program, 'position')
+        const resolutionLocation = gl.getUniformLocation(program, 'u_resolution')
+        const timeLocation = gl.getUniformLocation(program, 'u_time')
+        const mouseLocation = gl.getUniformLocation(program, 'u_mouse')
+
+        const buffer = gl.createBuffer()
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+          -1, -1,  1, -1,  -1,  1,
+          -1,  1,  1, -1,   1,  1
+        ]), gl.STATIC_DRAW)
+
+        let frameId = 0
+        const startTime = performance.now()
+
+        function render() {
+          if (currentTheme !== 'sky' || document.hidden) return
+
+          const now = performance.now() - startTime
+          gl.viewport(0, 0, canvas.width, canvas.height)
+          gl.clearColor(0.01, 0.05, 0.08, 1.0)
+          gl.clear(gl.COLOR_BUFFER_BIT)
+
+          gl.useProgram(program)
+          gl.enableVertexAttribArray(positionLocation)
+          gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+          gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0)
+
+          gl.uniform2f(resolutionLocation, canvas.width, canvas.height)
+          gl.uniform1f(timeLocation, now)
+          gl.uniform2f(mouseLocation, mx, canvas.height - my)
+
+          gl.drawArrays(gl.TRIANGLES, 0, 6)
+          frameId = requestAnimationFrame(render)
+        }
+
+        frameId = requestAnimationFrame(render)
+
+        function handleResize() {
+          width = window.innerWidth
+          height = window.innerHeight
+          canvas.width = width
+          canvas.height = height
+        }
+        window.addEventListener('resize', handleResize)
+
+        return () => {
+          cancelAnimationFrame(frameId)
+          window.removeEventListener('resize', handleResize)
+          gl.deleteProgram(program)
+          gl.deleteShader(vs)
+          gl.deleteShader(fs)
+          gl.deleteBuffer(buffer)
+        }
+      }
+
+      function startWebGLMoon() {
+        const canvas = document.getElementById('starfield-webgl')
+        if (!canvas) return null
+        const gl = canvas.getContext('webgl')
+        if (!gl) return null
+
+        let width = window.innerWidth
+        let height = window.innerHeight
+        canvas.width = width
+        canvas.height = height
+
+        const vsSource = `
+          attribute vec2 position;
+          void main() {
+            gl_Position = vec4(position, 0.0, 1.0);
+          }
+        `
+
+        const fsSource = `
+          precision highp float;
+          uniform vec2 u_resolution;
+          uniform float u_time;
+          uniform vec2 u_mouse;
+
+          float hash(vec2 p) {
+            return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+          }
+
+          float noise(vec2 p) {
+            vec2 i = floor(p);
+            vec2 f = fract(p);
+            vec2 u = f*f*(3.0-2.0*f);
+            return mix(mix(hash(i + vec2(0.0,0.0)), hash(i + vec2(1.0,0.0)), u.x),
+                       mix(hash(i + vec2(0.0,1.0)), hash(i + vec2(1.0,1.0)), u.x), u.y);
+          }
+
+          float fbm(vec2 p) {
+            float value = 0.0;
+            float amplitude = 0.5;
+            float frequency = 1.0;
+            for (int i = 0; i < 5; i++) {
+              value += amplitude * noise(p * frequency);
+              frequency *= 2.0;
+              amplitude *= 0.5;
+            }
+            return value;
+          }
+
+          float voronoi(vec2 x) {
+            vec2 n = floor(x);
+            vec2 f = fract(x);
+            float min_dist = 8.0;
+            for (int j = -1; j <= 1; j++) {
+              for (int i = -1; i <= 1; i++) {
+                vec2 g = vec2(float(i), float(j));
+                vec2 o = vec2(hash(n + g), hash(n + g + 12.0));
+                vec2 r = g + o - f;
+                float d = dot(r, r);
+                if (d < min_dist) min_dist = d;
+              }
+            }
+            return sqrt(min_dist);
+          }
+
+          float getMoonHeight(vec2 uv) {
+            float n1 = fbm(uv * 1.5);
+            float height = mix(-0.25, 0.25, n1);
+
+            // Large maria basins
+            float v1 = voronoi(uv * 3.5);
+            float crater1 = smoothstep(0.0, 0.1, v1);
+            float rim1 = 1.0 - smoothstep(0.0, 0.04, abs(v1 - 0.1));
+            height = mix(height - 0.35, height + 0.12 * rim1, crater1);
+
+            // Medium craters
+            float v2 = voronoi(uv * 8.0);
+            float crater2 = smoothstep(0.0, 0.08, v2);
+            float rim2 = 1.0 - smoothstep(0.0, 0.03, abs(v2 - 0.08));
+            height = mix(height - 0.22, height + 0.08 * rim2, crater2);
+
+            // Small craters
+            float v3 = voronoi(uv * 18.0);
+            float crater3 = smoothstep(0.0, 0.05, v3);
+            height = mix(height - 0.1, height, crater3);
+
+            // Micro-craters for HD feel
+            float v4 = voronoi(uv * 42.0);
+            float crater4 = smoothstep(0.0, 0.04, v4);
+            float rim4 = 1.0 - smoothstep(0.0, 0.02, abs(v4 - 0.04));
+            height = mix(height - 0.05, height + 0.04 * rim4, crater4);
+
+            // Regolith surface texture (fine grain noise)
+            float regolith = noise(uv * 55.0) * 0.06 - 0.03;
+            height += regolith;
+
+            return height;
+          }
+
+          float pattern(in vec2 p, out vec2 q, out vec2 r, float t) {
+            q.x = fbm(p + vec2(0.0, 0.0) + vec2(t * 0.04, t * 0.02));
+            q.y = fbm(p + vec2(5.2, 1.3) + vec2(-t * 0.03, t * 0.05));
+
+            r.x = fbm(p + 4.0 * q + vec2(1.7, 9.2) + vec2(t * 0.01, -t * 0.02));
+            r.y = fbm(p + 4.0 * q + vec2(8.3, 2.8) + vec2(-t * 0.02, t * 0.03));
+
+            return fbm(p + 4.0 * r);
+          }
+
+          float spiralGalaxy(vec2 p, float t) {
+            float r = length(p);
+            float theta = atan(p.y, p.x);
+            float spiral = sin(theta * 2.0 - r * 6.5 + t * 0.12);
+            float intensity = smoothstep(0.0, 1.0, spiral) * exp(-r * 3.8);
+            float core = exp(-r * 12.0) * 1.5;
+            return (intensity + core) * 0.45;
+          }
+
+          float starFlare(vec2 p) {
+            float d = length(p);
+            float core = exp(-d * 8.0) * 0.8;
+            float spikeX = exp(-abs(p.y) * 45.0) * exp(-abs(p.x) * 4.0) * 0.35;
+            float spikeY = exp(-abs(p.x) * 45.0) * exp(-abs(p.y) * 4.0) * 0.35;
+            return core + spikeX + spikeY;
+          }
+
+          void main() {
+            vec2 uv = gl_FragCoord.xy;
+            vec2 uvNorm = uv / u_resolution;
+            float t = u_time * 0.0015;
+
+            // Interactive nebula warp
+            vec2 mouseNorm = u_mouse / u_resolution;
+            float mouseDist = distance(uvNorm, mouseNorm);
+            vec2 warpUv = uv;
+            if (mouseDist < 0.45) {
+              float strength = (1.0 - mouseDist / 0.45) * 20.0;
+              vec2 dir = normalize(uvNorm - mouseNorm);
+              warpUv += dir * strength;
+            }
+
+            // High-detail domain warped FBM for nebula gas
+            vec2 q, r;
+            float f = pattern(warpUv * 0.0018, q, r, t);
+
+            // Volumetric space colors – ultra-dark for high-contrast moon-in-space feel
+            vec3 spaceIndigo = vec3(0.002, 0.001, 0.006);
+            vec3 spacePurple = vec3(0.010, 0.007, 0.025);
+            vec3 spaceSilver = vec3(0.04, 0.045, 0.06);
+            vec3 spaceElectric = vec3(0.012, 0.04, 0.08);
+
+            vec3 spaceBg = mix(spaceIndigo, spacePurple, f);
+            spaceBg = mix(spaceBg, spaceSilver, dot(q, q) * 0.22);
+            spaceBg = mix(spaceBg, spaceElectric, r.y * 0.28);
+            spaceBg += spaceElectric * pow(f, 4.0) * 0.3;
+
+            vec3 bg = spaceBg;
+
+            // Dense persistent dim starfield – always visible, never blinks
+            vec2 dimGrid = floor(uv * 0.35);
+            float dimNoise = hash(dimGrid);
+            if (dimNoise > 0.92) {
+              vec2 dimCenter = (dimGrid + vec2(0.5)) / 0.35;
+              float dimDist = distance(uv, dimCenter);
+              float dimGlow = exp(-dimDist * 1.8);
+              float dimSize = hash(dimGrid + 7.0);
+              bg += vec3(0.55, 0.62, 0.78) * dimGlow * (0.15 + dimSize * 0.15);
+            }
+
+            // Bright twinkling stars – gentle pulse, never fully disappear
+            vec2 starGrid = floor(uv * 0.18);
+            float starNoise = hash(starGrid);
+            if (starNoise > 0.984) {
+              vec2 starCenter = (starGrid + vec2(0.5)) / 0.18;
+              float distToStar = distance(uv, starCenter);
+              float starGlow = exp(-distToStar * 0.85);
+              float twinkle = sin(t * 1.2 + starNoise * 12.0) * 0.2 + 0.8;
+              float colorVar = hash(starGrid + 3.0);
+              vec3 starCol = mix(vec3(0.85, 0.90, 1.0), vec3(1.0, 0.92, 0.82), colorVar);
+              bg += starCol * starGlow * twinkle * 1.0;
+            }
+
+            // Galaxy calculation
+            vec2 galaxyOffset = uvNorm - vec2(0.22, 0.35);
+            galaxyOffset.y *= 1.8;
+            float cosAngle = cos(0.65);
+            float sinAngle = sin(0.65);
+            vec2 rotatedGalaxy = vec2(
+              galaxyOffset.x * cosAngle - galaxyOffset.y * sinAngle,
+              galaxyOffset.x * sinAngle + galaxyOffset.y * cosAngle
+            );
+            float galIntensity = spiralGalaxy(rotatedGalaxy * 3.2, t * 0.8);
+            bg += vec3(0.60, 0.68, 0.92) * galIntensity * 1.5;
+
+            // Flare stars twinkling
+            vec2 fStar1 = uvNorm - vec2(0.18, 0.82);
+            float twinkle1 = sin(t * 2.2 + 1.5) * 0.45 + 0.55;
+            bg += vec3(0.92, 0.95, 1.0) * starFlare(fStar1 * 12.0) * twinkle1;
+
+            vec2 fStar2 = uvNorm - vec2(0.62, 0.88);
+            float twinkle2 = sin(t * 1.8 + 4.2) * 0.45 + 0.55;
+            bg += vec3(0.95, 0.92, 1.0) * starFlare(fStar2 * 15.0) * twinkle2;
+
+            vec2 fStar3 = uvNorm - vec2(0.48, 0.15);
+            float twinkle3 = sin(t * 3.1 + 0.8) * 0.45 + 0.55;
+            bg += vec3(0.88, 0.95, 1.0) * starFlare(fStar3 * 18.0) * twinkle3;
+
+            // 3D parallax offsets for the Moon
+            vec2 parallax = vec2(0.0);
+            if (u_mouse.x > -9000.0) {
+              parallax = (u_mouse - u_resolution * 0.5) * 0.022;
+            }
+            vec2 moonCenter = u_resolution * vec2(0.88, 0.70) + parallax;
+            float moonRadius = min(u_resolution.x, u_resolution.y) * 0.19;
+            if (u_resolution.x < 640.0) {
+              moonCenter = u_resolution * vec2(0.5, 0.70) + parallax * 0.5;
+              moonRadius = min(u_resolution.x, u_resolution.y) * 0.26;
+            }
+
+            float d = distance(uv, moonCenter);
+
+            // Glowing atmosphere / corona halo around the Moon – ultra ethereal
+            float halo1 = exp(-max(0.0, d - moonRadius) * 0.065);
+            float halo2 = exp(-max(0.0, d - moonRadius) * 0.018);
+            float halo3 = exp(-max(0.0, d - moonRadius) * 0.004);
+            
+            vec3 glow = vec3(0.98, 0.99, 1.0) * halo1 * 2.2
+                      + vec3(0.60, 0.72, 0.98) * halo2 * 1.4
+                      + vec3(0.25, 0.38, 0.72) * halo3 * 0.7;
+            bg += glow;
+
+            // Render the Moon sphere
+            if (d < moonRadius) {
+              vec2 p = (uv - moonCenter) / moonRadius;
+              float r2 = dot(p, p);
+              float z = sqrt(max(0.0, 1.0 - r2));
+              vec3 normal = vec3(p, z);
+
+              // Lighting direction (light from top-left/front)
+              vec3 lightDir = normalize(vec3(-0.45, 0.4, 0.78));
+
+              // Map spherical coordinate
+              vec2 sphereUv = vec2(atan(normal.x, normal.z), asin(normal.y)) * 2.2;
+
+              // Tangent/bitangent vectors on sphere for normal mapping
+              vec3 tangent = normalize(cross(normal, vec3(0.0, 1.0, 0.0)));
+              vec3 bitangent = cross(normal, tangent);
+
+              // Sample height heights in tangent space
+              float e = 0.008; 
+              float h = getMoonHeight(sphereUv);
+              float h_t = getMoonHeight(sphereUv + vec2(e, 0.0));
+              float h_b = getMoonHeight(sphereUv + vec2(0.0, e));
+
+              // Compute perturbed normal (bump mapping)
+              vec3 perturbedNormal = normalize(normal - (h_t - h) * tangent * 0.75 - (h_b - h) * bitangent * 0.75);
+              float diffuse = max(0.0, dot(perturbedNormal, lightDir));
+
+              // Moon colors: maria vs highlands – pure radiant white highlands
+              vec3 mariaColor = vec3(0.55, 0.58, 0.64);
+              vec3 highlandColor = vec3(1.0, 1.0, 1.0);
+              vec3 surface = mix(mariaColor, highlandColor, smoothstep(-0.25, 0.15, h));
+
+              // Brighter ejecta ray systems from prominent craters
+              vec2 craterCenter1 = vec2(0.2, -0.4);
+              vec2 craterCenter2 = vec2(-0.5, 0.1);
+              
+              float distC1 = distance(sphereUv, craterCenter1);
+              float distC2 = distance(sphereUv, craterCenter2);
+              
+              float rays1 = smoothstep(0.92, 1.0, cos(atan(sphereUv.y - craterCenter1.y, sphereUv.x - craterCenter1.x) * 10.0 + fbm(sphereUv * 8.0) * 0.8)) * exp(-distC1 * 1.5) * 0.3;
+              float rays2 = smoothstep(0.94, 1.0, cos(atan(sphereUv.y - craterCenter2.y, sphereUv.x - craterCenter2.x) * 14.0 + fbm(sphereUv * 12.0) * 0.6)) * exp(-distC2 * 2.0) * 0.25;
+              
+              surface = mix(surface, vec3(0.96, 0.98, 1.0), rays1 + rays2);
+
+              // Edge shadow / terminator wrapping
+              float termWrap = smoothstep(0.0, 0.15, dot(normal, lightDir));
+              diffuse *= termWrap;
+
+              // Rim light (Fresnel) – luminous ethereal edge glow
+              float fresnel = pow(1.0 - max(0.0, dot(normal, vec3(0.0, 0.0, 1.0))), 2.8);
+              vec3 rim = vec3(0.95, 0.97, 1.0) * fresnel * 3.5;
+
+              // Final shaded moon surface – high ambient + strong diffuse for show-stealing brightness
+              vec3 finalMoon = surface * (diffuse * 0.65 + 0.55) + rim;
+
+              // Softer limb blend at the exact boundary of the sphere
+              float edgeBlend = smoothstep(0.0, 1.8, moonRadius - d);
+              bg = mix(bg, finalMoon, edgeBlend);
+            }
+
+            // Vignette
+            float vig = 1.0 - 0.18 * pow(length(uvNorm - vec2(0.5)) * 1.3, 2.0);
+            bg *= vig;
+
+            // Tone mapping & Gamma – preserve moon brilliance while crushing background blacks
+            bg = bg / (bg + vec3(0.65));
+            bg = pow(clamp(bg, 0.0, 1.0), vec3(1.05));
+
+            gl_FragColor = vec4(bg, 1.0);
+          }
+        `
+
+        function compileShader(source, type) {
+          const shader = gl.createShader(type)
+          gl.shaderSource(shader, source)
+          gl.compileShader(shader)
+          if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            console.error('Shader compilation error:', gl.getShaderInfoLog(shader))
+            gl.deleteShader(shader)
+            return null
+          }
+          return shader
+        }
+
+        const vs = compileShader(vsSource, gl.VERTEX_SHADER)
+        const fs = compileShader(fsSource, gl.FRAGMENT_SHADER)
+        const program = gl.createProgram()
+        gl.attachShader(program, vs)
+        gl.attachShader(program, fs)
+        gl.linkProgram(program)
+
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+          console.error('Program link error:', gl.getProgramInfoLog(program))
+          return null
+        }
+
+        const positionLocation = gl.getAttribLocation(program, 'position')
+        const resolutionLocation = gl.getUniformLocation(program, 'u_resolution')
+        const timeLocation = gl.getUniformLocation(program, 'u_time')
+        const mouseLocation = gl.getUniformLocation(program, 'u_mouse')
+
+        const buffer = gl.createBuffer()
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+          -1, -1,  1, -1,  -1,  1,
+          -1,  1,  1, -1,   1,  1
+        ]), gl.STATIC_DRAW)
+
+        let frameId = 0
+        const startTime = performance.now()
+
+        function render() {
+          if (currentTheme !== 'moon' || document.hidden) return
+
+          const now = performance.now() - startTime
+          gl.viewport(0, 0, canvas.width, canvas.height)
+          gl.clearColor(0.01, 0.01, 0.02, 1.0)
+          gl.clear(gl.COLOR_BUFFER_BIT)
+
+          gl.useProgram(program)
+          gl.enableVertexAttribArray(positionLocation)
+          gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+          gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0)
+
+          gl.uniform2f(resolutionLocation, canvas.width, canvas.height)
+          gl.uniform1f(timeLocation, now)
+          gl.uniform2f(mouseLocation, mx, canvas.height - my)
+
+          gl.drawArrays(gl.TRIANGLES, 0, 6)
+          frameId = requestAnimationFrame(render)
+        }
+
+        frameId = requestAnimationFrame(render)
+
+        function handleResize() {
+          width = window.innerWidth
+          height = window.innerHeight
+          canvas.width = width
+          canvas.height = height
+        }
+        window.addEventListener('resize', handleResize)
+
+        return () => {
+          cancelAnimationFrame(frameId)
+          window.removeEventListener('resize', handleResize)
+          gl.deleteProgram(program)
+          gl.deleteShader(vs)
+          gl.deleteShader(fs)
+          gl.deleteBuffer(buffer)
+        }
+      }
 
       function startStarfield() {
         const canvas = document.getElementById('starfield')
-        if (!canvas || !canvas.getContext) return
+        if (!canvas || !canvas.getContext) return null
         const ctx = canvas.getContext('2d')
-        if (!ctx) return
+        if (!ctx) return null
 
         let width = 0
         let height = 0
-        let stars = []
-        let dust = []
-        let meteors = []
         let frameId = 0
 
-        function createStars() {
-          stars = Array.from({ length: STAR_COUNT }, () => {
-            const colors = [
-              '#ffffff',
-              '#e0e0ff',
-              '#ffe0e0',
-              '#e0ffe0',
-              '#e0f0ff',
-            ]
-            return {
-              x: Math.random() * width,
-              y: Math.random() * height,
-              r: 0.5 + Math.random() * 2,
-              vy: (Math.random() - 0.5) * 0.02,
-              vx: (Math.random() - 0.5) * 0.02,
-              tw: Math.random() * Math.PI * 2,
-              pulseSpeed: 800 + Math.random() * 800,
-              color: colors[Math.floor(Math.random() * colors.length)],
-              baseAlpha: Math.random() * 0.5 + 0.3,
+        let prevMx = -9999
+        let prevMy = -9999
+        let windX = 0
+        let windY = 0
+
+        let particles = []
+        let sparks = []
+        let meteors = []
+        let ripples = []
+        let constellationSystems = []
+        let satellites = []
+        let galaxyStars = []
+        let starsNebulae = []
+        let starsPulsar = null
+        let oceanLife = null
+        let lastDrawTime = 0
+        let lightningBolts = []
+        let lightningFlash = 0
+        let oceanFrame = 0
+        let paused = false
+
+        function getSolarParams() {
+          const H = Math.min(height * 0.25, 200)
+          const limbRadius = (width * width) / (8 * H) + H / 2
+          const limbX = width / 2
+          const limbY = height - H + limbRadius
+          return { H, limbRadius, limbX, limbY }
+        }
+
+        function getBezierPoint(u, p0, cp1, cp2, p3) {
+          const term0 = Math.pow(1 - u, 3)
+          const term1 = 3 * Math.pow(1 - u, 2) * u
+          const term2 = 3 * (1 - u) * Math.pow(u, 2)
+          const term3 = Math.pow(u, 3)
+          
+          return {
+            x: term0 * p0.x + term1 * cp1.x + term2 * cp2.x + term3 * p3.x,
+            y: term0 * p0.y + term1 * cp1.y + term2 * cp2.y + term3 * p3.y
+          }
+        }
+
+        function getThemeHue(theme) {
+          const hues = {
+            stars: 240,
+            sun: 45,
+            ocean: 185,
+            sky: 345,
+            moon: 200
+          }
+          return hues[theme] || 240
+        }
+
+        function drawGradientBg() {
+          // Central soft purple nebula glow
+          const grad1 = ctx.createRadialGradient(
+            width * 0.35,
+            height * 0.3,
+            0,
+            width * 0.35,
+            height * 0.3,
+            Math.min(width, height) * 0.6
+          )
+          grad1.addColorStop(0, 'rgba(80, 35, 130, 0.09)')
+          grad1.addColorStop(0.5, 'rgba(30, 15, 60, 0.04)')
+          grad1.addColorStop(1, 'rgba(0, 0, 0, 0)')
+          ctx.fillStyle = grad1
+          ctx.fillRect(0, 0, width, height)
+
+          // Secondary soft deep cyan/blue nebula glow
+          const grad2 = ctx.createRadialGradient(
+            width * 0.72,
+            height * 0.62,
+            0,
+            width * 0.72,
+            height * 0.62,
+            Math.min(width, height) * 0.5
+          )
+          grad2.addColorStop(0, 'rgba(25, 50, 110, 0.08)')
+          grad2.addColorStop(0.5, 'rgba(10, 18, 45, 0.03)')
+          grad2.addColorStop(1, 'rgba(0, 0, 0, 0)')
+          ctx.fillStyle = grad2
+          ctx.fillRect(0, 0, width, height)
+        }
+
+        function initParticlesForTheme(theme) {
+          particles = []
+          sparks = []
+          meteors = []
+          ripples = []
+          constellationSystems = []
+          
+          if (theme === 'stars') {
+            const colors = ['#ffffff', '#f8fafc', '#e0e0ff', '#e0f0ff', '#dbeafe', '#eff6ff']
+            for (let i = 0; i < 280; i++) {
+              const z = 0.3 + Math.random() * 0.7
+              particles.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                r: (0.5 + Math.random() * 2.2) * z,
+                vy: (Math.random() - 0.5) * 0.06 * z,
+                vx: (Math.random() - 0.5) * 0.06 * z + 0.018,
+                tw: Math.random() * Math.PI * 2,
+                pulseSpeed: 800 + Math.random() * 800,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                baseAlpha: Math.random() * 0.5 + 0.3,
+                z,
+                isDust: false
+              })
             }
-          })
+            for (let i = 0; i < 140; i++) {
+              const z = 0.15 + Math.random() * 0.5
+              particles.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                r: (0.15 + Math.random() * 0.6) * z,
+                vy: (Math.random() - 0.5) * 0.035 * z,
+                vx: (Math.random() - 0.5) * 0.035 * z + 0.01,
+                tw: Math.random() * Math.PI * 2,
+                pulseSpeed: 3000 + Math.random() * 3000,
+                color: '#b8a8ff',
+                baseAlpha: Math.random() * 0.15 + 0.02,
+                z,
+                isDust: true
+              })
+            }
+            for (let i = 0; i < 2; i++) {
+              meteors.push({
+                x: Math.random() * width,
+                y: Math.random() * height * 0.3,
+                r: 1.5 + Math.random() * 2.5,
+                vx: 2 + Math.random() * 3,
+                vy: 0.5 + Math.random() * 1.5,
+                life: 1,
+                maxLife: 1,
+                color: '#ffddaa',
+                trailLength: 60
+              })
+            }
+
+            // Initialize a Polaris/Sirius-like supergiant star for Stars theme
+            starsPulsar = {
+              relX: 0.28,
+              relY: 0.65,
+              size: 4.2,
+              pulsePhase: Math.random() * Math.PI,
+              pulseSpeed: 0.003 + Math.random() * 0.002
+            }
+
+            // Initialize dynamic shifting nebulae for Stars theme
+            starsNebulae = [
+              {
+                relX: 0.35,
+                relY: 0.3,
+                vx: 0.005,
+                vy: -0.003,
+                rScale: 0.65,
+                pulsePhase: Math.random() * Math.PI * 2,
+                colorStop0: 'rgba(107, 33, 168, 0.15)',
+                colorStop1: 'rgba(88, 28, 135, 0.04)'
+              },
+              {
+                relX: 0.72,
+                relY: 0.62,
+                vx: -0.004,
+                vy: 0.004,
+                rScale: 0.55,
+                pulsePhase: Math.random() * Math.PI * 2,
+                colorStop0: 'rgba(3, 105, 161, 0.14)',
+                colorStop1: 'rgba(30, 41, 59, 0.03)'
+              },
+              {
+                relX: 0.5,
+                relY: 0.45,
+                vx: 0.002,
+                vy: 0.005,
+                rScale: 0.48,
+                pulsePhase: Math.random() * Math.PI * 2,
+                colorStop0: 'rgba(79, 70, 229, 0.12)',
+                colorStop1: 'rgba(49, 46, 129, 0.03)'
+              },
+              {
+                relX: 0.15,
+                relY: 0.75,
+                vx: -0.006,
+                vy: -0.002,
+                rScale: 0.4,
+                pulsePhase: Math.random() * Math.PI * 2,
+                colorStop0: 'rgba(13, 148, 136, 0.09)',
+                colorStop1: 'rgba(4, 47, 46, 0.015)'
+              }
+            ]
+
+            // Initialize dynamic spiral galaxy for Stars theme
+            galaxyStars = []
+            const numArms = 3
+            const starsPerArm = 220
+            const galaxyColors = ['#ffffff', '#e0f0ff', '#c8e2ff', '#a5f3fc', '#c4b5fd']
+            for (let arm = 0; arm < numArms; arm++) {
+              const baseAngle = (arm * Math.PI * 2) / numArms
+              for (let i = 0; i < starsPerArm; i++) {
+                const progress = i / starsPerArm
+                const r = Math.pow(progress, 1.8) * Math.min(width, height) * 0.24 + Math.random() * 12
+                const theta = baseAngle + r * 0.014 + (Math.random() - 0.5) * (0.35 / (progress + 0.15))
+                galaxyStars.push({
+                  r,
+                  theta,
+                  speed: 0.00015 + (0.00035 / (progress * 1.5 + 0.5)),
+                  color: galaxyColors[Math.floor(Math.random() * galaxyColors.length)],
+                  size: 0.4 + Math.random() * 1.3,
+                  baseAlpha: 0.35 + Math.random() * 0.6,
+                  tw: Math.random() * Math.PI * 2,
+                  pulseSpeed: 1000 + Math.random() * 1500
+                })
+              }
+            }
+
+            // Initialize elegant background constellations for Stars theme
+            const starsConstellationsData = [
+              { scale: 0.14, centerX: 0.22, centerY: 0.20,
+                stars: [{x:0,y:0},{x:0.3,y:-0.1},{x:0.6,y:0.1},{x:0.7,y:0.4},{x:0.5,y:0.6},{x:0.1,y:0.5}],
+                connections: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,0]] },
+              { scale: 0.12, centerX: 0.8, centerY: 0.7,
+                stars: [{x:0,y:0.2},{x:0.3,y:0},{x:0.5,y:0.3},{x:0.8,y:0.15},{x:0.95,y:0.4}],
+                connections: [[0,1],[1,2],[2,3],[3,4]] },
+              { scale: 0.15, centerX: 0.18, centerY: 0.72,
+                stars: [{x:0,y:0},{x:0.2,y:0.3},{x:0.5,y:0.4},{x:0.6,y:0.1},{x:0.8,y:-0.15}],
+                connections: [[0,1],[1,2],[2,3],[3,4],[2,0]] },
+              { scale: 0.12, centerX: 0.48, centerY: 0.15,
+                stars: [{x:0,y:0},{x:0.15,y:-0.05},{x:0.3,y:0},{x:0.4,y:0.15},{x:0.45,y:0.35},{x:0.28,y:0.4},{x:0.2,y:0.22}],
+                connections: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,3]] },
+              { scale: 0.1, centerX: 0.78, centerY: 0.18,
+                stars: [{x:0,y:0},{x:0.2,y:0.2},{x:0.4,y:0},{x:0.6,y:0.3},{x:0.8,y:0.1}],
+                connections: [[0,1],[1,2],[2,3],[3,4]] },
+              { scale: 0.11, centerX: 0.12, centerY: 0.45,
+                stars: [{x:0,y:0},{x:0.2,y:0},{x:0.4,y:0},{x:0.6,y:0},{x:0.3,y:-0.3},{x:0.3,y:0.3}],
+                connections: [[0,1],[1,2],[2,3],[1,4],[1,5]] },
+              { scale: 0.13, centerX: 0.42, centerY: 0.82,
+                stars: [{x:0,y:0},{x:0.4,y:0},{x:0.1,y:0.3},{x:0.2,y:0.3},{x:0.3,y:0.3},{x:0,y:0.6},{x:0.4,y:0.6}],
+                connections: [[0,1],[0,2],[1,4],[2,3],[3,4],[2,5],[4,6],[5,6]] }
+            ]
+            for (let c of starsConstellationsData) {
+              const cStars = c.stars.map(s => ({
+                relX: c.centerX + s.x * c.scale,
+                relY: c.centerY + s.y * c.scale,
+                tw: Math.random() * Math.PI * 2,
+                pulseSpeed: 1000 + Math.random() * 1500,
+                r: 0.85 + Math.random() * 1.3
+              }))
+              constellationSystems.push({
+                stars: cStars,
+                connections: c.connections
+              })
+            }
+          } else if (theme === 'sun') {
+            const params = getSolarParams()
+            const { limbX, limbY, limbRadius } = params
+
+            for (let i = 0; i < 220; i++) {
+              const theta = -Math.PI / 2 - 0.55 + Math.random() * 1.1
+              const offsetRadius = limbRadius - Math.random() * 15
+              const x = limbX + Math.cos(theta) * offsetRadius
+              const y = limbY + Math.sin(theta) * offsetRadius
+
+              particles.push({
+                x,
+                y,
+                r: 0.8 + Math.random() * 2.2,
+                vx: (Math.random() - 0.5) * 0.3,
+                vy: -0.6 - Math.random() * 1.5,
+                tw: Math.random() * Math.PI * 2,
+                pulseSpeed: 1000 + Math.random() * 1200,
+                baseAlpha: Math.random() * 0.5 + 0.3,
+                color: `hsl(${18 + Math.random() * 18}, 95%, ${60 + Math.random() * 20}%)`,
+                isEmber: true
+              })
+            }
+
+            for (let i = 0; i < 9; i++) {
+              const thetaStart = -Math.PI / 2 - 0.55 + (i * 0.13) + (Math.random() - 0.5) * 0.04
+              const thetaEnd = thetaStart + 0.08 + Math.random() * 0.06
+              const length = 90 + Math.random() * 140
+
+              particles.push({
+                thetaStart,
+                thetaEnd,
+                length,
+                phase: Math.random() * Math.PI * 2,
+                speed: 0.001 + Math.random() * 0.0015,
+                hue: 18 + i * 4,
+                isSolarArc: true,
+                beads: [
+                  { u: 0.1, speed: 0.003 + Math.random() * 0.002 },
+                  { u: 0.4, speed: 0.003 + Math.random() * 0.002 },
+                  { u: 0.7, speed: 0.003 + Math.random() * 0.002 }
+                ]
+              })
+            }
+          } else if (theme === 'ocean') {
+            for (let i = 0; i < 140; i++) {
+              particles.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                r: 0.12 + Math.random() * 0.45,
+                vx: (Math.random() - 0.5) * 0.018,
+                vy: 0.015 + Math.random() * 0.05,
+                tw: Math.random() * Math.PI * 2,
+                drift: 0.0003 + Math.random() * 0.0008,
+                baseAlpha: Math.random() * 0.1 + 0.02,
+                isMarineSnow: true,
+              })
+            }
+            for (let i = 0; i < 55; i++) {
+              particles.push({
+                x: Math.random() * width,
+                y: height * 0.35 + Math.random() * height * 0.65,
+                r: 0.15 + Math.random() * 0.7,
+                vx: (Math.random() - 0.5) * 0.025,
+                vy: -0.05 - Math.random() * 0.14,
+                wobble: Math.random() * Math.PI * 2,
+                wobbleSpeed: 0.006 + Math.random() * 0.01,
+                baseAlpha: Math.random() * 0.08 + 0.03,
+                isBubble: true,
+              })
+            }
+            oceanLife = initOceanLife(width, height, 14)
+          } else if (theme === 'sky') {
+            // ── Wind streaks — more of them, faster ──────────────────────────
+            for (let i = 0; i < 24; i++) {
+              particles.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                len: 80 + Math.random() * 200,
+                speed: 150 + Math.random() * 320,
+                baseAlpha: 0.03 + Math.random() * 0.10,
+                controlOffset: (Math.random() - 0.5) * 60,
+                isWindStreak: true,
+              })
+            }
+            // ── Cherry blossom petals — doubled, pink + white mix ────────────
+            for (let i = 0; i < 80; i++) {
+              const pinkOrWhite = Math.random()
+              particles.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                r: 3 + Math.random() * 4.5,
+                vx: 60 + Math.random() * 140,
+                vy: 10 + Math.random() * 40,
+                angle: Math.random() * Math.PI * 2,
+                spinSpeed: 0.6 + Math.random() * 2.8,
+                tw: Math.random() * Math.PI * 2,
+                color: pinkOrWhite > 0.65
+                  ? `hsl(${335 + Math.random() * 30}, 82%, ${72 + Math.random() * 16}%)`  // pink
+                  : `hsl(${0}, 0%, ${88 + Math.random() * 10}%)`,                          // near-white
+                baseAlpha: 0.18 + Math.random() * 0.55,
+                isLeaf: true,
+              })
+            }
+            // ── Tiny bird silhouettes gliding at high altitude ───────────────
+            for (let i = 0; i < 8; i++) {
+              particles.push({
+                x: Math.random() * width,
+                y: Math.random() * height * 0.55,  // upper sky only
+                r: 1.8 + Math.random() * 1.4,
+                vx: 35 + Math.random() * 60,
+                vy: -2 + Math.random() * 4,
+                tw: Math.random() * Math.PI * 2,
+                baseAlpha: 0.22 + Math.random() * 0.3,
+                isBird: true,
+                wingPhase: Math.random() * Math.PI * 2,
+                wingSpeed: 1.8 + Math.random() * 2.5,
+              })
+            }
+            // ── Lazy cloud puffs drifting across ────────────────────────────
+            for (let i = 0; i < 6; i++) {
+              particles.push({
+                x: Math.random() * width,
+                y: height * 0.08 + Math.random() * height * 0.55,
+                r: 60 + Math.random() * 100,
+                vx: 8 + Math.random() * 18,
+                vy: 0,
+                baseAlpha: 0.06 + Math.random() * 0.10,
+                isCloudPuff: true,
+              })
+            }
+          } else if (theme === 'moon') {
+            satellites = []
+            // Drifting space dust particles (silver-grey, soft glow)
+            for (let i = 0; i < 180; i++) {
+              const z = 0.2 + Math.random() * 0.8
+              particles.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                r: (0.3 + Math.random() * 1.5) * z,
+                vy: (Math.random() - 0.5) * 0.03 * z,
+                vx: (Math.random() - 0.5) * 0.03 * z + 0.012,
+                tw: Math.random() * Math.PI * 2,
+                pulseSpeed: 2000 + Math.random() * 2000,
+                color: '#cbd5e1',
+                baseAlpha: Math.random() * 0.10 + 0.03,
+                z,
+                isDust: true
+              })
+            }
+
+            // Space station object (persistent, slowly traversing)
+            particles.push({
+              x: -200,
+              y: height * 0.18 + Math.random() * height * 0.25,
+              vx: 0.12 + Math.random() * 0.08,
+              vy: (Math.random() - 0.5) * 0.02,
+              isSpaceStation: true,
+              rotation: 0,
+              rotSpeed: 0.0004,
+              blinkPhase: 0,
+              trussLen: 55 + Math.random() * 20,
+              panelW: 16 + Math.random() * 6,
+              panelH: 32 + Math.random() * 10,
+              baseAlpha: 1.0
+            })
+
+            // Generate 4 elegant background constellations
+            const constellationsData = [
+              { scale: 0.12, centerX: 0.12, centerY: 0.25,
+                stars: [{x:0,y:0},{x:0.2,y:0.08},{x:0.4,y:0.12},{x:0.52,y:0.28},{x:0.56,y:0.52},{x:0.8,y:0.56},{x:0.84,y:0.32},{x:0.56,y:0.28}],
+                connections: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,4]] },
+              { scale: 0.09, centerX: 0.58, centerY: 0.20,
+                stars: [{x:0,y:0},{x:0.25,y:0.35},{x:0.5,y:0.08},{x:0.75,y:0.4},{x:1.0,y:0.04}],
+                connections: [[0,1],[1,2],[2,3],[3,4]] },
+              { scale: 0.13, centerX: 0.15, centerY: 0.68,
+                stars: [{x:0.5,y:0},{x:0.5,y:0.45},{x:0.5,y:1.0},{x:0,y:0.45},{x:1.0,y:0.45}],
+                connections: [[0,1],[1,2],[3,1],[1,4]] },
+              { scale: 0.14, centerX: 0.42, centerY: 0.62,
+                stars: [{x:0.2,y:0.1},{x:0.8,y:0.15},{x:0.5,y:0.5},{x:0.4,y:0.48},{x:0.6,y:0.52},{x:0.8,y:0.9},{x:0.2,y:0.85}],
+                connections: [[0,3],[1,4],[3,2],[2,4],[3,6],[4,5],[6,5]] }
+            ]
+
+            for (let c of constellationsData) {
+              const cStars = c.stars.map(s => ({
+                relX: c.centerX + s.x * c.scale,
+                relY: c.centerY + s.y * c.scale,
+                tw: Math.random() * Math.PI * 2,
+                pulseSpeed: 1200 + Math.random() * 1200,
+                r: 1.0 + Math.random() * 1.5
+              }))
+              constellationSystems.push({
+                stars: cStars,
+                connections: c.connections
+              })
+            }
+          }
         }
 
-        function createDust() {
-          dust = Array.from({ length: DUST_COUNT }, () => ({
-            x: Math.random() * width,
-            y: Math.random() * height,
-            r: 0.15 + Math.random() * 0.5,
-            vy: (Math.random() - 0.5) * 0.01,
-            vx: (Math.random() - 0.5) * 0.01,
-            tw: Math.random() * Math.PI * 2,
-            pulseSpeed: 3000 + Math.random() * 3000,
-            color: '#b8a8ff',
-            baseAlpha: Math.random() * 0.15 + 0.02,
-          }))
+        const onThemeChange = (e) => {
+          const newTheme = e.detail.theme
+          if (newTheme !== currentTheme) {
+            currentTheme = newTheme
+            setupStarfield()
+          }
         }
 
-        function createMeteors() {
-          meteors = Array.from({ length: METEOR_COUNT }, () => ({
-            x: Math.random() * width,
-            y: Math.random() * height * 0.3,
-            r: 1.5 + Math.random() * 2.5,
-            vx: 2 + Math.random() * 3,
-            vy: 0.5 + Math.random() * 1.5,
-            life: 1,
-            maxLife: 1,
-            color: '#ffddaa',
-            trailLength: 60,
-          }))
+        const onMouseMove = (e) => {
+          const rect = canvas.getBoundingClientRect()
+          mx = e.clientX - rect.left
+          my = e.clientY - rect.top
         }
+
+        const onClick = (e) => {
+          if (e.target.closest('a, button, input, textarea, [role="button"], #poll-form, #poll-vote, #poll-view')) return
+          const rect = canvas.getBoundingClientRect()
+          const mouseX = e.clientX - rect.left
+          const mouseY = e.clientY - rect.top
+          
+          if (currentTheme === 'stars') {
+            meteors.push({
+              x: mouseX - 100 - Math.random() * 100,
+              y: mouseY - 150 - Math.random() * 150,
+              r: 1.5 + Math.random() * 2.5,
+              vx: 2 + Math.random() * 3,
+              vy: 0.5 + Math.random() * 1.5,
+              life: 1,
+              maxLife: 1,
+              color: '#ffddaa',
+              trailLength: 60
+            })
+          } else if (currentTheme === 'sun') {
+            for (let i = 0; i < 30; i++) {
+              const angle = Math.random() * Math.PI * 2
+              const speed = 1.2 + Math.random() * 4.0
+              sparks.push({
+                x: mouseX,
+                y: mouseY,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                r: 1.0 + Math.random() * 1.8,
+                life: 1.0,
+                decay: 0.015 + Math.random() * 0.015,
+                color: `hsl(${18 + Math.random() * 18}, 100%, ${60 + Math.random() * 18}%)`,
+                phase: Math.random() * Math.PI * 2,
+                curveSpeed: (Math.random() - 0.5) * 0.08
+              })
+            }
+          } else if (currentTheme === 'ocean') {
+            // clicks handled by page content only
+          } else if (currentTheme === 'sky') {
+            lightningFlash = 1.0;
+            const generateLightningBranch = (x1, y1, x2, y2, depth) => {
+              const dx = x2 - x1;
+              const dy = y2 - y1;
+              const dist = Math.hypot(dx, dy);
+              
+              if (dist < 12 || depth <= 0) {
+                return [{ x: x1, y: y1 }, { x: x2, y: y2 }];
+              }
+              
+              const midX = (x1 + x2) * 0.5;
+              const midY = (y1 + y2) * 0.5;
+              const ox = -dy / dist;
+              const oy = dx / dist;
+              const offset = (Math.random() - 0.5) * dist * 0.18;
+              const cx = midX + ox * offset;
+              const cy = midY + oy * offset;
+              
+              let path = [];
+              path = path.concat(generateLightningBranch(x1, y1, cx, cy, depth - 1));
+              path.pop();
+              path = path.concat(generateLightningBranch(cx, cy, x2, y2, depth - 1));
+              
+              if (Math.random() < 0.28 && depth > 2) {
+                const bx = cx + (Math.random() - 0.5) * dist * 0.22;
+                const by = cy + Math.random() * dist * 0.35;
+                const subBranch = generateLightningBranch(cx, cy, bx, by, depth - 1);
+                lightningBolts.push({ path: subBranch, width: 0.8, alpha: 0.8 });
+              }
+              
+              return path;
+            };
+
+            const startX = mouseX + (Math.random() - 0.5) * 120;
+            const mainPath = generateLightningBranch(startX, 0, mouseX, mouseY, 6);
+            lightningBolts.push({ path: mainPath, width: 2.2, alpha: 1.0 });
+          }
+        }
+
+        document.addEventListener('celestial-theme-change', onThemeChange)
+        document.addEventListener('mousemove', onMouseMove, { passive: true })
+        document.addEventListener('click', onClick)
+        document.addEventListener('visibilitychange', () => { paused = document.hidden })
 
         function resize() {
           width = window.innerWidth
           height = window.innerHeight
           canvas.width = width
           canvas.height = height
-          createStars()
-          createDust()
-          createMeteors()
-        }
-
-        function drawGradientBg() {
-          // Create gradient background for added depth
-          const gradient = ctx.createRadialGradient(
-            width / 2,
-            height / 3,
-            0,
-            width / 2,
-            height,
-            Math.max(width, height),
-          )
-          gradient.addColorStop(0, 'rgba(50, 30, 80, 0.04)')
-          gradient.addColorStop(0.5, 'rgba(15, 8, 30, 0.02)')
-          gradient.addColorStop(1, 'rgba(0, 0, 0, 0)')
-          ctx.fillStyle = gradient
-          ctx.fillRect(0, 0, width, height)
+          initParticlesForTheme(currentTheme)
         }
 
         function draw(time) {
-          if (!width || !height) return
-
-          // Create slight fade trail effect
-          ctx.fillStyle = 'rgba(1, 1, 2, 0.04)'
-          ctx.fillRect(0, 0, width, height)
-
+          if (!width || !height || paused) return
           const t = time || performance.now()
+          const dt = lastDrawTime ? Math.min(0.05, (t - lastDrawTime) / 1000) : 1 / 60
+          lastDrawTime = t
+          oceanFrame++
 
-          // Draw stars
-          for (const star of stars) {
-            star.y += star.vy
-            star.x += star.vx
+          if (currentTheme === 'stars') {
+            ctx.fillStyle = 'rgba(1, 1, 2, 0.12)'
+            ctx.fillRect(0, 0, width, height)
 
-            // Wrap around
-            if (star.x > width + 10) star.x = -10
-            if (star.x < -10) star.x = width + 10
-            if (star.y > height + 10) {
-              star.y = -10
-              star.x = Math.random() * width
+            // Draw shifting dynamic nebulae with mouse parallax
+            const ndx = (mx !== -9999) ? (mx - width * 0.5) * 0.006 : 0
+            const ndy = (my !== -9999) ? (my - height * 0.5) * 0.006 : 0
+            for (let n of starsNebulae) {
+              n.pulsePhase += 0.0016
+              n.relX += n.vx * dt
+              n.relY += n.vy * dt
+              if (n.relX < 0.05 || n.relX > 0.95) n.vx *= -1
+              if (n.relY < 0.05 || n.relY > 0.95) n.vy *= -1
+
+              const ncx = n.relX * width + ndx
+              const ncy = n.relY * height + ndy
+              const nr = Math.min(width, height) * n.rScale * (1 + Math.sin(n.pulsePhase) * 0.09)
+
+              const grad = ctx.createRadialGradient(ncx, ncy, 0, ncx, ncy, nr)
+              grad.addColorStop(0, n.colorStop0)
+              grad.addColorStop(0.48, n.colorStop1)
+              grad.addColorStop(1, 'rgba(0,0,0,0)')
+              ctx.fillStyle = grad
+              ctx.fillRect(0, 0, width, height)
             }
 
-            // Pulsing twinkling effect
-            const alpha =
-              star.baseAlpha +
-              0.6 * Math.abs(Math.sin(t / star.pulseSpeed + star.tw))
+            // Draw soft, dark cosmic dust lanes (Milky Way style, adds immense depth)
+            ctx.save()
+            const dxLane = (mx !== -9999) ? (mx - width * 0.5) * 0.005 : 0
+            const dyLane = (my !== -9999) ? (my - height * 0.5) * 0.005 : 0
+            
+            const laneGrad = ctx.createRadialGradient(
+              width * 0.5 + dxLane, height * 0.5 + dyLane, 0,
+              width * 0.5 + dxLane, height * 0.5 + dyLane, Math.min(width, height) * 0.42
+            )
+            laneGrad.addColorStop(0, 'rgba(4, 2, 10, 0.42)')
+            laneGrad.addColorStop(0.65, 'rgba(4, 2, 10, 0.18)')
+            laneGrad.addColorStop(1, 'rgba(0, 0, 0, 0)')
+            ctx.fillStyle = laneGrad
             ctx.beginPath()
-            ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2)
-            ctx.fillStyle = star.color
-            ctx.globalAlpha = alpha
+            ctx.arc(width * 0.5 + dxLane, height * 0.5 + dyLane, Math.min(width, height) * 0.42, 0, Math.PI * 2)
             ctx.fill()
+            ctx.restore()
 
-            // Add subtle glow
-            if (alpha > 0.6) {
-              ctx.shadowColor = star.color
-              ctx.shadowBlur = star.r * 1.5
+            // Draw a gorgeous ringed Gas Giant Planet in the background (highly unique, premium element)
+            ctx.save()
+            const pX = 0.82 * width + (mx !== -9999 ? (mx - width * 0.5) * 0.004 : 0)
+            const pY = 0.18 * height + (my !== -9999 ? (my - height * 0.5) * 0.004 : 0)
+            
+            // A. Planet glow
+            const pGlow = ctx.createRadialGradient(pX, pY, 0, pX, pY, 35)
+            pGlow.addColorStop(0, 'rgba(147, 197, 253, 0.12)')
+            pGlow.addColorStop(1, 'rgba(0, 0, 0, 0)')
+            ctx.fillStyle = pGlow
+            ctx.beginPath()
+            ctx.arc(pX, pY, 35, 0, Math.PI * 2)
+            ctx.fill()
+            
+            // B. Draw back ring (tilted ellipse)
+            ctx.save()
+            ctx.translate(pX, pY)
+            ctx.rotate(-0.25)
+            ctx.strokeStyle = 'rgba(203, 213, 225, 0.35)'
+            ctx.lineWidth = 3.0
+            ctx.beginPath()
+            ctx.ellipse(0, 0, 28, 6, 0, Math.PI, 2 * Math.PI)
+            ctx.stroke()
+            ctx.restore()
+            
+            // C. Draw planet body
+            const pGrad = ctx.createRadialGradient(pX - 4, pY - 4, 1, pX, pY, 14)
+            pGrad.addColorStop(0, '#cbd5e1')
+            pGrad.addColorStop(0.6, '#475569')
+            pGrad.addColorStop(1, '#0f172a')
+            ctx.fillStyle = pGrad
+            ctx.beginPath()
+            ctx.arc(pX, pY, 14, 0, Math.PI * 2)
+            ctx.fill()
+            
+            // D. Draw front ring (tilted ellipse)
+            ctx.save()
+            ctx.translate(pX, pY)
+            ctx.rotate(-0.25)
+            ctx.strokeStyle = 'rgba(241, 245, 249, 0.65)'
+            ctx.lineWidth = 3.2
+            ctx.beginPath()
+            ctx.ellipse(0, 0, 28, 6, 0, 0, Math.PI)
+            ctx.stroke()
+            ctx.restore()
+            
+            ctx.restore()
+
+            // Draw a beautiful slow-pulsing supergiant star (Sirius-like, no beams)
+            if (starsPulsar) {
+              starsPulsar.pulsePhase += 0.003 * dt * 60
+              const px = starsPulsar.relX * width + (mx !== -9999 ? (mx - width * 0.5) * 0.005 : 0)
+              const py = starsPulsar.relY * height + (my !== -9999 ? (my - height * 0.5) * 0.005 : 0)
+              const pSize = starsPulsar.size * (1.0 + Math.sin(starsPulsar.pulsePhase) * 0.12)
+              
+              const coreGlow = ctx.createRadialGradient(px, py, 0, px, py, pSize * 6)
+              coreGlow.addColorStop(0, 'rgba(255, 255, 255, 0.95)')
+              coreGlow.addColorStop(0.3, 'rgba(186, 230, 253, 0.55)')
+              coreGlow.addColorStop(0.7, 'rgba(56, 189, 248, 0.12)')
+              coreGlow.addColorStop(1, 'rgba(0, 0, 0, 0)')
+              ctx.fillStyle = coreGlow
+              ctx.beginPath()
+              ctx.arc(px, py, pSize * 6, 0, Math.PI * 2)
               ctx.fill()
-              ctx.shadowBlur = 0
-            }
-          }
-
-          // Draw dust particles
-          for (const d of dust) {
-            d.y += d.vy
-            d.x += d.vx
-
-            // Wrap around
-            if (d.x > width + 10) d.x = -10
-            if (d.x < -10) d.x = width + 10
-            if (d.y > height + 10) {
-              d.y = -10
-              d.x = Math.random() * width
             }
 
-            const alpha =
-              d.baseAlpha *
-              (0.3 + 0.7 * Math.abs(Math.sin(t / d.pulseSpeed + d.tw)))
+            // Draw slowly swirling squashed spiral galaxy
+            ctx.save()
+            const gdx = (mx !== -9999) ? (mx - width * 0.5) * 0.012 : 0
+            const gdy = (my !== -9999) ? (my - height * 0.5) * 0.012 : 0
+            const gcx = 0.68 * width + gdx
+            const gcy = 0.32 * height + gdy
+
+            // Galaxy core glow
+            const corePulse = 1.0 + Math.sin(t * 0.0016) * 0.12
+            const coreRadius = Math.min(width, height) * 0.05 * corePulse
+            const coreGrad = ctx.createRadialGradient(gcx, gcy, 0, gcx, gcy, coreRadius)
+            coreGrad.addColorStop(0, 'rgba(255, 245, 230, 0.45)')
+            coreGrad.addColorStop(0.35, 'rgba(224, 242, 254, 0.20)')
+            coreGrad.addColorStop(0.7, 'rgba(168, 85, 247, 0.06)')
+            coreGrad.addColorStop(1, 'rgba(0, 0, 0, 0)')
+            ctx.fillStyle = coreGrad
             ctx.beginPath()
-            ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2)
-            ctx.fillStyle = d.color
-            ctx.globalAlpha = alpha * 0.5
+            ctx.arc(gcx, gcy, coreRadius, 0, Math.PI * 2)
             ctx.fill()
+
+            // Galaxy stars
+            for (let s of galaxyStars) {
+              s.theta += s.speed
+              const sx_gal = gcx + Math.cos(s.theta) * s.r
+              const sy_gal = gcy + Math.sin(s.theta) * s.r * 0.55 // elliptical/squashed perspective
+              const alpha = s.baseAlpha * (0.8 + 0.2 * Math.sin(t / s.pulseSpeed + s.tw))
+              ctx.beginPath()
+              ctx.arc(sx_gal, sy_gal, s.size, 0, Math.PI * 2)
+              ctx.fillStyle = s.color
+              ctx.globalAlpha = alpha
+              ctx.fill()
+            }
+            ctx.restore()
+
+            windX = Math.sin(t * 0.00007) * 0.035 + 0.022
+            windY = Math.cos(t * 0.00005) * 0.02 + 0.008
+          } else if (currentTheme === 'ocean' || currentTheme === 'sky' || currentTheme === 'moon') {
+            // Transparent — WebGL layer underneath provides all atmosphere
+            ctx.clearRect(0, 0, width, height)
+            windX = Math.sin(t * 0.00007) * 0.025 + 0.015
+            windY = Math.cos(t * 0.00005) * 0.015 + 0.005
+          } else {
+            ctx.clearRect(0, 0, width, height)
           }
 
-          // Draw meteors
-          for (let i = meteors.length - 1; i >= 0; i--) {
-            const meteor = meteors[i]
-            meteor.x += meteor.vx
-            meteor.y += meteor.vy
-            meteor.life -= 0.005
+          if (currentTheme === 'sun') {
+            const params = getSolarParams()
+            const { limbX, limbY, limbRadius } = params
 
-            if (meteor.life <= 0) {
-              meteors.splice(i, 1)
-              // Spawn new meteor less frequently
-              if (Math.random() > 0.92) {
+            for (let p of particles) {
+              if (p.isSolarArc) {
+                p.phase += p.speed
+                const sx = limbX + Math.cos(p.thetaStart) * limbRadius
+                const sy = limbY + Math.sin(p.thetaStart) * limbRadius
+                const ex = limbX + Math.cos(p.thetaEnd) * limbRadius
+                const ey = limbY + Math.sin(p.thetaEnd) * limbRadius
+                const midTheta = (p.thetaStart + p.thetaEnd) / 2
+                const peakL = limbRadius - p.length - Math.sin(p.phase) * 12
+                let px = limbX + Math.cos(midTheta) * peakL
+                let py = limbY + Math.sin(midTheta) * peakL
+
+                let excited = false
+                if (mx !== -9999 && my !== -9999) {
+                  const dx = mx - px
+                  const dy = my - py
+                  const dist = Math.sqrt(dx * dx + dy * dy)
+                  if (dist < 220) {
+                    const pull = (1 - dist / 220) * 0.6
+                    px += dx * pull
+                    py += dy * pull
+                    excited = true
+                  }
+                }
+                const cp1x = sx + (px - sx) * 0.55
+                const cp1y = sy + (py - sy) * 0.55
+                const cp2x = ex + (px - ex) * 0.55
+                const cp2y = ey + (py - ey) * 0.55
+                const alphaMult = excited ? 2.5 : 1.0
+
+                ctx.beginPath()
+                ctx.moveTo(sx, sy)
+                ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, ex, ey)
+                ctx.strokeStyle = `hsla(${p.hue}, 100%, 60%, ${0.13 * alphaMult})`
+                ctx.lineWidth = 8
+                ctx.stroke()
+
+                for (let f = 0; f < 6; f++) {
+                  const cp1x_f = cp1x + Math.sin(p.phase + f) * 2.5
+                  const cp1y_f = cp1y + Math.cos(p.phase + f) * 2.5
+                  const cp2x_f = cp2x + Math.cos(p.phase - f) * 2.5
+                  const cp2y_f = cp2y + Math.sin(p.phase - f) * 2.5
+                  ctx.beginPath()
+                  ctx.moveTo(sx, sy)
+                  ctx.bezierCurveTo(cp1x_f, cp1y_f, cp2x_f, cp2y_f, ex, ey)
+                  ctx.strokeStyle = `hsla(${p.hue + f * 1.5}, 95%, ${60 + f}%, ${0.045 * alphaMult})`
+                  ctx.lineWidth = 1.0
+                  ctx.stroke()
+                }
+
+                for (let bead of p.beads) {
+                  bead.u += bead.speed
+                  if (bead.u > 1) {
+                    bead.u = 0
+                    bead.speed = 0.003 + Math.random() * 0.002
+                  }
+                  const pos = getBezierPoint(bead.u, {x: sx, y: sy}, {x: cp1x, y: cp1y}, {x: cp2x, y: cp2y}, {x: ex, y: ey})
+                  ctx.beginPath()
+                  ctx.arc(pos.x, pos.y, 1.2 + Math.sin(t * 0.01 + bead.u * 10) * 0.4, 0, Math.PI * 2)
+                  ctx.fillStyle = `hsla(${p.hue + 15}, 100%, 92%, ${0.65 * alphaMult})`
+                  ctx.fill()
+                  ctx.beginPath()
+                  ctx.arc(pos.x, pos.y, 3.5, 0, Math.PI * 2)
+                  ctx.fillStyle = `hsla(${p.hue + 10}, 100%, 65%, ${0.2 * alphaMult})`
+                }
+              }
+            }
+          }
+          if (currentTheme === 'moon' || currentTheme === 'stars') {
+             // Draw background constellations
+             ctx.save()
+             const dx = (mx !== -9999) ? (mx - width * 0.5) * 0.008 : 0
+             const dy = (my !== -9999) ? (my - height * 0.5) * 0.008 : 0
+             const isMoon = currentTheme === 'moon'
+             
+             for (let c of constellationSystems) {
+               // Draw connection lines
+               ctx.strokeStyle = isMoon ? 'rgba(203, 213, 225, 0.12)' : 'rgba(103, 232, 249, 0.24)'
+               ctx.lineWidth = isMoon ? 0.75 : 1.0
+               ctx.setLineDash(isMoon ? [2, 3] : [4, 4]) // Flowing dashes for stars theme
+               if (!isMoon) {
+                 ctx.lineDashOffset = -t * 0.035
+               }
+               for (let conn of c.connections) {
+                 const s1 = c.stars[conn[0]]
+                 const s2 = c.stars[conn[1]]
+                 ctx.beginPath()
+                 ctx.moveTo(s1.relX * width + dx, s1.relY * height + dy)
+                 ctx.lineTo(s2.relX * width + dx, s2.relY * height + dy)
+                 ctx.stroke()
+               }
+               ctx.setLineDash([]) // Reset
+
+               // Draw star nodes
+               for (let s of c.stars) {
+                 const sx = s.relX * width + dx
+                 const sy = s.relY * height + dy
+                 const alpha = isMoon ? (0.2 + 0.65 * Math.abs(Math.sin(t / s.pulseSpeed + s.tw))) : (0.45 + 0.25 * Math.sin(t / s.pulseSpeed + s.tw))
+                 
+                 // Glow
+                 ctx.beginPath()
+                 ctx.arc(sx, sy, s.r * 2.5, 0, Math.PI * 2)
+                 ctx.fillStyle = isMoon ? 'rgba(226, 232, 240, 0.22)' : 'rgba(56, 189, 248, 0.32)'
+                 ctx.globalAlpha = alpha * 0.4
+                 ctx.fill()
+
+                 // Core
+                 ctx.beginPath()
+                 ctx.arc(sx, sy, s.r, 0, Math.PI * 2)
+                 ctx.fillStyle = '#ffffff'
+                 ctx.globalAlpha = alpha
+                 ctx.fill()
+               }
+              }
+              ctx.restore()
+
+              // Spawn a satellite periodically (more active for stars theme)
+              const maxSatellites = isMoon ? 1 : 2
+              const spawnProb = isMoon ? 0.003 : 0.008
+              if (satellites.length < maxSatellites && Math.random() < spawnProb) {
+                const direction = Math.random() > 0.5 ? 1 : -1;
+                const startX = direction === 1 ? -60 : width + 60;
+                const startY = height * 0.12 + Math.random() * height * 0.38;
+                const speed = (0.35 + Math.random() * 0.45) * direction;
+                satellites.push({
+                  x: startX,
+                  y: startY,
+                  vx: speed,
+                  vy: (Math.random() - 0.5) * 0.08,
+                  blinkTimer: 0,
+                  blinkRate: 35 + Math.floor(Math.random() * 20),
+                  size: 4 + Math.random() * 3
+                });
+              }
+
+              // Update and draw satellites
+              for (let i = satellites.length - 1; i >= 0; i--) {
+                const sat = satellites[i];
+                sat.x += sat.vx;
+                sat.y += sat.vy;
+                sat.blinkTimer++;
+
+                if (sat.x < -100 || sat.x > width + 100) {
+                  satellites.splice(i, 1);
+                  continue;
+                }
+
+                ctx.save();
+                ctx.translate(sat.x, sat.y);
+                
+                // Solar panels
+                ctx.fillStyle = 'rgba(148, 163, 184, 0.45)';
+                ctx.fillRect(-12, -1.5, 24, 3);
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.6)';
+                ctx.fillRect(-10, -1, 8, 2);
+                ctx.fillRect(2, -1, 8, 2);
+
+                // Central body
+                ctx.fillStyle = '#e2e8f0';
+                ctx.beginPath();
+                ctx.arc(0, 0, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Blinking LED
+                const isBlinkOn = Math.floor(sat.blinkTimer / sat.blinkRate) % 2 === 0;
+                if (isBlinkOn) {
+                  const isRed = Math.floor(sat.blinkTimer / (sat.blinkRate * 2)) % 2 === 0;
+                  ctx.fillStyle = isRed ? 'rgba(239, 68, 68, 0.95)' : 'rgba(59, 130, 246, 0.95)';
+                  ctx.shadowColor = isRed ? '#ef4444' : '#3b82f6';
+                  ctx.shadowBlur = 5;
+                  ctx.beginPath();
+                  ctx.arc(0, -1.8, 1.2, 0, Math.PI * 2);
+                  ctx.fill();
+                  ctx.shadowBlur = 0;
+                }
+                ctx.restore();
+              }
+
+              // Spawn occasional shooting stars
+              const meteorSpawnProb = currentTheme === 'stars' ? 0.008 : 0.004
+              if (Math.random() < meteorSpawnProb) {
                 meteors.push({
-                  x: Math.random() * width * 1.2 - width * 0.1,
-                  y: Math.random() * height * 0.25,
-                  r: 1.5 + Math.random() * 2.5,
-                  vx: 2 + Math.random() * 3,
-                  vy: 0.5 + Math.random() * 1.5,
+                  x: Math.random() * width * 0.8,
+                  y: Math.random() * height * 0.4,
+                  r: 1.0 + Math.random() * 1.5,
+                  vx: 3.0 + Math.random() * 3.5,
+                  vy: 1.2 + Math.random() * 1.8,
                   life: 1,
                   maxLife: 1,
-                  color: '#ffddaa',
-                  trailLength: 60,
+                  color: '#e0e7ff',
+                  trailLength: 45 + Math.floor(Math.random() * 30)
+                })
+              }
+            }
+
+          for (let p of particles) {
+            if (currentTheme === 'stars' || currentTheme === 'moon') {
+              const driftX = windX * (p.z || 1)
+              const driftY = windY * (p.z || 1)
+              p.y += p.vy + driftY
+              p.x += p.vx + driftX
+              if (p.x > width + 30) p.x = -30
+              if (p.x < -30) p.x = width + 30
+              if (p.y > height + 30) { p.y = -30; p.x = Math.random() * width }
+              if (p.y < -30) p.y = height + 30
+              if (p.isSpaceStation) {
+                // Update rotation and blink
+                p.rotation += p.rotSpeed
+                p.blinkPhase = (p.blinkPhase || 0) + 1
+                // Respawn when off-screen
+                if (p.x > width + 250) {
+                  p.x = -250
+                  p.y = height * 0.12 + Math.random() * height * 0.35
+                }
+                ctx.save()
+                ctx.translate(p.x, p.y)
+                ctx.rotate(Math.sin(p.rotation) * 0.03) // very subtle wobble
+                ctx.globalAlpha = 0.75
+
+                const tLen = p.trussLen || 60
+                const pW = p.panelW || 18
+                const pH = p.panelH || 35
+
+                // Main truss (horizontal beam)
+                ctx.strokeStyle = 'rgba(203, 213, 225, 0.65)'
+                ctx.lineWidth = 1.8
+                ctx.beginPath()
+                ctx.moveTo(-tLen, 0)
+                ctx.lineTo(tLen, 0)
+                ctx.stroke()
+
+                // Solar panel arrays (4 panels — 2 on each side of truss)
+                const panelPositions = [-tLen + 5, -tLen * 0.35, tLen * 0.35, tLen - 5]
+                for (let pi = 0; pi < panelPositions.length; pi++) {
+                  const px = panelPositions[pi]
+                  const panelAngle = Math.sin(p.rotation * 0.5 + pi) * 0.04
+                  ctx.save()
+                  ctx.translate(px, 0)
+                  ctx.rotate(panelAngle)
+
+                  // Panel frame
+                  ctx.fillStyle = 'rgba(148, 163, 184, 0.4)'
+                  ctx.fillRect(-pW / 2, -pH / 2, pW, pH)
+
+                  // Solar cells (blue shimmer)
+                  ctx.fillStyle = 'rgba(56, 140, 220, 0.55)'
+                  const cellRows = 4
+                  const cellCols = 2
+                  const cw = (pW - 4) / cellCols
+                  const ch = (pH - 4) / cellRows
+                  for (let cr = 0; cr < cellRows; cr++) {
+                    for (let cc = 0; cc < cellCols; cc++) {
+                      ctx.fillRect(-pW / 2 + 2 + cc * cw, -pH / 2 + 2 + cr * ch, cw - 1, ch - 1)
+                    }
+                  }
+                  ctx.restore()
+                }
+
+                // Habitat modules (central cylinders)
+                ctx.fillStyle = 'rgba(226, 232, 240, 0.65)'
+                ctx.beginPath()
+                ctx.ellipse(-4, 0, 6, 3.5, 0, 0, Math.PI * 2)
+                ctx.fill()
+                ctx.beginPath()
+                ctx.ellipse(6, 0, 5, 3, 0, 0, Math.PI * 2)
+                ctx.fill()
+                ctx.fillStyle = 'rgba(203, 213, 225, 0.5)'
+                ctx.beginPath()
+                ctx.ellipse(-14, 0, 4, 2.5, 0, 0, Math.PI * 2)
+                ctx.fill()
+
+                // Radiator panel (vertical thin fin)
+                ctx.fillStyle = 'rgba(180, 190, 200, 0.35)'
+                ctx.fillRect(-2, -14, 4, 8)
+                ctx.fillRect(-2, 6, 4, 8)
+
+                // Navigation lights (blinking red/green)
+                const blinkOn = Math.floor(p.blinkPhase / 40) % 2 === 0
+                if (blinkOn) {
+                  ctx.fillStyle = 'rgba(239, 68, 68, 0.9)'
+                  ctx.shadowColor = '#ef4444'
+                  ctx.shadowBlur = 4
+                  ctx.beginPath()
+                  ctx.arc(-tLen, 0, 1.4, 0, Math.PI * 2)
+                  ctx.fill()
+                  ctx.fillStyle = 'rgba(34, 197, 94, 0.9)'
+                  ctx.shadowColor = '#22c55e'
+                  ctx.beginPath()
+                  ctx.arc(tLen, 0, 1.4, 0, Math.PI * 2)
+                  ctx.fill()
+                  ctx.shadowBlur = 0
+                }
+
+                // White docking light on center module
+                const dockBlink = Math.floor(p.blinkPhase / 60) % 3 === 0
+                if (dockBlink) {
+                  ctx.fillStyle = 'rgba(255, 255, 255, 0.95)'
+                  ctx.shadowColor = '#ffffff'
+                  ctx.shadowBlur = 6
+                  ctx.beginPath()
+                  ctx.arc(0, -4, 1.0, 0, Math.PI * 2)
+                  ctx.fill()
+                  ctx.shadowBlur = 0
+                }
+
+                ctx.restore()
+                continue // skip normal particle drawing
+              }
+              if (p.isDarkParticle) {
+                ctx.beginPath()
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
+                ctx.fillStyle = p.color
+                ctx.globalAlpha = p.baseAlpha * (0.85 + 0.15 * Math.sin(t * 0.4 + p.tw))
+                ctx.fill()
+              } else if (p.isDust) {
+                const alpha = p.baseAlpha * (0.8 + 0.2 * Math.sin(t / p.pulseSpeed + p.tw))
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fillStyle = p.color; ctx.globalAlpha = alpha * 0.55; ctx.fill()
+              } else {
+                const alpha = p.baseAlpha + 0.12 * Math.sin(t / p.pulseSpeed + p.tw)
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fillStyle = p.color; ctx.globalAlpha = Math.max(0.12, Math.min(1.0, alpha)); ctx.fill()
+                if (alpha > 0.8) { ctx.shadowColor = p.color; ctx.shadowBlur = p.r * 1.2; ctx.fill(); ctx.shadowBlur = 0 }
+              }
+            } else if (currentTheme === 'sun') {
+              if (p.isEmber) {
+                p.x += p.vx
+                p.y += p.vy
+                p.vx += Math.sin(t * 0.002 + p.tw) * 0.004
+                p.vx *= 0.98
+                if (mx !== -9999 && my !== -9999) {
+                  const dx = p.x - mx
+                  const dy = p.y - my
+                  const dist = Math.sqrt(dx * dx + dy * dy)
+                  if (dist < 120) {
+                    const force = (1 - dist / 120) * 0.3
+                    p.vx += (dx / (dist || 1)) * force
+                    p.vy += (dy / (dist || 1)) * force
+                  }
+                }
+                const params = getSolarParams()
+                const distToCenter = Math.sqrt((p.x - params.limbX)**2 + (p.y - params.limbY)**2)
+                const distAboveLimb = params.limbRadius - distToCenter
+                const heightLimit = 450
+                const isTooHigh = (-distAboveLimb) > heightLimit
+                if (p.y < -20 || isTooHigh || p.x < -20 || p.x > width + 20) {
+                  const theta = -Math.PI / 2 - 0.55 + Math.random() * 1.1
+                  const offsetRadius = params.limbRadius - Math.random() * 15
+                  p.x = params.limbX + Math.cos(theta) * offsetRadius
+                  p.y = params.limbY + Math.sin(theta) * offsetRadius
+                  p.vy = -0.6 - Math.random() * 1.5
+                  p.vx = (Math.random() - 0.5) * 0.3
+                }
+                const riseRatio = Math.max(0, Math.min(1, (-distAboveLimb) / heightLimit))
+                const alpha = p.baseAlpha * (1 - riseRatio) * (0.3 + 0.7 * Math.abs(Math.sin(t / p.pulseSpeed + p.tw)))
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fillStyle = p.color; ctx.globalAlpha = Math.max(0, alpha); ctx.fill()
+              }
+            } else if (currentTheme === 'ocean') {
+              if (p.isMarineSnow) {
+                p.x += p.vx + Math.sin(t * p.drift + p.tw) * 0.012
+                p.y += p.vy
+                if (p.y > height + 5) { p.y = -5; p.x = Math.random() * width }
+                if (p.x < -5) p.x = width + 5
+                if (p.x > width + 5) p.x = -5
+                const depthFade = 0.5 + (p.y / height) * 0.5
+                ctx.beginPath()
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
+                ctx.fillStyle = `rgba(195, 215, 225, ${p.baseAlpha * depthFade})`
+                ctx.globalAlpha = 1
+                ctx.fill()
+              } else if (p.isBubble) {
+                p.wobble += p.wobbleSpeed
+                p.x += p.vx + Math.sin(p.wobble) * 0.03
+                p.y += p.vy
+                p.vx *= 0.995
+                if (p.y < height * 0.15 || p.x < -10 || p.x > width + 10) {
+                  p.x = Math.random() * width
+                  p.y = height * 0.5 + Math.random() * height * 0.5
+                  p.vy = -0.05 - Math.random() * 0.14
+                }
+                const depthFade = 0.3 + (p.y / height) * 0.5
+                const alpha = p.baseAlpha * depthFade
+                ctx.beginPath()
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
+                ctx.strokeStyle = `rgba(140, 190, 205, ${alpha * 0.35})`
+                ctx.lineWidth = 0.4
+                ctx.stroke()
+                const bg = ctx.createRadialGradient(p.x - p.r * 0.25, p.y - p.r * 0.25, 0, p.x, p.y, p.r)
+                bg.addColorStop(0, `rgba(200, 230, 240, ${alpha * 0.08})`)
+                bg.addColorStop(1, `rgba(80, 140, 160, ${alpha * 0.02})`)
+                ctx.fillStyle = bg
+                ctx.fill()
+              } else if (p.isBioPinpoint) {
+                p.x += p.vx + Math.sin(t * 0.0004 + p.tw) * 0.008
+                p.y += p.vy + Math.cos(t * 0.0003 + p.tw) * 0.006
+                if (p.x < -5) p.x = width + 5
+                if (p.x > width + 5) p.x = -5
+                const deepOnly = Math.max(0, (p.y / height - 0.45) * 2.5)
+                const alpha = p.baseAlpha * deepOnly * (0.35 + 0.65 * Math.abs(Math.sin(t / p.pulseSpeed + p.tw)))
+                if (alpha > 0.02) {
+                  ctx.globalCompositeOperation = 'lighter'
+                  ctx.beginPath()
+                  ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
+                  ctx.fillStyle = `rgba(20, 120, 140, ${alpha})`
+                  ctx.fill()
+                  ctx.shadowColor = `rgba(15, 90, 110, ${alpha * 0.5})`
+                  ctx.shadowBlur = 4
+                  ctx.fill()
+                  ctx.shadowBlur = 0
+                  ctx.globalCompositeOperation = 'source-over'
+                }
+              }
+            } else if (currentTheme === 'sky') {
+                if (p.isWindStreak) {
+                  p.x += p.speed * dt
+                  if (p.x - p.len > width) {
+                    p.x = -p.len
+                    p.y = Math.random() * height
+                    p.speed = 150 + Math.random() * 320
+                    p.len = 80 + Math.random() * 200
+                  }
+                  ctx.save()
+                  ctx.beginPath()
+                  const startX = p.x - p.len
+                  const startY = p.y
+                  const controlX = p.x - p.len * 0.5
+                  const controlY = p.y + p.controlOffset
+                  const endX = p.x
+                  const endY = p.y
+                  ctx.moveTo(startX, startY)
+                  ctx.quadraticCurveTo(controlX, controlY, endX, endY)
+                  let alpha = p.baseAlpha
+                  if (startX < 80) {
+                    alpha *= (startX / 80)
+                  } else if (endX > width - 80) {
+                    alpha *= ((width - endX) / 80)
+                  }
+                  ctx.strokeStyle = `rgba(255, 255, 255, ${Math.max(0, alpha)})`
+                  ctx.lineWidth = 0.9
+                  ctx.stroke()
+                  ctx.restore()
+                } else if (p.isLeaf) {
+                  p.x += p.vx * dt
+                  p.y += p.vy * dt
+                  p.angle += p.spinSpeed * dt
+                  p.y += Math.sin(t * 1.2 + p.tw) * 0.6
+                  if (p.x > width + 10 || p.y > height + 10) {
+                    p.x = -10
+                    p.y = Math.random() * height * 0.85
+                    p.angle = Math.random() * Math.PI * 2
+                  }
+                  ctx.save()
+                  ctx.translate(p.x, p.y)
+                  ctx.rotate(p.angle)
+                  ctx.beginPath()
+                  ctx.moveTo(-p.r, 0)
+                  ctx.quadraticCurveTo(0, -p.r * 0.45, p.r, 0)
+                  ctx.quadraticCurveTo(0, p.r * 0.45, -p.r, 0)
+                  ctx.closePath()
+                  ctx.fillStyle = p.color
+                  ctx.globalAlpha = p.baseAlpha * (0.75 + 0.25 * Math.sin(t * 0.8 + p.tw))
+                  ctx.fill()
+                  ctx.restore()
+                } else if (p.isBird) {
+                  p.x += p.vx * dt
+                  p.y += p.vy * dt + Math.sin(t * 0.4 + p.tw) * 0.5
+                  p.wingPhase += p.wingSpeed * dt
+                  if (p.x > width + 20) {
+                    p.x = -20
+                    p.y = Math.random() * height * 0.55
+                  }
+                  const wingFlap = Math.sin(p.wingPhase) * p.r * 2.2
+                  ctx.save()
+                  ctx.translate(p.x, p.y)
+                  ctx.globalAlpha = p.baseAlpha
+                  ctx.strokeStyle = 'rgba(20, 40, 80, 0.55)'
+                  ctx.lineWidth = 1.0
+                  ctx.lineCap = 'round'
+                  ctx.beginPath()
+                  ctx.moveTo(-p.r * 2.5, 0)
+                  ctx.quadraticCurveTo(-p.r, wingFlap, 0, 0)
+                  ctx.moveTo(p.r * 2.5, 0)
+                  ctx.quadraticCurveTo(p.r, wingFlap, 0, 0)
+                  ctx.stroke()
+                  ctx.restore()
+                } else if (p.isCloudPuff) {
+                  p.x += p.vx * dt
+                  if (p.x - p.r > width + 50) {
+                    p.x = -p.r - 50
+                    p.y = height * 0.08 + Math.random() * height * 0.55
+                    p.r = 60 + Math.random() * 100
+                    p.baseAlpha = 0.06 + Math.random() * 0.10
+                  }
+                  const cg = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r)
+                  cg.addColorStop(0, `rgba(255, 255, 255, ${p.baseAlpha})`)
+                  cg.addColorStop(0.5, `rgba(230, 240, 255, ${p.baseAlpha * 0.5})`)
+                  cg.addColorStop(1, 'rgba(255,255,255,0)')
+                  ctx.fillStyle = cg
+                  ctx.beginPath()
+                  ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
+                  ctx.fill()
+                  ctx.beginPath()
+                  ctx.arc(p.x - p.r * 0.5, p.y + p.r * 0.12, p.r * 0.65, 0, Math.PI * 2)
+                  ctx.fill()
+                }
+              }
+            }
+            // Reset alpha after any sky particle draws that may set it
+            ctx.globalAlpha = 1
+
+          if (currentTheme === 'stars' || currentTheme === 'moon') {
+            // Periodic random meteor spawning
+            if (currentTheme === 'moon') {
+              if (Math.random() < 0.007) {
+                meteors.push({
+                  x: Math.random() * width * 0.7,
+                  y: -20,
+                  r: 0.8 + Math.random() * 1.5,
+                  vx: 3.5 + Math.random() * 5.0,
+                  vy: 2.0 + Math.random() * 3.5,
+                  life: 1.0,
+                  maxLife: 1.0,
+                  color: '#e2e8f0', // Silver shooting star
+                  trailLength: 45 + Math.floor(Math.random() * 30)
                 })
               }
             } else {
-              const alpha =
-                meteor.life *
-                0.7 *
-                (0.4 + 0.6 * Math.sin(meteor.life * Math.PI))
-              ctx.globalAlpha = alpha
-              ctx.globalCompositeOperation = 'lighter'
+              if (Math.random() < 0.012) {
+                meteors.push({
+                  x: Math.random() * width * 0.7,
+                  y: -20,
+                  r: 1.2 + Math.random() * 1.8,
+                  vx: 4.0 + Math.random() * 5.0,
+                  vy: 2.0 + Math.random() * 3.5,
+                  life: 1.0,
+                  maxLife: 1.0,
+                  color: '#ffddaa',
+                  trailLength: 50 + Math.floor(Math.random() * 30)
+                })
+              }
+            }
 
-              // Draw meteor trail
-              ctx.strokeStyle = meteor.color
-              ctx.lineWidth = meteor.r
-              ctx.lineCap = 'round'
-              ctx.lineJoin = 'round'
-              ctx.beginPath()
-              ctx.moveTo(
-                meteor.x - meteor.vx * meteor.trailLength,
-                meteor.y - meteor.vy * meteor.trailLength,
-              )
-              ctx.lineTo(meteor.x, meteor.y)
-              ctx.stroke()
-
-              // Draw meteor head with glow
-              ctx.shadowColor = '#ffeeaa'
-              ctx.shadowBlur = 20
-              ctx.fillStyle = meteor.color
-              ctx.beginPath()
-              ctx.arc(meteor.x, meteor.y, meteor.r, 0, Math.PI * 2)
-              ctx.fill()
-              ctx.shadowBlur = 0
-
-              ctx.globalCompositeOperation = 'source-over'
+            for (let i = meteors.length - 1; i >= 0; i--) {
+              const meteor = meteors[i]
+              meteor.x += meteor.vx
+              meteor.y += meteor.vy
+              meteor.life -= 0.005
+              if (meteor.life <= 0) {
+                meteors.splice(i, 1)
+              } else {
+                ctx.globalAlpha = meteor.life * 0.7 * (0.4 + 0.6 * Math.sin(meteor.life * Math.PI))
+                ctx.globalCompositeOperation = 'lighter'
+                ctx.strokeStyle = meteor.color; ctx.lineWidth = meteor.r; ctx.lineCap = 'round'; ctx.beginPath()
+                ctx.moveTo(meteor.x - meteor.vx * meteor.trailLength, meteor.y - meteor.vy * meteor.trailLength)
+                ctx.lineTo(meteor.x, meteor.y); ctx.stroke()
+                ctx.shadowColor = currentTheme === 'moon' ? '#cbd5e1' : '#ffeeaa'; ctx.shadowBlur = 20; ctx.fillStyle = meteor.color; ctx.beginPath()
+                ctx.arc(meteor.x, meteor.y, meteor.r, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0
+                ctx.globalCompositeOperation = 'source-over'
+              }
             }
           }
 
-          // Draw depth gradient overlay
-          drawGradientBg()
+          if (currentTheme === 'sun') {
+            for (let i = sparks.length - 1; i >= 0; i--) {
+              const s = sparks[i]
+              s.phase += s.curveSpeed || 0.02
+              s.vx += Math.sin(s.phase) * 0.12
+              s.vy += Math.cos(s.phase) * 0.12
+              s.x += s.vx; s.y += s.vy; s.vx *= 0.96; s.vy *= 0.96; s.life -= s.decay || 0.02
+              if (s.life <= 0) { sparks.splice(i, 1) } else {
+                ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fillStyle = s.color; ctx.globalAlpha = s.life * 0.65; ctx.fill()
+              }
+            }
+          }
 
-          ctx.globalAlpha = 1
-          ctx.globalCompositeOperation = 'source-over'
+          if (currentTheme === 'ocean') {
+            if (oceanLife) {
+              updateOceanLife(oceanLife, width, height, t, dt)
+              drawOceanLife(ctx, oceanLife, t, height, width, 0.75)
+            }
+          }
+
+          if (currentTheme === 'sky') {
+            if (lightningFlash > 0) {
+              lightningFlash -= dt * 6.5
+              ctx.save()
+              ctx.fillStyle = `rgba(255, 253, 240, ${lightningFlash * 0.32})`
+              ctx.fillRect(0, 0, width, height)
+              ctx.restore()
+            }
+            for (let bIdx = lightningBolts.length - 1; bIdx >= 0; bIdx--) {
+              const b = lightningBolts[bIdx]
+              b.alpha -= dt * 4.8
+              if (b.alpha <= 0) {
+                lightningBolts.splice(bIdx, 1)
+                continue
+              }
+              ctx.save()
+              ctx.beginPath()
+              ctx.moveTo(b.path[0].x, b.path[0].y)
+              for (let ptIdx = 1; ptIdx < b.path.length; ptIdx++) {
+                ctx.lineTo(b.path[ptIdx].x, b.path[ptIdx].y)
+              }
+              ctx.strokeStyle = `rgba(255, 255, 255, ${b.alpha})`
+              ctx.lineWidth = b.width
+              ctx.shadowColor = 'rgba(120, 240, 255, 0.9)'
+              ctx.shadowBlur = 12
+              ctx.stroke()
+              ctx.restore()
+            }
+          }
+
+          if (currentTheme === 'stars') drawGradientBg()
+          ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'
         }
 
-        function loop(timestamp) {
-          draw(timestamp)
-          frameId = requestAnimationFrame(loop)
-        }
-
-        resize()
-        cancelAnimationFrame(frameId)
-        loop(0)
+        function loop(timestamp) { draw(timestamp); frameId = requestAnimationFrame(loop) }
+        resize(); loop(0)
         window.addEventListener('resize', resize)
-
         return () => {
           window.removeEventListener('resize', resize)
+          document.removeEventListener('celestial-theme-change', onThemeChange)
+          document.removeEventListener('mousemove', onMouseMove)
+          document.removeEventListener('click', onClick)
           cancelAnimationFrame(frameId)
         }
       }
 
-      let starfieldCleanup = null
-
       function setupStarfield() {
-        if (starfieldCleanup) starfieldCleanup()
+        if (starfieldCleanup) { starfieldCleanup(); starfieldCleanup = null; }
+        if (webglCleanup) { webglCleanup(); webglCleanup = null; }
+
+        currentTheme = localStorage.getItem('celestial-theme') || 'stars'
+        const webglCanvas = document.getElementById('starfield-webgl')
+
+        if (currentTheme === 'sun') {
+          webglCleanup = startWebGLSun()
+          if (webglCanvas) {
+            webglCanvas.classList.remove('opacity-0')
+            webglCanvas.classList.add('opacity-100')
+          }
+        } else if (currentTheme === 'ocean') {
+          webglCleanup = startWebGLOcean()
+          if (webglCanvas) {
+            webglCanvas.classList.remove('opacity-0')
+            webglCanvas.classList.add('opacity-100')
+          }
+          const starfield2d = document.getElementById('starfield')
+          if (starfield2d) {
+            starfield2d.style.opacity = '1'
+            starfield2d.style.display = 'block'
+          }
+        } else if (currentTheme === 'sky') {
+          webglCleanup = startWebGLSky()
+          if (webglCanvas) {
+            webglCanvas.classList.remove('opacity-0')
+            webglCanvas.classList.add('opacity-100')
+          }
+          const starfield2d = document.getElementById('starfield')
+          if (starfield2d) {
+            starfield2d.style.opacity = '1'
+            starfield2d.style.display = 'block'
+          }
+        } else if (currentTheme === 'moon') {
+          webglCleanup = startWebGLMoon()
+          if (webglCanvas) {
+            webglCanvas.classList.remove('opacity-0')
+            webglCanvas.classList.add('opacity-100')
+          }
+          const starfield2d = document.getElementById('starfield')
+          if (starfield2d) {
+            starfield2d.style.opacity = '1'
+            starfield2d.style.display = 'block'
+          }
+        } else {
+          const starfield2d = document.getElementById('starfield')
+          if (starfield2d) {
+            starfield2d.style.opacity = '1'
+            starfield2d.style.display = 'block'
+          }
+          if (webglCanvas) {
+            webglCanvas.classList.add('opacity-0')
+            webglCanvas.classList.remove('opacity-100')
+          }
+        }
+
         starfieldCleanup = startStarfield()
       }
 
       document.addEventListener('astro:page-load', setupStarfield)
+      setupStarfield()
+
+      document.addEventListener('astro:after-swap', () => {
+        const storedTheme = localStorage.getItem('celestial-theme') || 'stars'
+        const palettes = {
+          stars: {
+            p: 'oklch(0.82 0 0)',
+            c1: 'oklch(0.35 0.18 280)',
+            c2: 'oklch(0.28 0.15 200)',
+            c3: 'oklch(0.2 0.1 270)',
+            c4: 'oklch(0.22 0.12 300)',
+            c5: 'oklch(0.20 0.1 210)',
+            ds1: 'oklch(0.06 0.01 260)',
+            ds2: 'oklch(0.03 0 0)'
+          },
+          sun: {
+            p: 'oklch(0.85 0.08 75)',
+            c1: 'oklch(0.12 0.02 30)',
+            c2: 'oklch(0.10 0.015 50)',
+            c3: 'oklch(0.08 0.01 25)',
+            c4: 'oklch(0.11 0.02 35)',
+            c5: 'oklch(0.07 0.01 15)',
+            ds1: 'oklch(0.05 0.015 35)',
+            ds2: 'oklch(0.02 0.005 20)'
+          },
+          ocean: {
+            p: 'oklch(0.82 0.08 185)',
+            c1: 'oklch(0.24 0.10 195)',
+            c2: 'oklch(0.18 0.08 175)',
+            c3: 'oklch(0.15 0.06 210)',
+            c4: 'oklch(0.22 0.09 190)',
+            c5: 'oklch(0.14 0.05 230)',
+            ds1: 'oklch(0.05 0.02 200)',
+            ds2: 'oklch(0.02 0.01 220)'
+          },
+          sky: {
+            p: 'oklch(0.82 0.18 345)',
+            c1: 'oklch(0.24 0.09 340)',
+            c2: 'oklch(0.20 0.07 300)',
+            c3: 'oklch(0.18 0.06 320)',
+            c4: 'oklch(0.25 0.08 355)',
+            c5: 'oklch(0.16 0.05 270)',
+            ds1: 'oklch(0.05 0.02 280)',
+            ds2: 'oklch(0.02 0.01 300)'
+          },
+          moon: {
+            p: 'oklch(0.82 0 0)',
+            c1: 'oklch(0.08 0.01 240)',
+            c2: 'oklch(0.06 0.008 240)',
+            c3: 'oklch(0.04 0.005 240)',
+            c4: 'oklch(0.07 0.009 240)',
+            c5: 'oklch(0.05 0.006 240)',
+            ds1: 'oklch(0.03 0.005 240)',
+            ds2: 'oklch(0.01 0.002 240)'
+          }
+        }
+        const active = palettes[storedTheme] || palettes.stars
+        const root = document.documentElement
+        root.setAttribute('data-celestial-theme', storedTheme)
+        root.style.setProperty('--primary', active.p)
+        root.style.setProperty('--nebula-color-1', active.c1)
+        root.style.setProperty('--nebula-color-2', active.c2)
+        root.style.setProperty('--nebula-color-3', active.c3)
+        root.style.setProperty('--nebula-color-4', active.c4)
+        root.style.setProperty('--nebula-color-5', active.c5)
+        root.style.setProperty('--deep-space-1', active.ds1)
+        root.style.setProperty('--deep-space-2', active.ds2)
+      })
     </script>
   </body>
 </html>

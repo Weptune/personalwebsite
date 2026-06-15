@@ -27,11 +27,6 @@ import Favicons from './Favicons.astro'
     content="#121212"
     media="(prefers-color-scheme: dark)"
   />
-  <meta
-    name="theme-color"
-    content="#121212"
-    media="(prefers-color-scheme: light)"
-  />
 
   <link rel="sitemap" href="/sitemap-index.xml" />
   <link rel="manifest" href="/site.webmanifest" />
@@ -44,6 +39,71 @@ import Favicons from './Favicons.astro'
 
   <Favicons />
   <ClientRouter />
+
+  <script is:inline>
+    ;(() => {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      localStorage.setItem('theme', 'dark');
+      
+      let theme = localStorage.getItem('celestial-theme');
+      if (!theme) {
+        theme = 'stars';
+        localStorage.setItem('celestial-theme', 'stars');
+      }
+      const palettes = {
+        stars: {
+          primary: 'oklch(0.82 0 0)',
+          color1: 'oklch(0.35 0.18 280)',
+          color2: 'oklch(0.28 0.15 200)',
+          color3: 'oklch(0.2 0.1 270)',
+          color4: 'oklch(0.22 0.12 300)',
+          color5: 'oklch(0.20 0.1 210)'
+        },
+        sun: {
+          primary: 'oklch(0.85 0.08 75)',
+          color1: 'oklch(0.12 0.02 30)',
+          color2: 'oklch(0.10 0.015 50)',
+          color3: 'oklch(0.08 0.01 25)',
+          color4: 'oklch(0.11 0.02 35)',
+          color5: 'oklch(0.07 0.01 15)'
+        },
+        ocean: {
+          primary: 'oklch(0.82 0.08 185)',
+          color1: 'oklch(0.24 0.10 195)',
+          color2: 'oklch(0.18 0.08 175)',
+          color3: 'oklch(0.15 0.06 210)',
+          color4: 'oklch(0.22 0.09 190)',
+          color5: 'oklch(0.14 0.05 230)'
+        },
+        sky: {
+          primary: 'oklch(0.82 0.18 345)',
+          color1: 'oklch(0.24 0.09 340)',
+          color2: 'oklch(0.20 0.07 300)',
+          color3: 'oklch(0.18 0.06 320)',
+          color4: 'oklch(0.25 0.08 355)',
+          color5: 'oklch(0.16 0.05 270)'
+        },
+        moon: {
+          primary: 'oklch(0.82 0 0)',
+          color1: 'oklch(0.08 0.01 240)',
+          color2: 'oklch(0.06 0.008 240)',
+          color3: 'oklch(0.04 0.005 240)',
+          color4: 'oklch(0.07 0.009 240)',
+          color5: 'oklch(0.05 0.006 240)'
+        }
+      };
+      
+      const active = palettes[theme] || palettes.stars;
+      const root = document.documentElement;
+      root.setAttribute('data-celestial-theme', theme);
+      root.style.setProperty('--primary', active.primary);
+      root.style.setProperty('--nebula-color-1', active.color1);
+      root.style.setProperty('--nebula-color-2', active.color2);
+      root.style.setProperty('--nebula-color-3', active.color3);
+      root.style.setProperty('--nebula-color-4', active.color4);
+      root.style.setProperty('--nebula-color-5', active.color5);
+    })()
+  </script>
 
   <slot />
 </head>

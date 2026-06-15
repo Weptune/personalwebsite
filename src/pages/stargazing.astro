@@ -1,25 +1,36 @@
 ---
+import '@/styles/global.css'
+import Head from '@/components/Head.astro'
 import SpacePlayground from '@/components/SpacePlayground'
 ---
 
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>In the mood for stargazing?</title>
+<html lang="en" data-theme="dark">
+  <Head>
+    <title>stargazing</title>
+    <script is:inline>
+      try {
+        const params = new URLSearchParams(window.location.search)
+        const urlTheme = params.get('theme')
+        const valid = ['stars', 'sun', 'ocean', 'sky', 'moon']
+        const t = valid.includes(urlTheme) ? urlTheme : (localStorage.getItem('celestial-theme') || 'stars')
+        document.documentElement.setAttribute('data-celestial-theme', t)
+        localStorage.setItem('celestial-theme', t)
+      } catch {}
+    </script>
     <style>
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
       }
+      html,
       body {
         overflow: hidden;
-        background: #000;
+        background: #010810;
       }
     </style>
-  </head>
+  </Head>
   <body>
     <SpacePlayground client:only="react" />
   </body>
