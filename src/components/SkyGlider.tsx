@@ -101,6 +101,7 @@ export default function SkyGlider() {
   const [hud, setHud] = useState<HudData>({ altitude: 1400, airspeed: 38, bearing: 90, score: 0, distance: 0, windGust: 0, condition: 'CLEAR' })
   const [audioOn, setAudioOn] = useState(false)
   const [redirectCountdown, setRedirectCountdown] = useState(6)
+  const [telemetryOpen, setTelemetryOpen] = useState(false)
 
   useEffect(() => {
     if (gameState === 'victory') {
@@ -1062,18 +1063,27 @@ export default function SkyGlider() {
 
       {/* ── Right HUD Panels ── */}
       {gameState === 'playing' && (
-        <div className="pointer-events-none absolute right-6 top-[5.25rem] z-30 space-y-1 font-mono text-xs">
-          {/* Top Panel: Score */}
-          <div className="min-w-[190px] border border-pink-700/50 bg-black/85 px-4 py-3 shadow-lg shadow-black/50 backdrop-blur-sm">
+        <div className="pointer-events-none absolute right-6 top-[5.25rem] z-30 space-y-1 font-mono text-xs scale-80 origin-top-right md:scale-100 max-w-[200px]">
+          {/* Top Panel: Score (acts as toggle button on mobile) */}
+          <button
+            onClick={() => setTelemetryOpen(!telemetryOpen)}
+            className="pointer-events-auto w-full text-left border border-pink-700/50 bg-black/85 px-4 py-3 shadow-lg shadow-black/50 backdrop-blur-sm relative focus:outline-none"
+          >
+            {/* Toggle indicator arrow only on mobile */}
+            <span className="absolute right-3 top-3 text-[9px] text-pink-400 font-bold md:hidden">
+              {telemetryOpen ? '▼' : '▲'}
+            </span>
             <p className="text-2xl font-bold tabular-nums text-white drop-shadow-md">
               {hud.score}
             </p>
             <p className="mt-1 text-[10px] uppercase tracking-widest text-pink-200">Lanterns Gathered</p>
             <p className="mt-0.5 text-[10px] text-pink-400/80">Endless Flight Mode</p>
-          </div>
+          </button>
 
           {/* Bottom Panel: Progress & Telemetry */}
-          <div className="space-y-1.5 border border-pink-900/50 bg-black/80 px-3 py-2.5 text-[10px] text-pink-300/90 shadow-lg shadow-black/40">
+          <div className={`space-y-1.5 border border-pink-900/50 bg-black/80 px-3 py-2.5 text-[10px] text-pink-300/90 shadow-lg shadow-black/40 transition-all duration-200
+            ${telemetryOpen ? 'block' : 'hidden md:block'}`}
+          >
             <div>
               <div className="flex justify-between mb-0.5">
                 <span>▸ Progress</span>
