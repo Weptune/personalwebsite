@@ -325,6 +325,7 @@ export default function OceanDescent() {
   const [zoneFlash, setZoneFlash] = useState('')
   const [redirectCountdown, setRedirectCountdown] = useState(6)
   const [objectivesOpen, setObjectivesOpen] = useState(false)
+  const [telemetryOpen, setTelemetryOpen] = useState(false)
 
   useEffect(() => {
     if (gameState === 'victory') {
@@ -2021,17 +2022,28 @@ export default function OceanDescent() {
 
       {/* HUD status - Right */}
       {gameState === 'playing' && (
-        <div className="pointer-events-none absolute right-6 top-[5.25rem] z-30 space-y-1 font-mono text-xs scale-80 origin-top-right md:scale-100">
-          <div className="min-w-[190px] border border-teal-700/50 bg-black/85 px-4 py-3 shadow-lg shadow-black/50 backdrop-blur-sm">
+        <div className="pointer-events-none absolute right-6 top-[5.25rem] z-30 space-y-1 font-mono text-xs scale-80 origin-top-right md:scale-100 max-w-[200px]">
+          {/* Main card (acts as toggle button on mobile) */}
+          <button
+            onClick={() => setTelemetryOpen(!telemetryOpen)}
+            className="pointer-events-auto w-full text-left border border-teal-700/50 bg-black/85 px-4 py-3 shadow-lg shadow-black/50 backdrop-blur-sm relative focus:outline-none"
+          >
+            {/* Toggle indicator arrow only on mobile */}
+            <span className="absolute right-3 top-3 text-[9px] text-teal-400 font-bold md:hidden">
+              {telemetryOpen ? '▼' : '▲'}
+            </span>
             <p className="text-2xl font-bold tabular-nums text-white drop-shadow-md">
               {Math.floor(hud.depth)}
               <span className="text-sm font-normal text-teal-300/90"> m</span>
             </p>
             <p className="mt-1 text-[10px] uppercase tracking-widest text-teal-200">{hud.zone.short}</p>
             <p className="mt-0.5 text-[10px] text-teal-400/80">{hud.zone.name}</p>
-          </div>
+          </button>
 
-          <div className="space-y-1.5 border border-teal-900/50 bg-black/80 px-3 py-2.5 text-[10px] text-teal-300/90 shadow-lg shadow-black/40">
+          {/* Collapsible details box */}
+          <div className={`space-y-1.5 border border-teal-900/50 bg-black/80 px-3 py-2.5 text-[10px] text-teal-300/90 shadow-lg shadow-black/40 transition-all duration-200
+            ${telemetryOpen ? 'block' : 'hidden md:block'}`}
+          >
             <div>
               <div className="flex justify-between mb-0.5">
                 <span>▸ Hull Integrity</span>
