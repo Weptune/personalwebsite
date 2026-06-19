@@ -31,7 +31,7 @@ function readTheme(): CelestialTheme {
   const fromStorage = localStorage.getItem('celestial-theme')
   if (isCelestialTheme(fromStorage)) return fromStorage
 
-  return 'stars'
+  return 'moon'
 }
 
 function persistTheme(theme: CelestialTheme) {

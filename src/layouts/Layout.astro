@@ -2557,7 +2557,7 @@ const { class: className } = Astro.props
         if (starfieldCleanup) { starfieldCleanup(); starfieldCleanup = null; }
         if (webglCleanup) { webglCleanup(); webglCleanup = null; }
 
-        currentTheme = localStorage.getItem('celestial-theme') || 'stars'
+        currentTheme = localStorage.getItem('celestial-theme') || 'moon'
         const webglCanvas = document.getElementById('starfield-webgl')
 
         if (currentTheme === 'sun') {
@@ -2618,7 +2618,7 @@ const { class: className } = Astro.props
       setupStarfield()
 
       document.addEventListener('astro:after-swap', () => {
-        const storedTheme = localStorage.getItem('celestial-theme') || 'stars'
+        const storedTheme = localStorage.getItem('celestial-theme') || 'moon'
         const palettes = {
           stars: {
             p: 'oklch(0.82 0 0)',

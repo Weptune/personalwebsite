@@ -1284,5 +1284,29 @@ body {
   color: #ffffff !important;
 }
 
+/* Spotify Visualizer Equalizer Animation */
+@keyframes spotify-equalizer {
+  0%, 100% {
+    height: 4px;
+  }
+  50% {
+    height: 18px;
+  }
+}
+
+.spotify-bar-1 {
+  animation: spotify-equalizer 0.8s ease-in-out infinite;
+}
+.spotify-bar-2 {
+  animation: spotify-equalizer 0.8s ease-in-out infinite 0.15s;
+}
+.spotify-bar-3 {
+  animation: spotify-equalizer 0.8s ease-in-out infinite 0.3s;
+}
+.spotify-bar-4 {
+  animation: spotify-equalizer 0.8s ease-in-out infinite 0.45s;
+}
+
+
 
 

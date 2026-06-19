@@ -1,5 +1,5 @@
 ---
-const OPTIONS = ['The Stars', 'The Sun', 'The Ocean', 'The Sky', 'The Moon'] as const
+const OPTIONS = ['The Moon', 'The Sun', 'The Ocean', 'The Sky', 'The Stars'] as const
 ---
 
 <section class="gothic-panel fade-in-up-soft" aria-label="Poll">
@@ -43,7 +43,7 @@ const OPTIONS = ['The Stars', 'The Sun', 'The Ocean', 'The Sky', 'The Moon'] as 
 </section>
 
 <script>
-  const OPTIONS = ['The Stars', 'The Sun', 'The Ocean', 'The Sky', 'The Moon']
+  const OPTIONS = ['The Moon', 'The Sun', 'The Ocean', 'The Sky', 'The Stars']
   const POLL_KEY = 'poll-choice'
   const POLL_HAS_VOTED_KEY = 'poll-has-voted'
   const POLL_ROW_ID_KEY = 'poll-row-id'
@@ -147,7 +147,7 @@ const OPTIONS = ['The Stars', 'The Sun', 'The Ocean', 'The Sky', 'The Moon'] as 
 
     // Set initial checked radio based on active theme
     try {
-      const storedTheme = localStorage.getItem('celestial-theme') || 'stars'
+      const storedTheme = localStorage.getItem('celestial-theme') || 'moon'
       const revMap: Record<string, string> = {
         stars: 'The Stars',
         sun: 'The Sun',
@@ -432,13 +432,16 @@ const OPTIONS = ['The Stars', 'The Sun', 'The Ocean', 'The Sky', 'The Moon'] as 
       }
     }
 
-    // Bind change listener to dynamically cast vote on radio click
-    f.onchange = () => {
-      const choice = getSelected()
-      if (choice && !hasVoted()) {
-        castVote(choice)
-      }
-    }
+    // Bind click listener to each radio input to dynamically cast vote on click (even if already checked)
+    const inputs = f.querySelectorAll('input[type="radio"]')
+    inputs.forEach((input: any) => {
+      input.addEventListener('click', () => {
+        const choice = input.value
+        if (choice && !hasVoted()) {
+          castVote(choice)
+        }
+      })
+    })
 
     viewBtn.onclick = async () => {
       const rows = await fetchResults()

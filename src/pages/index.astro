@@ -3,6 +3,7 @@ import BlogCard from '@/components/BlogCard.astro'
 import Link from '@/components/Link.astro'
 import PageHead from '@/components/PageHead.astro'
 import Poll from '@/components/Poll.astro'
+import SpotifyWidget from '@/components/SpotifyWidget'
 import { buttonVariants } from '@/components/ui/button'
 import { SITE } from '@/consts'
 import Layout from '@/layouts/Layout.astro'
@@ -90,7 +91,7 @@ const recentThoughts = await getRecentPosts(SITE.featuredPostCount)
     function syncStargazingLink() {
       const link = document.getElementById('stargazing-link')
       if (!link) return
-      const theme = localStorage.getItem('celestial-theme') || 'stars'
+      const theme = localStorage.getItem('celestial-theme') || 'moon'
       link.href = `/stargazing?theme=${theme}`
     }
     syncStargazingLink()
@@ -120,5 +121,10 @@ const recentThoughts = await getRecentPosts(SITE.featuredPostCount)
         >
       </Link>
     </div>
+  </section>
+
+  <!-- Spotify Currently Playing Status -->
+  <section class="fade-in-up-soft">
+    <SpotifyWidget client:load />
   </section>
 </Layout>
