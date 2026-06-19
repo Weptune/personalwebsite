@@ -1262,162 +1262,132 @@ const { class: className } = Astro.props
             return (intensity + core) * 0.45;
           }
 
+          float starFlare(vec2 p, float angle) {
+            float d = length(p);
+            float core = exp(-d * 8.0) * 0.8;
+            float cosA = cos(angle);
+            float sinA = sin(angle);
+            vec2 rP = vec2(p.x * cosA - p.y * sinA, p.x * sinA + p.y * cosA);
+            float spikeX = exp(-abs(rP.y) * 45.0) * exp(-abs(rP.x) * 4.0) * 0.35;
+            float spikeY = exp(-abs(rP.x) * 45.0) * exp(-abs(rP.y) * 4.0) * 0.35;
+            
+            vec2 rP2 = vec2(p.x - p.y, p.x + p.y) * 0.707;
+            float spikeDiagX = exp(-abs(rP2.y) * 120.0) * exp(-abs(rP2.x) * 8.0) * 0.12;
+            float spikeDiagY = exp(-abs(rP2.x) * 120.0) * exp(-abs(rP2.y) * 8.0) * 0.12;
+            
+            return core + spikeX + spikeY + spikeDiagX + spikeDiagY;
+          }
+
           void main() {
             vec2 uv = gl_FragCoord.xy;
             vec2 uvNorm = uv / u_resolution;
             float t = u_time * 0.0015;
 
-            // 1. Mouse coordinate normalization and lensing
+            // 1. Subtle mouse gravitational lensing warp
             vec2 warpUv = uvNorm;
             if (u_mouse.x > -9000.0) {
               vec2 mouseNorm = u_mouse / u_resolution;
               float mouseDist = distance(uvNorm, mouseNorm);
-              float mouseLensRadius = 0.055;
-              if (mouseDist > mouseLensRadius) {
-                float strength = (mouseLensRadius * mouseLensRadius) / (mouseDist - mouseLensRadius * 0.45);
-                warpUv = mouseNorm + normalize(uvNorm - mouseNorm) * (mouseDist + strength * 0.95);
+              float lensRadius = 0.38;
+              if (mouseDist < lensRadius) {
+                float force = pow(1.0 - mouseDist / lensRadius, 2.0) * 0.022;
+                warpUv -= normalize(uvNorm - mouseNorm) * force;
               }
             }
 
-            // 2. Gravitational Singularity (Black Hole) Center
-            vec2 bhCenter = vec2(0.28, 0.65);
-            if (u_resolution.x < 640.0) {
-              bhCenter = vec2(0.5, 0.65);
-            }
-            
-            vec2 toBh = warpUv - bhCenter;
-            float distToBh = length(toBh);
-            vec2 dirToBh = normalize(toBh);
-
-            // Singular gravitational lensing of deep space behind the black hole
-            float bhRadius = 0.058;
-            vec2 finalUv = warpUv;
-            if (distToBh > bhRadius) {
-              // Einstein Ring refraction
-              float lensEffect = (bhRadius * bhRadius) / (distToBh - bhRadius * 0.52);
-              finalUv = bhCenter + dirToBh * (distToBh + lensEffect * 0.9);
-            }
-
-            // 3. Render Background Gas (Lensed)
+            // 2. High-detail photorealistic nebula gas layers
             vec2 q, r;
-            float f = pattern(finalUv * 2.8, q, r, t);
+            float f = pattern(warpUv * 2.8, q, r, t);
 
-            // Rich cosmic color palette: Indigo, Dark Purple, Deep Magenta, and Cosmic Gold Highlights
-            vec3 colorIndigo = vec3(0.001, 0.001, 0.005);
-            vec3 colorPurple = vec3(0.03, 0.01, 0.08);
-            vec3 colorMagenta = vec3(0.09, 0.008, 0.045);
-            vec3 colorGold = vec3(0.14, 0.09, 0.025);
+            // True astronomical deep space colors: Hydrogen-Alpha Red, Oxygen Cyan, Cosmic Dust Brown
+            vec3 spaceBlack = vec3(0.002, 0.001, 0.004);
+            vec3 hydrogenRed = vec3(0.045, 0.012, 0.025);
+            vec3 oxygenCyan = vec3(0.010, 0.038, 0.048);
+            vec3 cosmicDust = vec3(0.022, 0.016, 0.010);
 
-            vec3 gasColor = mix(colorIndigo, colorPurple, f);
-            gasColor = mix(gasColor, colorMagenta, dot(q, q) * 0.32);
-            gasColor = mix(gasColor, colorGold, r.y * 0.25);
-            gasColor += colorGold * pow(f, 4.0) * 0.45;
+            vec3 gasColor = mix(spaceBlack, hydrogenRed, f * 0.65);
+            gasColor = mix(gasColor, oxygenCyan, dot(q, q) * 0.45);
+            
+            // Faint dark cosmic dust lanes blocking the background light
+            float dustPattern = fbm(warpUv * 6.0 + q * 2.0);
+            gasColor = mix(gasColor, cosmicDust * 0.12, smoothstep(0.55, 0.85, dustPattern) * 0.75);
+
+            // Add soft diagonal Milky Way band
+            float band = abs(warpUv.x - warpUv.y + 0.2) / 1.414;
+            float bandGlow = exp(-band * 6.5);
+            float bandWarp = fbm(warpUv * 3.5 + t * 0.01) * 0.5 + 0.5;
+            gasColor += vec3(0.045, 0.03, 0.06) * bandGlow * bandWarp;
 
             vec3 bg = gasColor;
 
-            // 4. Render Background Stars (Lensed)
-            vec2 lensedPixelUv = finalUv * u_resolution;
+            // 3. Ultra-Dense Multi-Layered Starfields
+            vec2 pixelUv = warpUv * u_resolution;
             
-            // Dense persistent dim starfield
-            vec2 dimGrid = floor(lensedPixelUv * 0.35);
+            // Layer A: Distant dim background stars (very dense, tiny)
+            vec2 dimGrid = floor(pixelUv * 0.38);
             float dimNoise = hash(dimGrid);
-            if (dimNoise > 0.935) {
-              vec2 dimCenter = (dimGrid + vec2(0.5)) / 0.35;
-              float dimDist = distance(lensedPixelUv, dimCenter);
-              float dimGlow = exp(-dimDist * 1.8);
+            if (dimNoise > 0.82) {
+              vec2 dimCenter = (dimGrid + vec2(0.5)) / 0.38;
+              float dimDist = distance(pixelUv, dimCenter);
+              float dimGlow = exp(-dimDist * 2.5);
               float dimSize = hash(dimGrid + 9.0);
-              bg += vec3(0.60, 0.66, 0.88) * dimGlow * (0.16 + dimSize * 0.16);
+              bg += vec3(0.55, 0.62, 0.78) * dimGlow * (0.08 + dimSize * 0.08);
+            }
+            
+            // Layer B: Medium twinkling stars
+            vec2 medGrid = floor(pixelUv * 0.22);
+            float medNoise = hash(medGrid);
+            if (medNoise > 0.965) {
+              vec2 medCenter = (medGrid + vec2(0.5)) / 0.22;
+              float medDist = distance(pixelUv, medCenter);
+              float medGlow = exp(-medDist * 1.5);
+              float medSize = hash(medGrid + 4.0);
+              float twinkle = sin(t * 1.8 + medNoise * 20.0) * 0.35 + 0.65;
+              vec3 medColor = mix(vec3(0.7, 0.8, 1.0), vec3(1.0, 0.85, 0.6), hash(medGrid + 12.0));
+              bg += medColor * medGlow * twinkle * (0.2 + medSize * 0.25);
+            }
+            
+            // Layer C: Bright stars (with soft glare)
+            vec2 brightGrid = floor(pixelUv * 0.08);
+            float brightNoise = hash(brightGrid);
+            if (brightNoise > 0.99) {
+              vec2 brightCenter = (brightGrid + vec2(0.5)) / 0.08;
+              float brightDist = distance(pixelUv, brightCenter);
+              float brightGlow = exp(-brightDist * 0.8);
+              float twinkle = sin(t * 2.5 + brightNoise * 40.0) * 0.4 + 0.6;
+              float size = hash(brightGrid + 2.0);
+              vec3 brightColor = mix(vec3(0.8, 0.9, 1.0), vec3(1.0, 0.9, 0.75), hash(brightGrid + 7.0));
+              bg += brightColor * brightGlow * twinkle * (0.5 + size * 0.5);
             }
 
-            // Bright twinkling stars - blue and gold
-            vec2 starGrid = floor(lensedPixelUv * 0.18);
-            float starNoise = hash(starGrid);
-            if (starNoise > 0.985) {
-              vec2 starCenter = (starGrid + vec2(0.5)) / 0.18;
-              float distToStar = distance(lensedPixelUv, starCenter);
-              float starGlow = exp(-distToStar * 0.85);
-              float twinkle = sin(t * 1.4 + starNoise * 15.0) * 0.35 + 0.65;
-              float colorVar = hash(starGrid + 5.0);
-              vec3 starCol = mix(vec3(0.68, 0.84, 1.0), vec3(1.0, 0.80, 0.50), colorVar);
-              bg += starCol * starGlow * twinkle * 1.25;
-            }
-
-            // 5. Squashed Spiral Galaxy at (0.68, 0.32) (Lensed)
-            vec2 galaxyOffset = finalUv - vec2(0.68, 0.32);
+            // 4. Distant Spiral Galaxy at (0.68, 0.32)
+            vec2 galaxyOffset = warpUv - vec2(0.68, 0.32);
             galaxyOffset.y *= 1.8;
-            float cosAngle = cos(0.25 - t * 0.08);
-            float sinAngle = sin(0.25 - t * 0.08);
+            float cosAngle = cos(0.25 - t * 0.04);
+            float sinAngle = sin(0.25 - t * 0.04);
             vec2 rotatedGalaxy = vec2(
               galaxyOffset.x * cosAngle - galaxyOffset.y * sinAngle,
               galaxyOffset.x * sinAngle + galaxyOffset.y * cosAngle
             );
-            float galIntensity = spiralGalaxy(rotatedGalaxy * 3.5, t * 0.5);
-            vec3 galCol = mix(vec3(0.58, 0.30, 0.88), vec3(0.95, 0.68, 0.42), 0.5);
-            bg += galCol * galIntensity * 1.7;
+            float galIntensity = spiralGalaxy(rotatedGalaxy * 4.0, t * 0.4);
+            vec3 galCol = mix(vec3(0.5, 0.35, 0.8), vec3(0.9, 0.75, 0.5), 0.5);
+            bg += galCol * galIntensity * 1.4;
 
-            // 6. Black Hole Accretion Disk (Lensed wrapping around Event Horizon)
-            vec2 pLens = finalUv - bhCenter;
-            float rDisk = length(vec2(pLens.x, pLens.y * 3.6));
-            float diskMask = smoothstep(bhRadius * 1.15, bhRadius * 1.7, rDisk) 
-                           * (1.0 - smoothstep(bhRadius * 2.0, bhRadius * 5.8, rDisk));
-            
-            float angle = atan(pLens.y * 3.6, pLens.x);
-            float swirl = angle - rDisk * 26.0 + t * 4.5;
-            float diskNoise = noise(vec2(rDisk * 38.0, swirl));
-            float diskGas = smoothstep(0.18, 0.75, diskNoise) * 0.65 + 0.35;
-            
-            float doppler = 1.0 - 0.58 * (pLens.x / (distToBh + 0.001));
-            float diskIntensity = diskMask * diskGas * doppler;
-            
-            vec3 diskColor = vec3(0.0);
-            if (diskIntensity > 0.0) {
-              vec3 colRed = vec3(0.85, 0.12, 0.04);
-              vec3 colGold = vec3(1.0, 0.72, 0.12);
-              vec3 colWhite = vec3(1.0, 0.96, 0.88);
-              
-              float temp = (rDisk - bhRadius * 1.15) / (bhRadius * 4.65);
-              diskColor = mix(colWhite, colGold, smoothstep(0.0, 0.22, temp));
-              diskColor = mix(diskColor, colRed, smoothstep(0.18, 0.68, temp));
-              diskColor = mix(diskColor, vec3(0.15, 0.0, 0.03), smoothstep(0.6, 1.0, temp));
-              diskColor *= diskIntensity * 2.5;
-            }
-
-            // 7. Relativistic Plasma Jets (Collimated cyan beams from polar axes)
-            float distAlongJet = pLens.y;
-            float distFromJet = abs(pLens.x);
-            float jetWidth = 0.012 + abs(distAlongJet) * 0.095;
-            float jetMask = smoothstep(jetWidth, jetWidth * 0.28, distFromJet);
-            float jetFade = exp(-abs(distAlongJet) * 2.3);
-            float jetPulse = sin(distAlongJet * 38.0 - t * 6.5) * 0.22 + 0.78;
-            float jetNoise = noise(vec2(pLens.x * 45.0, pLens.y * 18.0 - t * 2.2));
-            
-            float jetIntensity = jetMask * jetFade * jetPulse * (0.45 + 0.55 * jetNoise) 
-                               * smoothstep(bhRadius * 0.4, bhRadius * 1.1, abs(distAlongJet));
-                               
-            vec3 jetColor = vec3(0.10, 0.58, 1.0) * jetIntensity * 2.8;
-
-            // 8. Event Horizon Shadow & Border Glow
-            vec3 finalColor = bg;
-            float eventHorizon = bhRadius * 0.95;
-            if (distToBh < eventHorizon) {
-              finalColor = vec3(0.0);
-            } else {
-              finalColor += diskColor;
-              finalColor += jetColor;
-              
-              float boundaryGlow = exp(-(distToBh - eventHorizon) * 48.0);
-              finalColor += vec3(1.0, 0.82, 0.58) * boundaryGlow * 0.95;
-            }
+            // 5. Polaris/Sirius-like Supergiant Pulsar with realistic camera diffraction flares
+            vec2 pulsarCenter = warpUv - vec2(0.28, 0.65);
+            float pulsarIntensity = starFlare(pulsarCenter * 15.0, 0.2);
+            float pulsarTwinkle = sin(t * 1.5) * 0.12 + 0.88;
+            bg += vec3(0.85, 0.92, 1.0) * pulsarIntensity * pulsarTwinkle * 1.5;
 
             // Vignette
             float vig = 1.0 - 0.16 * pow(length(uvNorm - vec2(0.5)) * 1.3, 2.0);
-            finalColor *= vig;
+            bg *= vig;
 
             // Tone mapping & Gamma correction
-            finalColor = finalColor / (finalColor + vec3(0.52));
-            finalColor = pow(clamp(finalColor, 0.0, 1.0), vec3(1.05));
+            bg = bg / (bg + vec3(0.52));
+            bg = pow(clamp(bg, 0.0, 1.0), vec3(1.05));
 
-            gl_FragColor = vec4(finalColor, 1.0);
+            gl_FragColor = vec4(bg, 1.0);
           }
         `
 
