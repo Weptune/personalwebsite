@@ -1286,7 +1286,7 @@ const { class: className } = Astro.props
             vec2 galUv     = lensUv + mouseShift * 0.014;
             vec2 pulsarUv  = lensUv + mouseShift * 0.028;
 
-            // 2. High-Contrast Volumetric Nebula with Intricate Dark Dust Lanes
+            // 2. Volumetric Nebula (toned down to allow stars to pop)
             vec2 q, r;
             float f = pattern(gasUv * 2.5, q, r, t);
 
@@ -1297,13 +1297,13 @@ const { class: className } = Astro.props
             vec3 sulfurViolet  = vec3(0.24, 0.10, 0.38); // Rich purple emission
             vec3 cosmicGold    = vec3(0.52, 0.32, 0.10); // Warm dust scatter rim
 
-            // Complex volumetric gas mix
-            vec3 gasColor = mix(spaceMidnight, sulfurViolet, f * 0.85);
-            gasColor = mix(gasColor, hydrogenRed, dot(q, q) * 0.72);
-            gasColor = mix(gasColor, oxygenTeal, r.y * 0.65);
+            // Complex volumetric gas mix (toned down opacity multipliers for background balance)
+            vec3 gasColor = mix(spaceMidnight, sulfurViolet, f * 0.52);
+            gasColor = mix(gasColor, hydrogenRed, dot(q, q) * 0.48);
+            gasColor = mix(gasColor, oxygenTeal, r.y * 0.42);
 
-            // Add bright warm gold cores in dense regions
-            float goldIntensity = pow(f, 4.2) * 2.5;
+            // Add warm gold cores in dense regions
+            float goldIntensity = pow(f, 4.2) * 1.8;
             gasColor += cosmicGold * goldIntensity;
 
             // Intricate cold dust lanes (silhouettes that absorb gas glow)
@@ -1333,42 +1333,42 @@ const { class: className } = Astro.props
             vec2 pixelUv = uvA * u_resolution;
             float gasFactor = smoothstep(0.2, 0.75, f);
 
-            // Layer A: Distant background stars (very dense, tiny, clustered in gas)
+            // Layer A: Distant background stars (extremely dense, tiny, clustered in gas)
             vec2 pixelUvA = uvA * u_resolution;
-            vec2 gridA = floor(pixelUvA * 0.38);
+            vec2 gridA = floor(pixelUvA * 0.46);
             float noiseA = hash(gridA);
-            float threshA = 0.84 - 0.25 * gasFactor; // higher density inside nebulae
+            float threshA = 0.74 - 0.28 * gasFactor; // highly dense inside nebulae
             if (noiseA > threshA) {
               vec2 jitter = vec2(hash(gridA + vec2(1.1)), hash(gridA + vec2(2.2))) - 0.5;
-              vec2 center = (gridA + vec2(0.5) + jitter * 0.8) / 0.38;
+              vec2 center = (gridA + vec2(0.5) + jitter * 0.8) / 0.46;
               float d = distance(pixelUvA, center);
               float glow = exp(-d * 2.8);
               float size = hash(gridA + vec2(9.3));
               vec3 col = mix(vec3(0.72, 0.82, 1.0), vec3(1.0, 0.88, 0.72), hash(gridA + vec2(4.7)));
-              bg += col * glow * (0.06 + size * 0.14);
+              bg += col * glow * (0.12 + size * 0.22);
             }
 
             // Layer B: Midground stars (medium, twinkling, organic jitter)
             vec2 pixelUvB = uvB * u_resolution;
-            vec2 gridB = floor(pixelUvB * 0.22);
+            vec2 gridB = floor(pixelUvB * 0.28);
             float noiseB = hash(gridB);
-            float threshB = 0.935 - 0.16 * gasFactor;
+            float threshB = 0.88 - 0.18 * gasFactor;
             if (noiseB > threshB) {
               vec2 jitter = vec2(hash(gridB + vec2(3.3)), hash(gridB + vec2(4.4))) - 0.5;
-              vec2 center = (gridB + vec2(0.5) + jitter * 0.8) / 0.22;
+              vec2 center = (gridB + vec2(0.5) + jitter * 0.8) / 0.28;
               float d = distance(pixelUvB, center);
               float glow = exp(-d * 1.8);
               float size = hash(gridB + vec2(5.1));
               float twinkle = sin(t * 2.2 + noiseB * 31.4) * 0.35 + 0.65;
               vec3 col = mix(vec3(0.68, 0.85, 1.0), vec3(1.0, 0.92, 0.68), hash(gridB + vec2(8.1)));
-              bg += col * glow * twinkle * (0.20 + size * 0.35);
+              bg += col * glow * twinkle * (0.32 + size * 0.48);
             }
 
             // Layer C: Bright stars (large, twinkling, with photographic diffraction spikes)
             vec2 pixelUvC = uvC * u_resolution;
             vec2 gridC = floor(pixelUvC * 0.10);
             float noiseC = hash(gridC);
-            if (noiseC > 0.968) {
+            if (noiseC > 0.945) {
               vec2 jitter = vec2(hash(gridC + vec2(5.5)), hash(gridC + vec2(6.6))) - 0.5;
               vec2 center = (gridC + vec2(0.5) + jitter * 0.8) / 0.10;
               float d = distance(pixelUvC, center);
@@ -1376,13 +1376,13 @@ const { class: className } = Astro.props
               float size = hash(gridC + vec2(7.2));
               float twinkle = sin(t * 2.8 + noiseC * 62.8) * 0.42 + 0.58;
               vec3 col = mix(vec3(0.82, 0.92, 1.0), vec3(1.0, 0.95, 0.72), hash(gridC + vec2(11.2)));
-              bg += col * glow * (0.58 + size * 0.62) * twinkle;
+              bg += col * glow * (0.72 + size * 0.82) * twinkle;
 
               // Photographic diffraction spikes for the very brightest stars in the field
-              if (size > 0.70) {
+              if (size > 0.62) {
                 vec2 offset = pixelUvC - center;
-                float spike = (exp(-abs(offset.x) * 1.8) * exp(-abs(offset.y) * 0.18) +
-                               exp(-abs(offset.y) * 1.8) * exp(-abs(offset.x) * 0.18)) * 0.25 * twinkle;
+                float spike = (exp(-abs(offset.x) * 1.5) * exp(-abs(offset.y) * 0.15) +
+                               exp(-abs(offset.y) * 1.5) * exp(-abs(offset.x) * 0.15)) * 0.32 * twinkle;
                 bg += col * spike;
               }
             }
@@ -1391,7 +1391,7 @@ const { class: className } = Astro.props
             vec2 pixelUvD = uvB * u_resolution * 1.5;
             vec2 gridD = floor(pixelUvD);
             float noiseD = hash(gridD);
-            if (noiseD > 0.955 - 0.22 * gasFactor) {
+            if (noiseD > 0.92 - 0.25 * gasFactor) {
               vec2 jitter = vec2(hash(gridD + vec2(12.3)), hash(gridD + vec2(15.4))) - 0.5;
               vec2 center = (gridD + vec2(0.5) + jitter * 0.8);
               float d = distance(pixelUvD, center);
@@ -1399,7 +1399,77 @@ const { class: className } = Astro.props
               bg += vec3(0.72, 0.85, 1.0) * glow * (0.04 + 0.12 * hash(gridD + vec2(19.8))) * gasFactor;
             }
 
-            // 5. Detailed Hubble Deep-Field Spiral Galaxy at (0.68, 0.32)
+            // 4a. Globular Star Cluster at (0.48, 0.15) (Telescopic details)
+            vec2 globOffset = galUv - vec2(0.48, 0.15);
+            float globD = length(globOffset);
+            if (globD < 0.18) {
+              float coreGlow = exp(-globD * 42.0) * 2.2;
+              float outerGlow = exp(-globD * 12.0) * 0.45;
+              bg += vec3(1.0, 0.94, 0.82) * (coreGlow + outerGlow);
+              
+              // Resolved star pinpoints inside the cluster
+              vec2 globGrid = floor(pixelUv * 0.8);
+              float globNoise = hash(globGrid);
+              if (globNoise > 0.82) {
+                vec2 globJitter = vec2(hash(globGrid + vec2(1.5)), hash(globGrid + vec2(2.5))) - 0.5;
+                vec2 globCenter = (globGrid + vec2(0.5) + globJitter * 0.7) / 0.8;
+                float starDist = distance(globCenter / u_resolution, vec2(0.48, 0.15));
+                if (starDist < 0.08) {
+                  float d = distance(pixelUv, globCenter);
+                  float starGlow = exp(-d * 2.2);
+                  float prob = smoothstep(0.08, 0.01, starDist);
+                  if (hash(globGrid + vec2(7.7)) < prob) {
+                    bg += vec3(1.0, 0.96, 0.88) * starGlow * 0.95;
+                  }
+                }
+              }
+            }
+
+            // 5a. Detailed Edge-on Needle Galaxy at (0.12, 0.18) (NGC 4565 lookalike)
+            vec2 needleOffset = galUv - vec2(0.12, 0.18);
+            float needleAngle = -0.55;
+            float cosNeedle = cos(needleAngle);
+            float sinNeedle = sin(needleAngle);
+            vec2 rotatedNeedle = vec2(
+              needleOffset.x * cosNeedle - needleOffset.y * sinNeedle,
+              needleOffset.x * sinNeedle + needleOffset.y * cosNeedle
+            );
+            vec2 needleDistorted = vec2(rotatedNeedle.x * 1.8, rotatedNeedle.y * 12.0);
+            float needleR = length(needleDistorted);
+            if (needleR < 0.25) {
+              float core = exp(-needleR * 35.0) * 2.8;
+              float disk = exp(-needleR * 6.0) * 1.0;
+              // Dark dust lane slicing lengthwise
+              float dustLane = smoothstep(0.002, 0.008, abs(rotatedNeedle.y + 0.001 * sin(rotatedNeedle.x * 15.0)));
+              vec3 needleCol = vec3(0.92, 0.82, 0.68) * (core + disk * dustLane);
+              bg += needleCol * 1.5;
+            }
+
+            // 5b. Detailed Barred Spiral Galaxy at (0.85, 0.78) (NGC 1300 lookalike)
+            vec2 barOffset = galUv - vec2(0.85, 0.78);
+            barOffset.y *= 1.4; // slight tilt
+            float cosBar = cos(1.1 + t * 0.03);
+            float sinBar = sin(1.1 + t * 0.03);
+            vec2 rotBar = vec2(
+              barOffset.x * cosBar - barOffset.y * sinBar,
+              barOffset.x * sinBar + barOffset.y * cosBar
+            );
+            float barR = length(rotBar);
+            if (barR < 0.25) {
+              float barTheta = atan(rotBar.y, rotBar.x);
+              // Central bar
+              float barX = exp(-abs(rotBar.y) * 45.0) * exp(-abs(rotBar.x) * 8.0) * smoothstep(0.25, 0.0, abs(rotBar.x));
+              // Spiral arms
+              float barArms = sin(barTheta * 2.0 - log(barR + 0.02) * 4.2 + t * 0.25);
+              float armIntensity = smoothstep(0.0, 0.8, barArms) * exp(-barR * 9.0) * smoothstep(0.05, 0.25, barR);
+              float core = exp(-barR * 42.0) * 3.5;
+              
+              vec3 coreCol = vec3(1.0, 0.85, 0.68) * (core + barX * 1.8);
+              vec3 armCol = vec3(0.55, 0.82, 1.0) * armIntensity * 1.6;
+              bg += (coreCol + armCol) * 1.5;
+            }
+
+            // 5c. Detailed Spiral Galaxy at (0.68, 0.32)
             vec2 galaxyOffset = galUv - vec2(0.68, 0.32);
             galaxyOffset.y *= 1.85; // tilted perspective
             float cosAngle = cos(0.25 - t * 0.04);
@@ -2263,11 +2333,13 @@ const { class: className } = Astro.props
              
              for (let c of constellationSystems) {
                // Draw connection lines
-               ctx.strokeStyle = isMoon ? 'rgba(203, 213, 225, 0.12)' : 'rgba(103, 232, 249, 0.24)'
-               ctx.lineWidth = isMoon ? 0.75 : 1.0
+               ctx.strokeStyle = isMoon ? 'rgba(203, 213, 225, 0.12)' : 'rgba(147, 197, 253, 0.45)'
+               ctx.lineWidth = isMoon ? 0.75 : 1.25
                ctx.setLineDash(isMoon ? [2, 3] : [4, 4]) // Flowing dashes for stars theme
                if (!isMoon) {
                  ctx.lineDashOffset = -t * 0.035
+                 ctx.shadowColor = '#60a5fa'
+                 ctx.shadowBlur = 4
                }
                for (let conn of c.connections) {
                  const s1 = c.stars[conn[0]]
@@ -2278,23 +2350,24 @@ const { class: className } = Astro.props
                  ctx.stroke()
                }
                ctx.setLineDash([]) // Reset
+               ctx.shadowBlur = 0 // Reset
 
                // Draw star nodes
                for (let s of c.stars) {
                  const sx = s.relX * width + dx
                  const sy = s.relY * height + dy
-                 const alpha = isMoon ? (0.2 + 0.65 * Math.abs(Math.sin(t / s.pulseSpeed + s.tw))) : (0.45 + 0.25 * Math.sin(t / s.pulseSpeed + s.tw))
+                 const alpha = isMoon ? (0.2 + 0.65 * Math.abs(Math.sin(t / s.pulseSpeed + s.tw))) : (0.45 + 0.35 * Math.sin(t / s.pulseSpeed + s.tw))
                  
                  // Glow
                  ctx.beginPath()
-                 ctx.arc(sx, sy, s.r * 2.5, 0, Math.PI * 2)
-                 ctx.fillStyle = isMoon ? 'rgba(226, 232, 240, 0.22)' : 'rgba(56, 189, 248, 0.32)'
-                 ctx.globalAlpha = alpha * 0.4
+                 ctx.arc(sx, sy, s.r * (isMoon ? 2.5 : 3.8), 0, Math.PI * 2)
+                 ctx.fillStyle = isMoon ? 'rgba(226, 232, 240, 0.22)' : 'rgba(96, 165, 250, 0.55)'
+                 ctx.globalAlpha = alpha * 0.45
                  ctx.fill()
 
                  // Core
                  ctx.beginPath()
-                 ctx.arc(sx, sy, s.r, 0, Math.PI * 2)
+                 ctx.arc(sx, sy, s.r * (isMoon ? 1.0 : 1.25), 0, Math.PI * 2)
                  ctx.fillStyle = '#ffffff'
                  ctx.globalAlpha = alpha
                  ctx.fill()
