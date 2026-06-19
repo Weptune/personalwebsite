@@ -64,8 +64,8 @@ const recentThoughts = await getRecentPosts(SITE.featuredPostCount)
   </section>
 
   <Poll />
-  <div class="mt-2 text-center text-sm text-primary/80 animate-pulse">
-    🎨 Want a different vibe? <button id="theme-switch-hint" class="underline cursor-pointer">Try another theme</button>
+  <div class="mt-2 text-center text-sm text-primary/80">
+    → Want a different vibe? <span id="theme-switch-hint" class="cursor-pointer underline">Try another theme</span>
   </div>
   <script is:inline>
     const btn = document.getElementById('theme-switch-hint')
