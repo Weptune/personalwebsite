@@ -613,6 +613,103 @@ body {
   filter: none !important;
 }
 
+/* ------------------------------------------------ */
+/* THE STARS THEME COMPLETE CUSTOMIZATION           */
+/* ------------------------------------------------ */
+
+[data-celestial-theme="stars"] {
+  /* Override primary to a rich cosmic purple */
+  --primary: oklch(0.76 0.22 295);
+  --primary-foreground: oklch(0.12 0.03 295);
+
+  --muted: oklch(0.14 0.04 280);
+  --muted-foreground: oklch(0.62 0.06 280);
+
+  --border: rgba(160, 100, 255, 0.12);
+  --ring: oklch(0.55 0.18 290);
+}
+
+/* Headings: soft ethereal purple */
+[data-celestial-theme="stars"] h1,
+[data-celestial-theme="stars"] h2,
+[data-celestial-theme="stars"] h3,
+[data-celestial-theme="stars"] h4,
+[data-celestial-theme="stars"] h5,
+[data-celestial-theme="stars"] h6 {
+  color: oklch(0.84 0.18 295) !important;
+  text-shadow:
+    0 0 14px rgba(167, 100, 255, 0.35),
+    0 0 30px rgba(130, 60, 220, 0.15) !important;
+}
+
+/* Gothic panels — subtle purple tint on border */
+[data-celestial-theme="stars"] .gothic-panel {
+  border-color: rgba(160, 100, 255, 0.12) !important;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.65),
+    inset 0 0 1px rgba(200, 150, 255, 0.03) !important;
+  transition: border-color 0.4s ease, box-shadow 0.4s ease !important;
+}
+
+[data-celestial-theme="stars"] .gothic-panel:hover {
+  border-color: rgba(167, 100, 255, 0.35) !important;
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.8),
+    0 0 18px rgba(130, 60, 220, 0.06) !important;
+}
+
+[data-celestial-theme="stars"] .gothic-panel::before {
+  background: radial-gradient(
+    250px circle at var(--mouse-x, -999px) var(--mouse-y, -999px),
+    rgba(167, 100, 255, 0.07) 0%,
+    rgba(130, 60, 220, 0.025) 50%,
+    transparent 100%
+  ) !important;
+}
+
+/* Links: cosmic purple */
+[data-celestial-theme="stars"] a:not(.no-underline) {
+  background-image: linear-gradient(to right, oklch(0.76 0.22 295) 0%, oklch(0.76 0.22 295) 100%) !important;
+  color: oklch(0.76 0.22 295) !important;
+}
+
+/* Text selection */
+[data-celestial-theme="stars"] ::selection {
+  background: rgba(160, 80, 255, 0.22) !important;
+  color: #ffffff !important;
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Scrollbar: purple tint */
+[data-celestial-theme="stars"]::-webkit-scrollbar-thumb {
+  background: rgba(160, 80, 255, 0.15) !important;
+}
+
+[data-celestial-theme="stars"]::-webkit-scrollbar-thumb:hover {
+  background: rgba(167, 100, 255, 0.38) !important;
+}
+
+/* Poll buttons */
+[data-celestial-theme="stars"] button#poll-vote,
+[data-celestial-theme="stars"] button#poll-view {
+  background: rgba(167, 100, 255, 0.04) !important;
+  border-color: rgba(160, 80, 255, 0.18) !important;
+  color: oklch(0.76 0.22 295) !important;
+  box-shadow: none !important;
+  transition: all 0.3s ease !important;
+}
+
+[data-celestial-theme="stars"] button#poll-vote:hover,
+[data-celestial-theme="stars"] button#poll-view:hover {
+  background: rgba(167, 100, 255, 0.12) !important;
+  border-color: rgba(167, 100, 255, 0.42) !important;
+  color: #ffffff !important;
+}
+
+[data-celestial-theme="stars"] input[type="radio"] {
+  accent-color: oklch(0.76 0.22 295) !important;
+}
+
 
 [data-celestial-theme="moon"] .about-hero::before {
   background-image:
