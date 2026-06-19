@@ -1768,77 +1768,95 @@ const { class: className } = Astro.props
 
             // Initialize a Polaris/Sirius-like supergiant star for Stars theme
             starsPulsar = {
-              relX: 0.28,
-              relY: 0.65,
-              size: 4.2,
+              relX: 0.78,
+              relY: 0.22,
+              size: 5.5,
               pulsePhase: Math.random() * Math.PI,
-              pulseSpeed: 0.003 + Math.random() * 0.002
+              pulseSpeed: 0.0025 + Math.random() * 0.002
             }
 
             // Initialize dynamic shifting nebulae for Stars theme
+            // Smaller rScale = tighter, crisper clouds; higher alpha = more vivid
             starsNebulae = [
               {
-                relX: 0.35,
-                relY: 0.3,
+                relX: 0.28,
+                relY: 0.22,
                 vx: 0.005,
                 vy: -0.003,
-                rScale: 0.65,
+                rScale: 0.30,
                 pulsePhase: Math.random() * Math.PI * 2,
-                colorStop0: 'rgba(107, 33, 168, 0.15)',
-                colorStop1: 'rgba(88, 28, 135, 0.04)'
+                colorStop0: 'rgba(130, 40, 210, 0.28)',
+                colorStop1: 'rgba(88, 28, 135, 0.0)'
               },
               {
-                relX: 0.72,
-                relY: 0.62,
+                relX: 0.76,
+                relY: 0.65,
                 vx: -0.004,
                 vy: 0.004,
-                rScale: 0.55,
+                rScale: 0.26,
                 pulsePhase: Math.random() * Math.PI * 2,
-                colorStop0: 'rgba(3, 105, 161, 0.14)',
-                colorStop1: 'rgba(30, 41, 59, 0.03)'
+                colorStop0: 'rgba(20, 120, 200, 0.24)',
+                colorStop1: 'rgba(10, 40, 90, 0.0)'
               },
               {
-                relX: 0.5,
-                relY: 0.45,
+                relX: 0.52,
+                relY: 0.48,
                 vx: 0.002,
                 vy: 0.005,
-                rScale: 0.48,
+                rScale: 0.22,
                 pulsePhase: Math.random() * Math.PI * 2,
-                colorStop0: 'rgba(79, 70, 229, 0.12)',
-                colorStop1: 'rgba(49, 46, 129, 0.03)'
+                colorStop0: 'rgba(90, 80, 240, 0.22)',
+                colorStop1: 'rgba(40, 36, 120, 0.0)'
               },
               {
-                relX: 0.15,
-                relY: 0.75,
+                relX: 0.12,
+                relY: 0.72,
                 vx: -0.006,
                 vy: -0.002,
-                rScale: 0.4,
+                rScale: 0.20,
                 pulsePhase: Math.random() * Math.PI * 2,
-                colorStop0: 'rgba(13, 148, 136, 0.09)',
-                colorStop1: 'rgba(4, 47, 46, 0.015)'
+                colorStop0: 'rgba(20, 160, 145, 0.20)',
+                colorStop1: 'rgba(4, 47, 46, 0.0)'
+              },
+              {
+                relX: 0.88,
+                relY: 0.18,
+                vx: 0.003,
+                vy: 0.006,
+                rScale: 0.18,
+                pulsePhase: Math.random() * Math.PI * 2,
+                colorStop0: 'rgba(200, 80, 150, 0.18)',
+                colorStop1: 'rgba(80, 20, 60, 0.0)'
               }
             ]
 
             // Initialize dynamic spiral galaxy for Stars theme
             galaxyStars = []
-            const numArms = 3
-            const starsPerArm = 220
-            const galaxyColors = ['#ffffff', '#e0f0ff', '#c8e2ff', '#a5f3fc', '#c4b5fd']
+            const numArms = 4
+            const starsPerArm = 300
+            const galaxyColors = [
+              '#ffffff', '#f0f0ff', '#e0d8ff',
+              '#c8e2ff', '#a5f3fc', '#c4b5fd',
+              '#f9a8d4', '#fde68a'
+            ]
             for (let arm = 0; arm < numArms; arm++) {
               const baseAngle = (arm * Math.PI * 2) / numArms
               for (let i = 0; i < starsPerArm; i++) {
                 const progress = i / starsPerArm
-                const r = Math.pow(progress, 1.8) * Math.min(width, height) * 0.24 + Math.random() * 12
-                const theta = baseAngle + r * 0.014 + (Math.random() - 0.5) * (0.35 / (progress + 0.15))
+                // Tighter, more concentrated spiral — smaller max radius
+                const r = Math.pow(progress, 1.6) * Math.min(width, height) * 0.20 + Math.random() * 8
+                const theta = baseAngle + r * 0.016 + (Math.random() - 0.5) * (0.25 / (progress + 0.15))
+                // Larger, brighter stars — especially near center
+                const coreBoost = Math.max(0, 1 - progress * 1.5)
                 galaxyStars.push({
                   r,
                   theta,
-                  speed: 0.00015 + (0.00035 / (progress * 1.5 + 0.5)),
+                  speed: 0.00012 + (0.0003 / (progress * 1.5 + 0.5)),
                   color: galaxyColors[Math.floor(Math.random() * galaxyColors.length)],
-                  size: 0.4 + Math.random() * 1.3,
-                  baseAlpha: 0.35 + Math.random() * 0.6,
+                  size: 0.6 + Math.random() * 2.0 + coreBoost * 1.5,
+                  baseAlpha: 0.55 + Math.random() * 0.45,
                   tw: Math.random() * Math.PI * 2,
-                  pulseSpeed: 1000 + Math.random() * 1500
+                  pulseSpeed: 800 + Math.random() * 1200
                 })
               }
             }
@@ -2198,17 +2216,46 @@ const { class: className } = Astro.props
               const gcX = width * 0.5 + (mx !== -9999 ? (mx - width * 0.5) * 0.006 : 0)
               const gcY = height * 0.5 + (my !== -9999 ? (my - height * 0.5) * 0.006 : 0)
               ctx.save()
+
+              // Bright galactic core glow
+              const coreR = Math.min(width, height) * 0.06
+              const coreGrad = ctx.createRadialGradient(gcX, gcY, 0, gcX, gcY, coreR)
+              coreGrad.addColorStop(0, 'rgba(255, 240, 220, 0.55)')
+              coreGrad.addColorStop(0.25, 'rgba(200, 170, 255, 0.25)')
+              coreGrad.addColorStop(0.6, 'rgba(120, 80, 200, 0.08)')
+              coreGrad.addColorStop(1, 'rgba(0,0,0,0)')
+              ctx.globalAlpha = 1
+              ctx.fillStyle = coreGrad
+              ctx.beginPath()
+              ctx.ellipse(gcX, gcY, coreR, coreR * 0.5, 0, 0, Math.PI * 2)
+              ctx.fill()
+
+              // Draw each galaxy star
+              ctx.globalCompositeOperation = 'lighter'
               for (let gs of galaxyStars) {
                 const angle = gs.theta + gs.speed * t
                 const sx = gcX + Math.cos(angle) * gs.r
-                const sy = gcY + Math.sin(angle) * gs.r * 0.38 // flatten to ellipse
-                const alpha = gs.baseAlpha * (0.7 + 0.3 * Math.sin(t / gs.pulseSpeed + gs.tw))
+                const sy = gcY + Math.sin(angle) * gs.r * 0.40 // flatten to ellipse
+                const alpha = gs.baseAlpha * (0.75 + 0.25 * Math.sin(t / gs.pulseSpeed + gs.tw))
+                const a = Math.max(0, Math.min(1, alpha))
+
+                // Glow halo for larger stars
+                if (gs.size > 1.2) {
+                  ctx.beginPath()
+                  ctx.arc(sx, sy, gs.size * 2.5, 0, Math.PI * 2)
+                  ctx.fillStyle = gs.color
+                  ctx.globalAlpha = a * 0.18
+                  ctx.fill()
+                }
+
+                // Star core
                 ctx.beginPath()
                 ctx.arc(sx, sy, gs.size, 0, Math.PI * 2)
                 ctx.fillStyle = gs.color
-                ctx.globalAlpha = Math.max(0, Math.min(1, alpha))
+                ctx.globalAlpha = a
                 ctx.fill()
               }
+              ctx.globalCompositeOperation = 'source-over'
               ctx.restore()
             }
 
@@ -3007,7 +3054,7 @@ const { class: className } = Astro.props
         const storedTheme = localStorage.getItem('celestial-theme') || 'moon'
         const palettes = {
           stars: {
-            p: 'oklch(0.82 0 0)',
+            p: 'oklch(0.76 0.22 295)',
             c1: 'oklch(0.35 0.18 280)',
             c2: 'oklch(0.28 0.15 200)',
             c3: 'oklch(0.2 0.1 270)',
