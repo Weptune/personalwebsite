@@ -64,6 +64,21 @@ const recentThoughts = await getRecentPosts(SITE.featuredPostCount)
   </section>
 
   <Poll />
+  <div class="mt-2 text-center text-sm text-primary/80 animate-pulse">
+    🎨 Want a different vibe? <button id="theme-switch-hint" class="underline cursor-pointer">Try another theme</button>
+  </div>
+  <script is:inline>
+    const btn = document.getElementById('theme-switch-hint')
+    btn?.addEventListener('click', () => {
+      const themes = ['stars','sun','ocean','sky','moon']
+      const current = localStorage.getItem('celestial-theme') || 'stars'
+      const idx = themes.indexOf(current)
+      const next = themes[(idx + 1) % themes.length]
+      localStorage.setItem('celestial-theme', next)
+      document.dispatchEvent(new Event('celestial-theme-change'))
+      location.reload()
+    })
+  </script>
 
   <section class="fade-in-up-soft">
     <a
