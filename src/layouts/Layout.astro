@@ -1253,131 +1253,207 @@ const { class: className } = Astro.props
             return fbm(p + 4.0 * r);
           }
 
-          float spiralGalaxy(vec2 p, float t) {
-            float r = length(p);
-            float theta = atan(p.y, p.x);
-            float spiral = sin(theta * 2.0 - r * 6.5 + t * 0.12);
-            float intensity = smoothstep(0.0, 1.0, spiral) * exp(-r * 3.8);
-            float core = exp(-r * 12.0) * 1.5;
-            return (intensity + core) * 0.45;
-          }
-
-          float starFlare(vec2 p, float angle) {
-            float d = length(p);
-            float core = exp(-d * 8.0) * 0.8;
-            float cosA = cos(angle);
-            float sinA = sin(angle);
-            vec2 rP = vec2(p.x * cosA - p.y * sinA, p.x * sinA + p.y * cosA);
-            float spikeX = exp(-abs(rP.y) * 45.0) * exp(-abs(rP.x) * 4.0) * 0.35;
-            float spikeY = exp(-abs(rP.x) * 45.0) * exp(-abs(rP.y) * 4.0) * 0.35;
-            
-            vec2 rP2 = vec2(p.x - p.y, p.x + p.y) * 0.707;
-            float spikeDiagX = exp(-abs(rP2.y) * 120.0) * exp(-abs(rP2.x) * 8.0) * 0.12;
-            float spikeDiagY = exp(-abs(rP2.x) * 120.0) * exp(-abs(rP2.y) * 8.0) * 0.12;
-            
-            return core + spikeX + spikeY + spikeDiagX + spikeDiagY;
-          }
-
           void main() {
             vec2 uv = gl_FragCoord.xy;
             vec2 uvNorm = uv / u_resolution;
             float t = u_time * 0.0015;
 
-            // 1. Subtle mouse gravitational lensing warp
-            vec2 warpUv = uvNorm;
+            // 1. Multi-plane Interactive Parallax & Gravitational Lensing
+            vec2 mouseNorm = vec2(0.5);
+            vec2 mouseShift = vec2(0.0);
             if (u_mouse.x > -9000.0) {
-              vec2 mouseNorm = u_mouse / u_resolution;
+              mouseNorm = u_mouse / u_resolution;
+              mouseShift = mouseNorm - vec2(0.5);
+            }
+
+            // Interactive Gravitational Lensing (local warp around cursor)
+            vec2 lensUv = uvNorm;
+            if (u_mouse.x > -9000.0) {
               float mouseDist = distance(uvNorm, mouseNorm);
-              float lensRadius = 0.38;
+              float lensRadius = 0.35;
               if (mouseDist < lensRadius) {
-                float force = pow(1.0 - mouseDist / lensRadius, 2.0) * 0.022;
-                warpUv -= normalize(uvNorm - mouseNorm) * force;
+                float force = pow(1.0 - mouseDist / lensRadius, 2.0) * 0.025;
+                lensUv -= normalize(uvNorm - mouseNorm) * force;
               }
             }
 
-            // 2. High-detail photorealistic nebula gas layers
+            // Derive separate UVs for different visual planes to create depth via parallax
+            vec2 gasUv     = lensUv + mouseShift * 0.012;
+            vec2 mwUv      = lensUv + mouseShift * 0.018;
+            vec2 uvA       = lensUv + mouseShift * 0.008;
+            vec2 uvB       = lensUv + mouseShift * 0.016;
+            vec2 uvC       = lensUv + mouseShift * 0.024;
+            vec2 galUv     = lensUv + mouseShift * 0.014;
+            vec2 pulsarUv  = lensUv + mouseShift * 0.028;
+
+            // 2. High-Contrast Volumetric Nebula with Intricate Dark Dust Lanes
             vec2 q, r;
-            float f = pattern(warpUv * 2.8, q, r, t);
+            float f = pattern(gasUv * 2.5, q, r, t);
 
-            // True astronomical deep space colors: Hydrogen-Alpha Red, Oxygen Cyan, Cosmic Dust Brown
-            vec3 spaceBlack = vec3(0.002, 0.001, 0.004);
-            vec3 hydrogenRed = vec3(0.045, 0.012, 0.025);
-            vec3 oxygenCyan = vec3(0.010, 0.038, 0.048);
-            vec3 cosmicDust = vec3(0.022, 0.016, 0.010);
+            // Rich sophisticated colors (JWST/Hubble-inspired palettes)
+            vec3 spaceMidnight = vec3(0.002, 0.002, 0.006);
+            vec3 hydrogenRed   = vec3(0.42, 0.08, 0.16); // Vibrant crimson emission
+            vec3 oxygenTeal    = vec3(0.06, 0.28, 0.38); // Bright teal emission
+            vec3 sulfurViolet  = vec3(0.24, 0.10, 0.38); // Rich purple emission
+            vec3 cosmicGold    = vec3(0.52, 0.32, 0.10); // Warm dust scatter rim
 
-            vec3 gasColor = mix(spaceBlack, hydrogenRed, f * 0.65);
-            gasColor = mix(gasColor, oxygenCyan, dot(q, q) * 0.45);
+            // Complex volumetric gas mix
+            vec3 gasColor = mix(spaceMidnight, sulfurViolet, f * 0.85);
+            gasColor = mix(gasColor, hydrogenRed, dot(q, q) * 0.72);
+            gasColor = mix(gasColor, oxygenTeal, r.y * 0.65);
+
+            // Add bright warm gold cores in dense regions
+            float goldIntensity = pow(f, 4.2) * 2.5;
+            gasColor += cosmicGold * goldIntensity;
+
+            // Intricate cold dust lanes (silhouettes that absorb gas glow)
+            float dustNoise = fbm(gasUv * 6.2 - vec2(t * 0.008, t * 0.004));
+            float dustAbsorb = smoothstep(0.38, 0.75, dustNoise);
+            gasColor *= mix(1.0, 0.08, dustAbsorb * (0.4 + 0.6 * f));
+
+            // 3. Majestic Diagonal Milky Way Star Band
+            float mwVal = abs(mwUv.x - mwUv.y + 0.12 + 0.08 * sin(mwUv.x * 3.0 + t * 0.05)) / 0.95;
+            float mwGlow = exp(-mwVal * 3.8);
+            float mwCore = exp(-mwVal * 18.0);
             
-            // Faint dark cosmic dust lanes blocking the background light
-            float dustPattern = fbm(warpUv * 6.0 + q * 2.0);
-            gasColor = mix(gasColor, cosmicDust * 0.12, smoothstep(0.55, 0.85, dustPattern) * 0.75);
-
-            // Add soft diagonal Milky Way band
-            float band = abs(warpUv.x - warpUv.y + 0.2) / 1.414;
-            float bandGlow = exp(-band * 6.5);
-            float bandWarp = fbm(warpUv * 3.5 + t * 0.01) * 0.5 + 0.5;
-            gasColor += vec3(0.045, 0.03, 0.06) * bandGlow * bandWarp;
+            // High-frequency unresolved stars shimmer in the background
+            float mwShimmer = fbm(mwUv * 16.0 + t * 0.02) * 0.35 + 0.65;
+            
+            // Dark rift (Great Rift) dividing the Milky Way core
+            float riftNoise = fbm(mwUv * 8.0 + vec2(t * 0.012, -t * 0.008));
+            float rift = smoothstep(0.015, 0.14, abs(mwVal - 0.04 + 0.05 * riftNoise));
+            
+            vec3 mwGlowColor = vec3(0.20, 0.14, 0.28) * mwGlow;
+            vec3 mwCoreColor = vec3(0.52, 0.42, 0.32) * mwCore * rift * mwShimmer;
+            gasColor += mwGlowColor + mwCoreColor * 1.6;
 
             vec3 bg = gasColor;
 
-            // 3. Ultra-Dense Multi-Layered Starfields
-            vec2 pixelUv = warpUv * u_resolution;
-            
-            // Layer A: Distant dim background stars (very dense, tiny)
-            vec2 dimGrid = floor(pixelUv * 0.38);
-            float dimNoise = hash(dimGrid);
-            if (dimNoise > 0.82) {
-              vec2 dimCenter = (dimGrid + vec2(0.5)) / 0.38;
-              float dimDist = distance(pixelUv, dimCenter);
-              float dimGlow = exp(-dimDist * 2.5);
-              float dimSize = hash(dimGrid + 9.0);
-              bg += vec3(0.55, 0.62, 0.78) * dimGlow * (0.08 + dimSize * 0.08);
-            }
-            
-            // Layer B: Medium twinkling stars
-            vec2 medGrid = floor(pixelUv * 0.22);
-            float medNoise = hash(medGrid);
-            if (medNoise > 0.965) {
-              vec2 medCenter = (medGrid + vec2(0.5)) / 0.22;
-              float medDist = distance(pixelUv, medCenter);
-              float medGlow = exp(-medDist * 1.5);
-              float medSize = hash(medGrid + 4.0);
-              float twinkle = sin(t * 1.8 + medNoise * 20.0) * 0.35 + 0.65;
-              vec3 medColor = mix(vec3(0.7, 0.8, 1.0), vec3(1.0, 0.85, 0.6), hash(medGrid + 12.0));
-              bg += medColor * medGlow * twinkle * (0.2 + medSize * 0.25);
-            }
-            
-            // Layer C: Bright stars (with soft glare)
-            vec2 brightGrid = floor(pixelUv * 0.08);
-            float brightNoise = hash(brightGrid);
-            if (brightNoise > 0.99) {
-              vec2 brightCenter = (brightGrid + vec2(0.5)) / 0.08;
-              float brightDist = distance(pixelUv, brightCenter);
-              float brightGlow = exp(-brightDist * 0.8);
-              float twinkle = sin(t * 2.5 + brightNoise * 40.0) * 0.4 + 0.6;
-              float size = hash(brightGrid + 2.0);
-              vec3 brightColor = mix(vec3(0.8, 0.9, 1.0), vec3(1.0, 0.9, 0.75), hash(brightGrid + 7.0));
-              bg += brightColor * brightGlow * twinkle * (0.5 + size * 0.5);
+            // 4. Dense Glittering Multi-Layered Starfields with Organic Jitter & Nursery Clusters
+            vec2 pixelUv = uvA * u_resolution;
+            float gasFactor = smoothstep(0.2, 0.75, f);
+
+            // Layer A: Distant background stars (very dense, tiny, clustered in gas)
+            vec2 pixelUvA = uvA * u_resolution;
+            vec2 gridA = floor(pixelUvA * 0.38);
+            float noiseA = hash(gridA);
+            float threshA = 0.84 - 0.25 * gasFactor; // higher density inside nebulae
+            if (noiseA > threshA) {
+              vec2 jitter = vec2(hash(gridA + vec2(1.1)), hash(gridA + vec2(2.2))) - 0.5;
+              vec2 center = (gridA + vec2(0.5) + jitter * 0.8) / 0.38;
+              float d = distance(pixelUvA, center);
+              float glow = exp(-d * 2.8);
+              float size = hash(gridA + vec2(9.3));
+              vec3 col = mix(vec3(0.72, 0.82, 1.0), vec3(1.0, 0.88, 0.72), hash(gridA + vec2(4.7)));
+              bg += col * glow * (0.06 + size * 0.14);
             }
 
-            // 4. Distant Spiral Galaxy at (0.68, 0.32)
-            vec2 galaxyOffset = warpUv - vec2(0.68, 0.32);
-            galaxyOffset.y *= 1.8;
+            // Layer B: Midground stars (medium, twinkling, organic jitter)
+            vec2 pixelUvB = uvB * u_resolution;
+            vec2 gridB = floor(pixelUvB * 0.22);
+            float noiseB = hash(gridB);
+            float threshB = 0.935 - 0.16 * gasFactor;
+            if (noiseB > threshB) {
+              vec2 jitter = vec2(hash(gridB + vec2(3.3)), hash(gridB + vec2(4.4))) - 0.5;
+              vec2 center = (gridB + vec2(0.5) + jitter * 0.8) / 0.22;
+              float d = distance(pixelUvB, center);
+              float glow = exp(-d * 1.8);
+              float size = hash(gridB + vec2(5.1));
+              float twinkle = sin(t * 2.2 + noiseB * 31.4) * 0.35 + 0.65;
+              vec3 col = mix(vec3(0.68, 0.85, 1.0), vec3(1.0, 0.92, 0.68), hash(gridB + vec2(8.1)));
+              bg += col * glow * twinkle * (0.20 + size * 0.35);
+            }
+
+            // Layer C: Bright stars (large, twinkling, with photographic diffraction spikes)
+            vec2 pixelUvC = uvC * u_resolution;
+            vec2 gridC = floor(pixelUvC * 0.10);
+            float noiseC = hash(gridC);
+            if (noiseC > 0.968) {
+              vec2 jitter = vec2(hash(gridC + vec2(5.5)), hash(gridC + vec2(6.6))) - 0.5;
+              vec2 center = (gridC + vec2(0.5) + jitter * 0.8) / 0.10;
+              float d = distance(pixelUvC, center);
+              float glow = exp(-d * 0.95);
+              float size = hash(gridC + vec2(7.2));
+              float twinkle = sin(t * 2.8 + noiseC * 62.8) * 0.42 + 0.58;
+              vec3 col = mix(vec3(0.82, 0.92, 1.0), vec3(1.0, 0.95, 0.72), hash(gridC + vec2(11.2)));
+              bg += col * glow * (0.58 + size * 0.62) * twinkle;
+
+              // Photographic diffraction spikes for the very brightest stars in the field
+              if (size > 0.70) {
+                vec2 offset = pixelUvC - center;
+                float spike = (exp(-abs(offset.x) * 1.8) * exp(-abs(offset.y) * 0.18) +
+                               exp(-abs(offset.y) * 1.8) * exp(-abs(offset.x) * 0.18)) * 0.25 * twinkle;
+                bg += col * spike;
+              }
+            }
+
+            // Layer D: Dense stellar nursery pinpoints embedded deep in gas cores
+            vec2 pixelUvD = uvB * u_resolution * 1.5;
+            vec2 gridD = floor(pixelUvD);
+            float noiseD = hash(gridD);
+            if (noiseD > 0.955 - 0.22 * gasFactor) {
+              vec2 jitter = vec2(hash(gridD + vec2(12.3)), hash(gridD + vec2(15.4))) - 0.5;
+              vec2 center = (gridD + vec2(0.5) + jitter * 0.8);
+              float d = distance(pixelUvD, center);
+              float glow = exp(-d * 3.2);
+              bg += vec3(0.72, 0.85, 1.0) * glow * (0.04 + 0.12 * hash(gridD + vec2(19.8))) * gasFactor;
+            }
+
+            // 5. Detailed Hubble Deep-Field Spiral Galaxy at (0.68, 0.32)
+            vec2 galaxyOffset = galUv - vec2(0.68, 0.32);
+            galaxyOffset.y *= 1.85; // tilted perspective
             float cosAngle = cos(0.25 - t * 0.04);
             float sinAngle = sin(0.25 - t * 0.04);
             vec2 rotatedGalaxy = vec2(
               galaxyOffset.x * cosAngle - galaxyOffset.y * sinAngle,
               galaxyOffset.x * sinAngle + galaxyOffset.y * cosAngle
             );
-            float galIntensity = spiralGalaxy(rotatedGalaxy * 4.0, t * 0.4);
-            vec3 galCol = mix(vec3(0.5, 0.35, 0.8), vec3(0.9, 0.75, 0.5), 0.5);
-            bg += galCol * galIntensity * 1.4;
+            float galR = length(rotatedGalaxy);
+            if (galR < 0.35) {
+              float galTheta = atan(rotatedGalaxy.y, rotatedGalaxy.x);
+              // Spiraling arms with logarithmic winding
+              float armsVal = sin(galTheta * 2.0 - log(galR + 0.01) * 3.8 + t * 0.32);
+              
+              // Dark dust lane wrapping the galaxy core
+              float galDust = smoothstep(0.12, 0.55, sin(galTheta * 2.0 - log(galR + 0.01) * 3.8 + 1.25 + t * 0.32));
+              
+              float armIntensity = smoothstep(-0.2, 0.8, armsVal) * exp(-galR * 12.0) * galDust;
+              float coreIntensity = exp(-galR * 38.0) * 3.8;
+              
+              vec3 galaxyCoreColor = vec3(1.0, 0.88, 0.72) * coreIntensity;
+              vec3 galaxyArmColor = vec3(0.48, 0.72, 1.0) * armIntensity * 1.8;
+              
+              bg += (galaxyCoreColor + galaxyArmColor) * 2.2;
+            }
 
-            // 5. Polaris/Sirius-like Supergiant Pulsar with realistic camera diffraction flares
-            vec2 pulsarCenter = warpUv - vec2(0.28, 0.65);
-            float pulsarIntensity = starFlare(pulsarCenter * 15.0, 0.2);
-            float pulsarTwinkle = sin(t * 1.5) * 0.12 + 0.88;
-            bg += vec3(0.85, 0.92, 1.0) * pulsarIntensity * pulsarTwinkle * 1.5;
+            // 6. Supergiant Pulsar with photographic 8-point diffraction flare
+            vec2 pulsarOffset = pulsarUv - vec2(0.28, 0.65);
+            float pDist = length(pulsarOffset);
+            if (pDist < 0.28) {
+              float pulsarTwinkle = sin(t * 1.8) * 0.12 + 0.88;
+              float pCore = exp(-pDist * 280.0) * 2.2;
+              
+              // 8-point diffraction spikes rotation
+              float angle = 0.25;
+              float cosA = cos(angle);
+              float sinA = sin(angle);
+              vec2 rP = vec2(pulsarOffset.x * cosA - pulsarOffset.y * sinA, pulsarOffset.x * sinA + pulsarOffset.y * cosA);
+              
+              // Main spikes
+              float spikeX = exp(-abs(rP.y) * 450.0) * exp(-abs(rP.x) * 15.0) * 0.75;
+              float spikeY = exp(-abs(rP.x) * 450.0) * exp(-abs(rP.y) * 15.0) * 0.75;
+              
+              // Diagonal spikes (shorter and softer)
+              vec2 rP2 = vec2(rP.x - rP.y, rP.x + rP.y) * 0.707;
+              float spikeDiagX = exp(-abs(rP2.y) * 750.0) * exp(-abs(rP2.x) * 35.0) * 0.45;
+              float spikeDiagY = exp(-abs(rP2.x) * 750.0) * exp(-abs(rP2.y) * 35.0) * 0.45;
+              
+              float pHalo = exp(-pDist * 16.0) * 0.38;
+              float pGlow = exp(-pDist * 48.0) * 0.90;
+              
+              vec3 pulsarCol = vec3(0.85, 0.92, 1.0) * (pCore + spikeX + spikeY + spikeDiagX + spikeDiagY + pHalo + pGlow) * pulsarTwinkle;
+              bg += pulsarCol * 2.2;
+            }
 
             // Vignette
             float vig = 1.0 - 0.16 * pow(length(uvNorm - vec2(0.5)) * 1.3, 2.0);
