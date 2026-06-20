@@ -64,8 +64,8 @@ const recentThoughts = await getRecentPosts(SITE.featuredPostCount)
   </section>
 
   <Poll />
-  <div class="mt-2 text-center text-sm text-primary/80">
-    → Want a different vibe? <span id="theme-switch-hint" class="cursor-pointer underline">Try another theme</span>
+  <div class="mt-3 text-center text-xs tracking-widest text-primary/70 font-mono uppercase">
+    ↑ Want a different vibe? <span id="theme-switch-hint" class="cursor-pointer underline hover:text-primary transition-colors">Try another theme</span>
   </div>
   <script is:inline>
     const btn = document.getElementById('theme-switch-hint')
@@ -75,7 +75,7 @@ const recentThoughts = await getRecentPosts(SITE.featuredPostCount)
       const idx = themes.indexOf(current)
       const next = themes[(idx + 1) % themes.length]
       localStorage.setItem('celestial-theme', next)
-      document.dispatchEvent(new Event('celestial-theme-change'))
+      document.dispatchEvent(new CustomEvent('celestial-theme-change', { detail: { theme: next } }))
       location.reload()
     })
   </script>
@@ -106,7 +106,7 @@ const recentThoughts = await getRecentPosts(SITE.featuredPostCount)
     function syncStargazingLink() {
       const link = document.getElementById('stargazing-link')
       if (!link) return
-      const theme = localStorage.getItem('celestial-theme') || 'moon'
+      const theme = localStorage.getItem('celestial-theme') || 'stars'
       link.href = `/stargazing?theme=${theme}`
     }
     syncStargazingLink()

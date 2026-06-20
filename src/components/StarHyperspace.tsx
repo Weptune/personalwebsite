@@ -105,9 +105,17 @@ export default function StarHyperspace() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
+    let width = window.innerWidth
+    let height = window.innerHeight
+
     const resize = () => {
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
+      const dpr = window.devicePixelRatio || 1
+      width = window.innerWidth
+      height = window.innerHeight
+      canvas.width = width * dpr
+      canvas.height = height * dpr
+      canvas.style.width = `${width}px`
+      canvas.style.height = `${height}px`
     }
     resize()
     window.addEventListener('resize', resize)
@@ -170,7 +178,7 @@ export default function StarHyperspace() {
 
     for (let i = 0; i < STAR_COUNT; i++) stars.push(spawnStar())
 
-    const nebulaColors = ['#22d3ee', '#8b5cf6', '#f472b6', '#60a5fa', '#facc15']
+    const nebulaColors = ['#a78bfa', '#8b5cf6', '#c084fc', '#f472b6', '#6366f1']
     for (let i = 0; i < 16; i++) {
       nebulae.push({
         x: (Math.random() - 0.5) * 18000,
@@ -185,7 +193,7 @@ export default function StarHyperspace() {
 
     for (let i = 0; i < 7; i++) {
       dustRibbons.push({
-        y: (Math.random() - 0.5) * canvas.height,
+        y: (Math.random() - 0.5) * height,
         width: 70 + Math.random() * 180,
         phase: Math.random() * Math.PI * 2,
         alpha: 0.035 + Math.random() * 0.045,
@@ -206,14 +214,14 @@ export default function StarHyperspace() {
       }
       constellations.push({
         nodes,
-        color: Math.random() > 0.5 ? '#67e8f9' : '#c4b5fd',
+        color: Math.random() > 0.5 ? '#a78bfa' : '#c4b5fd',
         alpha: 0.08 + Math.random() * 0.08,
       })
     }
 
     const project = (x: number, y: number, z: number) => {
       const scale = FOV / z
-      return { x: canvas.width / 2 + x * scale, y: canvas.height / 2 - y * scale, scale }
+      return { x: width / 2 + x * scale, y: height / 2 - y * scale, scale }
     }
 
     let lastHud = 0
@@ -226,7 +234,7 @@ export default function StarHyperspace() {
       lastFrame = now
       const time = now * 0.001
 
-      if (!canvas.width || !canvas.height || canvas.width <= 0 || canvas.height <= 0) {
+      if (!width || !height || width <= 0 || height <= 0) {
         raf = requestAnimationFrame(frame)
         return
       }
@@ -244,31 +252,35 @@ export default function StarHyperspace() {
 
       speed += (targetSpeed * warpFactor * 0.12 - speed) * 0.012
 
+      const dpr = window.devicePixelRatio || 1
+      ctx.save()
+      ctx.scale(dpr, dpr)
+
       ctx.fillStyle = '#000000'
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.fillRect(0, 0, width, height)
 
       const spaceGlow = ctx.createRadialGradient(
-        canvas.width / 2, canvas.height / 2, 0,
-        canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) * 0.8,
+        width / 2, height / 2, 0,
+        width / 2, height / 2, Math.max(width, height) * 0.8,
       )
       spaceGlow.addColorStop(0, 'rgba(18,8,38,0.42)')
       spaceGlow.addColorStop(0.46, 'rgba(5,18,40,0.16)')
       spaceGlow.addColorStop(1, 'rgba(0,0,0,0)')
       ctx.fillStyle = spaceGlow
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.fillRect(0, 0, width, height)
 
       for (const ribbon of dustRibbons) {
-        const driftY = ((ribbon.y + Math.sin(time * 0.18 + ribbon.phase) * 70 + canvas.height * 1.5) % (canvas.height * 2)) - canvas.height * 0.5
-        const grad = ctx.createLinearGradient(0, driftY - ribbon.width, canvas.width, driftY + ribbon.width)
+        const driftY = ((ribbon.y + Math.sin(time * 0.18 + ribbon.phase) * 70 + height * 1.5) % (height * 2)) - height * 0.5
+        const grad = ctx.createLinearGradient(0, driftY - ribbon.width, width, driftY + ribbon.width)
         grad.addColorStop(0, 'rgba(0,0,0,0)')
-        grad.addColorStop(0.35, `rgba(56, 189, 248, ${ribbon.alpha})`)
-        grad.addColorStop(0.52, `rgba(168, 85, 247, ${ribbon.alpha * 0.8})`)
+        grad.addColorStop(0.35, `rgba(168, 85, 247, ${ribbon.alpha})`)
+        grad.addColorStop(0.52, `rgba(99, 102, 241, ${ribbon.alpha * 0.8})`)
         grad.addColorStop(0.7, 'rgba(0,0,0,0)')
         ctx.fillStyle = grad
         ctx.save()
-        ctx.translate(canvas.width / 2, driftY)
+        ctx.translate(width / 2, driftY)
         ctx.rotate(-0.12 + Math.sin(ribbon.phase) * 0.08)
-        ctx.fillRect(-canvas.width, -ribbon.width / 2, canvas.width * 2, ribbon.width)
+        ctx.fillRect(-width, -ribbon.width / 2, width * 2, ribbon.width)
         ctx.restore()
       }
 
@@ -284,7 +296,7 @@ export default function StarHyperspace() {
         }
         const p = project(nebula.x, nebula.y, nebula.z)
         const r = nebula.radius * p.scale
-        if (r < 20 || p.x < -r || p.x > canvas.width + r || p.y < -r || p.y > canvas.height + r) continue
+        if (r < 20 || p.x < -r || p.x > width + r || p.y < -r || p.y > height + r) continue
         const rgb = hexToRgb(nebula.color)
         const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r)
         grad.addColorStop(0, `rgba(${rgb.r},${rgb.g},${rgb.b},${nebula.alpha})`)
@@ -362,6 +374,8 @@ export default function StarHyperspace() {
       }
       ctx.globalAlpha = 1
 
+      ctx.restore()
+
       if (now - lastHud > 100) {
         lastHud = now
         const phase = getPhase(dist)
@@ -401,14 +415,14 @@ export default function StarHyperspace() {
       <a
         href="/"
         data-astro-reload=""
-        className="pointer-events-auto fixed right-6 top-6 z-40 border-2 border-cyan-400/80 bg-black/85 px-4 py-2 font-mono text-xs text-white shadow-lg shadow-black/50 backdrop-blur-sm transition-all hover:bg-cyan-400/20 sm:px-5 sm:py-2.5 sm:text-sm"
+        className="pointer-events-auto fixed right-6 top-6 z-40 border-2 border-purple-400/80 bg-black/85 px-4 py-2 font-mono text-xs text-white shadow-lg shadow-black/50 backdrop-blur-sm transition-all hover:bg-purple-400/20 sm:px-5 sm:py-2.5 sm:text-sm"
       >
         ← back
       </a>
 
       {phaseFlash && (
         <div className="pointer-events-none absolute inset-x-0 top-1/3 z-40 flex justify-center">
-          <p className="animate-pulse border border-cyan-400/50 bg-black/70 px-6 py-3 font-mono text-sm uppercase tracking-[0.3em] text-cyan-200 shadow-lg shadow-black/60">
+          <p className="animate-pulse border border-purple-400/50 bg-black/70 px-6 py-3 font-mono text-sm uppercase tracking-[0.3em] text-purple-200 shadow-lg shadow-black/60">
             entering {phaseFlash}
           </p>
         </div>
@@ -416,55 +430,55 @@ export default function StarHyperspace() {
 
       {gameState === 'victory' && (
         <div className="pointer-events-none absolute inset-x-0 bottom-28 z-40 flex justify-center">
-          <p className="border border-cyan-500/40 bg-black/75 px-5 py-2 font-mono text-xs uppercase tracking-wider text-cyan-100/90">
+          <p className="border border-purple-500/40 bg-black/75 px-5 py-2 font-mono text-xs uppercase tracking-wider text-purple-100/90">
             Target nebula · {MAX_LY} ly · transit complete
           </p>
         </div>
       )}
 
       <div className="pointer-events-none absolute left-6 top-1/2 z-30 hidden -translate-y-1/2 sm:block">
-        <div className="h-64 w-1.5 overflow-hidden rounded-full border border-cyan-900/40 bg-black/50">
+        <div className="h-64 w-1.5 overflow-hidden rounded-full border border-purple-900/40 bg-black/50">
           <div
-            className="w-full bg-gradient-to-t from-indigo-950 via-cyan-600 to-cyan-200 transition-all duration-300"
+            className="w-full bg-gradient-to-t from-indigo-950 via-purple-600 to-purple-200 transition-all duration-300"
             style={{ height: `${progressPct}%`, marginTop: `${100 - progressPct}%` }}
           />
         </div>
-        <p className="mt-2 text-center font-mono text-[10px] text-cyan-500/70">0 ly</p>
-        <p className="mt-[200px] text-center font-mono text-[10px] text-cyan-500/70">{MAX_LY} ly</p>
+        <p className="mt-2 text-center font-mono text-[10px] text-purple-500/70">0 ly</p>
+        <p className="mt-[200px] text-center font-mono text-[10px] text-purple-500/70">{MAX_LY} ly</p>
       </div>
 
       <div className="pointer-events-none absolute right-6 top-[5.25rem] z-30 space-y-1 font-mono text-xs">
-        <div className="min-w-[170px] border border-cyan-700/50 bg-black/85 px-4 py-3 shadow-lg shadow-black/50 backdrop-blur-sm">
+        <div className="min-w-[170px] border border-purple-700/50 bg-black/85 px-4 py-3 shadow-lg shadow-black/50 backdrop-blur-sm">
           <p className="text-2xl font-bold tabular-nums text-white drop-shadow-md">
             {hud.distance.toFixed(1)}
-            <span className="text-sm font-normal text-cyan-300/90"> ly</span>
+            <span className="text-sm font-normal text-purple-300/90"> ly</span>
           </p>
-          <p className="mt-1 text-[10px] uppercase tracking-widest text-cyan-200">{hud.phase.short}</p>
-          <p className="mt-0.5 text-[10px] text-cyan-400/80">{hud.phase.name}</p>
+          <p className="mt-1 text-[10px] uppercase tracking-widest text-purple-200">{hud.phase.short}</p>
+          <p className="mt-0.5 text-[10px] text-purple-400/80">{hud.phase.name}</p>
         </div>
-        <div className="space-y-1 border border-cyan-900/50 bg-black/80 px-3 py-2 text-[10px] text-cyan-300/90 shadow-lg shadow-black/40">
-          <p>▸ WARP FACTOR <span className="float-right text-cyan-300/90">{hud.warpFactor.toFixed(1)}</span></p>
-          <p>▸ VELOCITY <span className="float-right text-cyan-300/90">{hud.velocity} c</span></p>
-          <p>▸ STARS PASSED <span className="float-right text-cyan-300/90">{hud.starsPassed.toLocaleString()}</span></p>
-          <p>▸ ETA <span className="float-right text-cyan-300/90">{hud.eta > 0 ? `${Math.ceil(hud.eta)}s` : '—'}</span></p>
+        <div className="space-y-1 border border-purple-900/50 bg-black/80 px-3 py-2 text-[10px] text-purple-300/90 shadow-lg shadow-black/40">
+          <p>▸ WARP FACTOR <span className="float-right text-purple-300/90">{hud.warpFactor.toFixed(1)}</span></p>
+          <p>▸ VELOCITY <span className="float-right text-purple-300/90">{hud.velocity} c</span></p>
+          <p>▸ STARS PASSED <span className="float-right text-purple-300/90">{hud.starsPassed.toLocaleString()}</span></p>
+          <p>▸ ETA <span className="float-right text-purple-300/90">{hud.eta > 0 ? `${Math.ceil(hud.eta)}s` : '—'}</span></p>
         </div>
       </div>
 
       <div className="pointer-events-none absolute inset-0 z-30 flex flex-col p-6 sm:p-8">
-        <div className="max-w-[min(100%,42rem)] border-b-2 border-cyan-500/60 pb-3 pr-28">
+        <div className="max-w-[min(100%,42rem)] border-b-2 border-purple-500/60 pb-3 pr-28">
           <h1 className="text-2xl font-bold tracking-wider text-white drop-shadow-lg sm:text-4xl">
             HYPERSPACE TRANSIT
           </h1>
-          <p className="mt-1 font-mono text-[10px] uppercase tracking-wider text-cyan-200 sm:text-xs">
+          <p className="mt-1 font-mono text-[10px] uppercase tracking-wider text-purple-200 sm:text-xs">
             {hud.phase.name} · {hud.phase.short}
           </p>
         </div>
         <div className="flex-1" />
-        <div className="pointer-events-none border-t-2 border-cyan-700/50 pt-3">
-          <p className="font-mono text-[10px] text-cyan-100/90 drop-shadow sm:text-xs">
+        <div className="pointer-events-none border-t-2 border-purple-700/50 pt-3">
+          <p className="font-mono text-[10px] text-purple-100/90 drop-shadow sm:text-xs">
             ▸ OBJECTIVE: REACH TARGET NEBULA · {MAX_LY} LIGHT-YEAR MARKER · WARP FACTOR {hud.warpFactor.toFixed(1)}
           </p>
-          <p className="mt-1 font-mono text-[10px] text-cyan-600/50">
+          <p className="mt-1 font-mono text-[10px] text-purple-600/50">
             ▸ {hud.distance.toFixed(1)} ly traversed — {gameState === 'victory' ? 'holding at destination' : `${Math.ceil(hud.eta)}s to target`}
           </p>
         </div>
@@ -473,29 +487,29 @@ export default function StarHyperspace() {
       {/* ── Victory Screen Overlay ── */}
       {gameState === 'victory' && (
         <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/85 backdrop-blur-md p-6">
-          <div className="max-w-md w-full border border-cyan-500/40 bg-black/95 p-8 text-center shadow-2xl">
-            <h2 className="text-3xl font-bold tracking-widest text-cyan-400 font-mono mb-2">
+          <div className="max-w-md w-full border border-purple-500/40 bg-black/95 p-8 text-center shadow-2xl">
+            <h2 className="text-3xl font-bold tracking-widest text-purple-400 font-mono mb-2">
               TRANSIT COMPLETE
             </h2>
-            <p className="text-[10px] font-mono text-cyan-200/60 tracking-widest mb-4">
+            <p className="text-[10px] font-mono text-purple-200/60 tracking-widest mb-4">
               Target nebula reached · {MAX_LY} ly traversed
             </p>
-            <p className="font-mono text-[11px] text-white/75 leading-relaxed mb-6 border-y border-cyan-900/40 py-4 px-2">
-              Redirecting to home page in <span className="text-cyan-400 font-bold">{redirectCountdown}s</span>...
+            <p className="font-mono text-[11px] text-white/75 leading-relaxed mb-6 border-y border-purple-900/40 py-4 px-2">
+              Redirecting to home page in <span className="text-purple-400 font-bold">{redirectCountdown}s</span>...
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => {
                   setGameState('playing')
                 }}
-                className="pointer-events-auto flex-1 border border-cyan-700/50 bg-black/50 hover:bg-cyan-950/40 text-cyan-200 font-mono text-[10px] px-4 py-2.5 transition-all tracking-widest cursor-pointer flex items-center justify-center"
+                className="pointer-events-auto flex-1 border border-purple-700/50 bg-black/50 hover:bg-purple-950/40 text-purple-200 font-mono text-[10px] px-4 py-2.5 transition-all tracking-widest cursor-pointer flex items-center justify-center"
               >
                 KEEP WARPING
               </button>
               <a
                 href="/"
                 data-astro-reload=""
-                className="pointer-events-auto flex-1 border border-cyan-500/80 bg-cyan-500/10 hover:bg-cyan-500/20 text-white font-mono text-[10px] px-4 py-2.5 transition-all tracking-widest cursor-pointer flex items-center justify-center"
+                className="pointer-events-auto flex-1 border border-purple-500/80 bg-purple-500/10 hover:bg-purple-500/20 text-white font-mono text-[10px] px-4 py-2.5 transition-all tracking-widest cursor-pointer flex items-center justify-center"
               >
                 RETURN HOME
               </a>

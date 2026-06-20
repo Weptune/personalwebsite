@@ -13,7 +13,7 @@ import SpacePlayground from '@/components/SpacePlayground'
         const params = new URLSearchParams(window.location.search)
         const urlTheme = params.get('theme')
         const valid = ['stars', 'sun', 'ocean', 'sky', 'moon']
-        const t = valid.includes(urlTheme) ? urlTheme : (localStorage.getItem('celestial-theme') || 'moon')
+        const t = valid.includes(urlTheme) ? urlTheme : (localStorage.getItem('celestial-theme') || 'stars')
         document.documentElement.setAttribute('data-celestial-theme', t)
         localStorage.setItem('celestial-theme', t)
       } catch {}

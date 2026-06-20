@@ -147,7 +147,7 @@ const OPTIONS = ['The Stars', 'The Sun', 'The Ocean', 'The Sky', 'The Moon'] as 
 
     // Set initial checked radio based on active theme
     try {
-      const storedTheme = localStorage.getItem('celestial-theme') || 'moon'
+      const storedTheme = localStorage.getItem('celestial-theme') || 'stars'
       const revMap: Record<string, string> = {
         stars: 'The Stars',
         sun: 'The Sun',
@@ -472,26 +472,6 @@ const OPTIONS = ['The Stars', 'The Sun', 'The Ocean', 'The Sky', 'The Moon'] as 
 
     // Restore results instantly if already voted
     if (hasVoted()) {
-      const themeMap: Record<string, string> = {
-        'The Stars': 'stars',
-        'The Sun': 'sun',
-        'The Ocean': 'ocean',
-        'The Sky': 'sky',
-        'The Moon': 'moon'
-      }
-      const savedChoice = localStorage.getItem(POLL_KEY)
-      if (savedChoice) {
-        const expectedTheme = themeMap[savedChoice]
-        const currentStoredTheme = localStorage.getItem('celestial-theme')
-        if (expectedTheme && currentStoredTheme !== expectedTheme) {
-          localStorage.setItem('celestial-theme', expectedTheme)
-          applyThemeVars(expectedTheme)
-          document.dispatchEvent(new CustomEvent('celestial-theme-change', {
-            detail: { theme: expectedTheme }
-          }))
-        }
-      }
-
       const localCounts = getLocalCounts()
       showResultsUI(localCounts)
       
