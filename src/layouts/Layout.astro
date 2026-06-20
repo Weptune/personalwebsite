@@ -1863,27 +1863,67 @@ const { class: className } = Astro.props
 
             // Initialize elegant background constellations for Stars theme
             const starsConstellationsData = [
-              { scale: 0.14, centerX: 0.22, centerY: 0.20,
-                stars: [{x:0,y:0},{x:0.3,y:-0.1},{x:0.6,y:0.1},{x:0.7,y:0.4},{x:0.5,y:0.6},{x:0.1,y:0.5}],
-                connections: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,0]] },
-              { scale: 0.12, centerX: 0.8, centerY: 0.7,
-                stars: [{x:0,y:0.2},{x:0.3,y:0},{x:0.5,y:0.3},{x:0.8,y:0.15},{x:0.95,y:0.4}],
+              // 1. Ursa Major (Big Dipper) - Top Left
+              { name: 'Ursa Major', coords: 'RA 10h 40m / DEC +55°', scale: 0.12, centerX: 0.08, centerY: 0.12,
+                stars: [
+                  {x:0, y:0.2, isMajor: true},     // Dubhe (Alpha)
+                  {x:0.1, y:0.42},   // Merak
+                  {x:0.35, y:0.38},  // Phecda
+                  {x:0.42, y:0.12},  // Megrez
+                  {x:0.62, y:0.04},  // Alioth
+                  {x:0.8, y:-0.05, isMajor: true},  // Mizar (Zeta)
+                  {x:0.95, y:-0.18}  // Alkaid
+                ],
+                connections: [[0,1],[1,2],[2,3],[3,0],[3,4],[4,5],[5,6]] },
+              // 2. Cassiopeia (The W) - Top Right
+              { name: 'Cassiopeia', coords: 'RA 1h 0m / DEC +60°', scale: 0.10, centerX: 0.78, centerY: 0.12,
+                stars: [
+                  {x:0, y:0.1},      // Segin
+                  {x:0.22, y:-0.15},  // Ruchbah
+                  {x:0.45, y:0.05, isMajor: true},   // Tsih (Gamma)
+                  {x:0.72, y:-0.18, isMajor: true},  // Shedar (Alpha)
+                  {x:0.95, y:0.08}    // Caph
+                ],
                 connections: [[0,1],[1,2],[2,3],[3,4]] },
-              { scale: 0.15, centerX: 0.18, centerY: 0.72,
-                stars: [{x:0,y:0},{x:0.2,y:0.3},{x:0.5,y:0.4},{x:0.6,y:0.1},{x:0.8,y:-0.15}],
-                connections: [[0,1],[1,2],[2,3],[3,4],[2,0]] },
-              { scale: 0.12, centerX: 0.48, centerY: 0.15,
-                stars: [{x:0,y:0},{x:0.15,y:-0.05},{x:0.3,y:0},{x:0.4,y:0.15},{x:0.45,y:0.35},{x:0.28,y:0.4},{x:0.2,y:0.22}],
-                connections: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,3]] },
-              { scale: 0.1, centerX: 0.78, centerY: 0.18,
-                stars: [{x:0,y:0},{x:0.2,y:0.2},{x:0.4,y:0},{x:0.6,y:0.3},{x:0.8,y:0.1}],
-                connections: [[0,1],[1,2],[2,3],[3,4]] },
-              { scale: 0.11, centerX: 0.12, centerY: 0.45,
-                stars: [{x:0,y:0},{x:0.2,y:0},{x:0.4,y:0},{x:0.6,y:0},{x:0.3,y:-0.3},{x:0.3,y:0.3}],
-                connections: [[0,1],[1,2],[2,3],[1,4],[1,5]] },
-              { scale: 0.13, centerX: 0.42, centerY: 0.82,
-                stars: [{x:0,y:0},{x:0.4,y:0},{x:0.1,y:0.3},{x:0.2,y:0.3},{x:0.3,y:0.3},{x:0,y:0.6},{x:0.4,y:0.6}],
-                connections: [[0,1],[0,2],[1,4],[2,3],[3,4],[2,5],[4,6],[5,6]] }
+              // 3. Orion (The Hunter) - Bottom Right
+              { name: 'Orion', coords: 'RA 5h 30m / DEC 0°', scale: 0.14, centerX: 0.76, centerY: 0.62,
+                stars: [
+                  {x:0.1, y:-0.3, isMajor: true},   // Betelgeuse (Alpha)
+                  {x:0.45, y:-0.28}, // Bellatrix
+                  {x:0.22, y:0.05},  // Alnitak
+                  {x:0.28, y:0.05},  // Alnilam
+                  {x:0.34, y:0.05},  // Mintaka
+                  {x:0.15, y:0.4},   // Saiph
+                  {x:0.42, y:0.42, isMajor: true},  // Rigel (Beta)
+                  {x:0.28, y:-0.45}  // Meissa (head)
+                ],
+                connections: [[0,1],[0,2],[1,4],[2,3],[3,4],[2,5],[4,6],[5,6],[0,7],[1,7]] },
+              // 4. Cygnus (The Swan) - Mid Left
+              { name: 'Cygnus', coords: 'RA 20h 30m / DEC +42°', scale: 0.13, centerX: 0.08, centerY: 0.48,
+                stars: [
+                  {x:0.5, y:-0.4, isMajor: true},   // Deneb (Alpha)
+                  {x:0.5, y:0.0},    // Sadr
+                  {x:0.5, y:0.5},    // Albireo
+                  {x:0.0, y:-0.05},  // Gienah
+                  {x:0.25, y:-0.02}, // wing left inner
+                  {x:1.0, y:0.05, isMajor: true},   // Fawaris
+                  {x:0.75, y:0.02}   // wing right inner
+                ],
+                connections: [[0,1],[1,2],[1,4],[4,3],[1,6],[6,5]] },
+              // 5. Leo (The Lion) - Bottom Left/Mid
+              { name: 'Leo', coords: 'RA 10h 30m / DEC +15°', scale: 0.13, centerX: 0.32, centerY: 0.72,
+                stars: [
+                  {x:0.0, y:0.2},     // Denebola
+                  {x:0.35, y:0.15},   // Chertan
+                  {x:0.42, y:-0.1},   // Zosma
+                  {x:0.7, y:-0.15},   // Algieba
+                  {x:0.75, y:0.25, isMajor: true},   // Regulus (Alpha)
+                  {x:0.48, y:0.3},    // Subra
+                  {x:0.9, y:-0.05},   // Adhafera
+                  {x:0.88, y:-0.25},  // Rasalas
+                  {x:0.75, y:-0.32}   // Al Minliar
+                ],
+                connections: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,1],[3,6],[6,7],[7,8]] }
             ]
             for (let c of starsConstellationsData) {
               const cStars = c.stars.map(s => ({
@@ -1891,9 +1931,12 @@ const { class: className } = Astro.props
                 relY: c.centerY + s.y * c.scale,
                 tw: Math.random() * Math.PI * 2,
                 pulseSpeed: 1000 + Math.random() * 1500,
-                r: 0.85 + Math.random() * 1.3
+                r: (s.isMajor ? 1.4 : 0.85) + Math.random() * 0.9,
+                isMajor: s.isMajor || false
               }))
               constellationSystems.push({
+                name: c.name,
+                coords: c.coords,
                 stars: cStars,
                 connections: c.connections
               })
@@ -2065,20 +2108,69 @@ const { class: className } = Astro.props
               baseAlpha: 1.0
             })
 
-            // Generate 4 elegant background constellations
+            // Generate 5 elegant background constellations for Moon theme
             const constellationsData = [
-              { scale: 0.12, centerX: 0.12, centerY: 0.25,
-                stars: [{x:0,y:0},{x:0.2,y:0.08},{x:0.4,y:0.12},{x:0.52,y:0.28},{x:0.56,y:0.52},{x:0.8,y:0.56},{x:0.84,y:0.32},{x:0.56,y:0.28}],
-                connections: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,4]] },
-              { scale: 0.09, centerX: 0.58, centerY: 0.20,
-                stars: [{x:0,y:0},{x:0.25,y:0.35},{x:0.5,y:0.08},{x:0.75,y:0.4},{x:1.0,y:0.04}],
+              // 1. Ursa Major (Big Dipper) - Top Left
+              { name: 'Ursa Major', coords: 'RA 10h 40m / DEC +55°', scale: 0.12, centerX: 0.08, centerY: 0.12,
+                stars: [
+                  {x:0, y:0.2, isMajor: true},     // Dubhe
+                  {x:0.1, y:0.42},   // Merak
+                  {x:0.35, y:0.38},  // Phecda
+                  {x:0.42, y:0.12},  // Megrez
+                  {x:0.62, y:0.04},  // Alioth
+                  {x:0.8, y:-0.05, isMajor: true},  // Mizar
+                  {x:0.95, y:-0.18}  // Alkaid
+                ],
+                connections: [[0,1],[1,2],[2,3],[3,0],[3,4],[4,5],[5,6]] },
+              // 2. Cassiopeia (The W) - Top Right
+              { name: 'Cassiopeia', coords: 'RA 1h 0m / DEC +60°', scale: 0.10, centerX: 0.78, centerY: 0.12,
+                stars: [
+                  {x:0, y:0.1},      // Segin
+                  {x:0.22, y:-0.15},  // Ruchbah
+                  {x:0.45, y:0.05, isMajor: true},   // Tsih
+                  {x:0.72, y:-0.18, isMajor: true},  // Shedar
+                  {x:0.95, y:0.08}    // Caph
+                ],
                 connections: [[0,1],[1,2],[2,3],[3,4]] },
-              { scale: 0.13, centerX: 0.15, centerY: 0.68,
-                stars: [{x:0.5,y:0},{x:0.5,y:0.45},{x:0.5,y:1.0},{x:0,y:0.45},{x:1.0,y:0.45}],
-                connections: [[0,1],[1,2],[3,1],[1,4]] },
-              { scale: 0.14, centerX: 0.42, centerY: 0.62,
-                stars: [{x:0.2,y:0.1},{x:0.8,y:0.15},{x:0.5,y:0.5},{x:0.4,y:0.48},{x:0.6,y:0.52},{x:0.8,y:0.9},{x:0.2,y:0.85}],
-                connections: [[0,3],[1,4],[3,2],[2,4],[3,6],[4,5],[6,5]] }
+              // 3. Orion (The Hunter) - Bottom Right
+              { name: 'Orion', coords: 'RA 5h 30m / DEC 0°', scale: 0.14, centerX: 0.76, centerY: 0.62,
+                stars: [
+                  {x:0.1, y:-0.3, isMajor: true},   // Betelgeuse
+                  {x:0.45, y:-0.28}, // Bellatrix
+                  {x:0.22, y:0.05},  // Alnitak
+                  {x:0.28, y:0.05},  // Alnilam
+                  {x:0.34, y:0.05},  // Mintaka
+                  {x:0.15, y:0.4},   // Saiph
+                  {x:0.42, y:0.42, isMajor: true},  // Rigel
+                  {x:0.28, y:-0.45}  // Meissa (head)
+                ],
+                connections: [[0,1],[0,2],[1,4],[2,3],[3,4],[2,5],[4,6],[5,6],[0,7],[1,7]] },
+              // 4. Cygnus (The Swan) - Mid Left
+              { name: 'Cygnus', coords: 'RA 20h 30m / DEC +42°', scale: 0.13, centerX: 0.08, centerY: 0.48,
+                stars: [
+                  {x:0.5, y:-0.4, isMajor: true},   // Deneb
+                  {x:0.5, y:0.0},    // Sadr
+                  {x:0.5, y:0.5},    // Albireo
+                  {x:0.0, y:-0.05},  // Gienah (wingtip left)
+                  {x:0.25, y:-0.02}, // wing left inner
+                  {x:1.0, y:0.05, isMajor: true},   // Fawaris (wingtip right)
+                  {x:0.75, y:0.02}   // wing right inner
+                ],
+                connections: [[0,1],[1,2],[1,4],[4,3],[1,6],[6,5]] },
+              // 5. Leo (The Lion) - Bottom Left/Mid
+              { name: 'Leo', coords: 'RA 10h 30m / DEC +15°', scale: 0.13, centerX: 0.32, centerY: 0.72,
+                stars: [
+                  {x:0.0, y:0.2},     // Denebola
+                  {x:0.35, y:0.15},   // Chertan
+                  {x:0.42, y:-0.1},   // Zosma
+                  {x:0.7, y:-0.15},   // Algieba
+                  {x:0.75, y:0.25, isMajor: true},   // Regulus
+                  {x:0.48, y:0.3},    // Subra
+                  {x:0.9, y:-0.05},   // Adhafera
+                  {x:0.88, y:-0.25},  // Rasalas
+                  {x:0.75, y:-0.32}   // Al Minliar
+                ],
+                connections: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,1],[3,6],[6,7],[7,8]] }
             ]
 
             for (let c of constellationsData) {
@@ -2087,9 +2179,12 @@ const { class: className } = Astro.props
                 relY: c.centerY + s.y * c.scale,
                 tw: Math.random() * Math.PI * 2,
                 pulseSpeed: 1200 + Math.random() * 1200,
-                r: 1.0 + Math.random() * 1.5
+                r: (s.isMajor ? 1.45 : 0.95) + Math.random() * 1.0,
+                isMajor: s.isMajor || false
               }))
               constellationSystems.push({
+                name: c.name,
+                coords: c.coords,
                 stars: cStars,
                 connections: c.connections
               })
@@ -2422,14 +2517,16 @@ const { class: className } = Astro.props
              const isMoon = currentTheme === 'moon'
              
              for (let c of constellationSystems) {
-               // Draw connection lines
-               ctx.strokeStyle = isMoon ? 'rgba(203, 213, 225, 0.12)' : 'rgba(192, 132, 252, 0.48)'
-               ctx.lineWidth = isMoon ? 0.75 : 1.3
-               ctx.setLineDash(isMoon ? [2, 3] : [4, 4]) // Flowing dashes for stars theme
+               // Draw connection lines - solid, thin, with organic breathing glow
+               const linePulse = 0.75 + 0.25 * Math.sin(t * 0.0008)
+               ctx.strokeStyle = isMoon 
+                 ? `rgba(203, 213, 225, ${0.14 * linePulse})` 
+                 : `rgba(167, 139, 250, ${0.35 * linePulse})`
+               ctx.lineWidth = isMoon ? 0.65 : 0.95
+               
                if (!isMoon) {
-                 ctx.lineDashOffset = -t * 0.035
-                 ctx.shadowColor = '#a855f7'
-                 ctx.shadowBlur = 5
+                 ctx.shadowColor = '#c084fc'
+                 ctx.shadowBlur = 3.5
                }
                for (let conn of c.connections) {
                  const s1 = c.stars[conn[0]]
@@ -2439,21 +2536,39 @@ const { class: className } = Astro.props
                  ctx.lineTo(s2.relX * width + dx, s2.relY * height + dy)
                  ctx.stroke()
                }
-               ctx.setLineDash([]) // Reset
                ctx.shadowBlur = 0 // Reset
 
                // Draw star nodes
                for (let s of c.stars) {
                  const sx = s.relX * width + dx
                  const sy = s.relY * height + dy
-                 const alpha = isMoon ? (0.2 + 0.65 * Math.abs(Math.sin(t / s.pulseSpeed + s.tw))) : (0.45 + 0.35 * Math.sin(t / s.pulseSpeed + s.tw))
+                 const alpha = isMoon 
+                   ? (0.2 + 0.65 * Math.abs(Math.sin(t / s.pulseSpeed + s.tw))) 
+                   : (0.45 + 0.35 * Math.sin(t / s.pulseSpeed + s.tw))
                  
                  // Glow
                  ctx.beginPath()
                  ctx.arc(sx, sy, s.r * (isMoon ? 2.5 : 3.8), 0, Math.PI * 2)
-                 ctx.fillStyle = isMoon ? 'rgba(226, 232, 240, 0.22)' : 'rgba(192, 132, 252, 0.55)'
+                 ctx.fillStyle = isMoon ? 'rgba(226, 232, 240, 0.22)' : 'rgba(167, 139, 250, 0.55)'
                  ctx.globalAlpha = alpha * 0.45
                  ctx.fill()
+
+                 // Lens Flare for major stars
+                 if (s.isMajor) {
+                   const flareSize = s.r * (isMoon ? 4.5 : 6.0) * alpha
+                   ctx.strokeStyle = isMoon ? 'rgba(226, 232, 240, 0.38)' : 'rgba(196, 181, 253, 0.5)'
+                   ctx.lineWidth = 0.5
+                   
+                   ctx.beginPath()
+                   ctx.moveTo(sx - flareSize, sy)
+                   ctx.lineTo(sx + flareSize, sy)
+                   ctx.stroke()
+                   
+                   ctx.beginPath()
+                   ctx.moveTo(sx, sy - flareSize)
+                   ctx.lineTo(sx, sy + flareSize)
+                   ctx.stroke()
+                 }
 
                  // Core
                  ctx.beginPath()
@@ -2462,9 +2577,38 @@ const { class: className } = Astro.props
                  ctx.globalAlpha = alpha
                  ctx.fill()
                }
-              }
-              ctx.restore()
-
+               
+               // Draw Constellation Label (Name + Coords)
+               if (c.name) {
+                 let sumX = 0, maxY = -9999
+                 for (let s of c.stars) {
+                   const sx = s.relX * width + dx
+                   const sy = s.relY * height + dy
+                   sumX += sx
+                   if (sy > maxY) maxY = sy
+                 }
+                 const labelX = sumX / c.stars.length
+                 const labelY = maxY + 22
+                 
+                 ctx.globalAlpha = isMoon ? 0.35 * linePulse : 0.45 * linePulse
+                 ctx.textAlign = 'center'
+                 
+                 // Draw Name (spaced out uppercase)
+                 ctx.font = "500 9px 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
+                 ctx.fillStyle = isMoon ? '#cbd5e1' : '#c084fc'
+                 const spacedName = c.name.toUpperCase().split('').map(char => char === ' ' ? '   ' : char + ' ').join('')
+                 ctx.fillText(spacedName, labelX, labelY)
+                 
+                 // Draw Coordinates below name
+                 if (c.coords) {
+                   ctx.font = "400 7px 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
+                   ctx.fillStyle = isMoon ? '#94a3b8' : '#a78bfa'
+                   ctx.globalAlpha = isMoon ? 0.25 * linePulse : 0.35 * linePulse
+                   ctx.fillText(c.coords, labelX, labelY + 9)
+                 }
+               }
+             }
+             ctx.restore()
               // Spawn a satellite periodically (more active for stars theme)
               const maxSatellites = isMoon ? 1 : 2
               const spawnProb = isMoon ? 0.003 : 0.008
@@ -2889,23 +3033,45 @@ const { class: className } = Astro.props
               }
             }
 
-            for (let i = meteors.length - 1; i >= 0; i--) {
-              const meteor = meteors[i]
-              meteor.x += meteor.vx
-              meteor.y += meteor.vy
-              meteor.life -= 0.005
-              if (meteor.life <= 0) {
-                meteors.splice(i, 1)
-              } else {
-                ctx.globalAlpha = meteor.life * 0.7 * (0.4 + 0.6 * Math.sin(meteor.life * Math.PI))
-                ctx.globalCompositeOperation = 'lighter'
-                ctx.strokeStyle = meteor.color; ctx.lineWidth = meteor.r; ctx.lineCap = 'round'; ctx.beginPath()
-                ctx.moveTo(meteor.x - meteor.vx * meteor.trailLength, meteor.y - meteor.vy * meteor.trailLength)
-                ctx.lineTo(meteor.x, meteor.y); ctx.stroke()
-                ctx.shadowColor = currentTheme === 'moon' ? '#cbd5e1' : '#ffeeaa'; ctx.shadowBlur = 20; ctx.fillStyle = meteor.color; ctx.beginPath()
-                ctx.arc(meteor.x, meteor.y, meteor.r, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0
-                ctx.globalCompositeOperation = 'source-over'
-              }
+          }
+
+          for (let i = meteors.length - 1; i >= 0; i--) {
+            const meteor = meteors[i]
+            meteor.x += meteor.vx
+            meteor.y += meteor.vy
+            meteor.life -= 0.005
+            if (meteor.life <= 0) {
+              meteors.splice(i, 1)
+            } else {
+              ctx.globalAlpha = meteor.life * 0.7 * (0.4 + 0.6 * Math.sin(meteor.life * Math.PI))
+              ctx.globalCompositeOperation = 'lighter'
+              
+              const startX = meteor.x - meteor.vx * meteor.trailLength
+              const startY = meteor.y - meteor.vy * meteor.trailLength
+              const grad = ctx.createLinearGradient(startX, startY, meteor.x, meteor.y)
+              
+              const baseColor = currentTheme === 'moon' ? '226, 232, 240' : '255, 221, 170'
+              grad.addColorStop(0, `rgba(${baseColor}, 0)`)
+              grad.addColorStop(0.4, `rgba(${baseColor}, 0.15)`)
+              grad.addColorStop(0.8, `rgba(${baseColor}, 0.5)`)
+              grad.addColorStop(1, `rgba(${baseColor}, 1)`)
+              
+              ctx.strokeStyle = grad
+              ctx.lineWidth = meteor.r
+              ctx.lineCap = 'round'
+              ctx.beginPath()
+              ctx.moveTo(startX, startY)
+              ctx.lineTo(meteor.x, meteor.y)
+              ctx.stroke()
+              
+              ctx.shadowColor = currentTheme === 'moon' ? '#cbd5e1' : '#ffeeaa'
+              ctx.shadowBlur = 15
+              ctx.fillStyle = meteor.color
+              ctx.beginPath()
+              ctx.arc(meteor.x, meteor.y, meteor.r * 1.2, 0, Math.PI * 2)
+              ctx.fill()
+              ctx.shadowBlur = 0
+              ctx.globalCompositeOperation = 'source-over'
             }
           }
 
