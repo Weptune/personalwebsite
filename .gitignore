@@ -11,3 +11,12 @@ pnpm-debug.log*
 .idea/
 teaser.pptx
 ~$teaser.pptx
+
+# Prototyping/testing/log/backup files
+check_test_libraries.py
+raw_chunks.txt
+run_selenium_test.py
+spotify-auth.js
+verify_delete.py
+verify_patch.py
+*.astro.backup
