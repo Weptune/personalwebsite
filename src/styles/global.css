@@ -817,7 +817,7 @@ body {
 }
 
 [data-celestial-theme="ocean"] header {
-  background: rgba(1, 10, 16, 0.35) !important;
+  background: transparent !important;
 }
 
 [data-celestial-theme="ocean"] .gothic-panel:hover {
@@ -1055,7 +1055,7 @@ body {
 }
 
 [data-celestial-theme="sky"] header {
-  background: rgba(14, 2, 10, 0.35) !important;
+  background: transparent !important;
 }
 
 [data-celestial-theme="sky"] .gothic-panel:hover {
@@ -1344,7 +1344,7 @@ body {
 }
 
 [data-celestial-theme="moon"] header {
-  background: rgba(4, 4, 6, 0.35) !important;
+  background: transparent !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
