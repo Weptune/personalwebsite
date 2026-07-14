@@ -28,7 +28,6 @@ def euclid_gcd(a, b):
 ```
 
 ```python
-# Don't try to grok this yet...
 def lll(basis):
     while k <= n:
         for j in reversed(range(k)): # reduction step loop
