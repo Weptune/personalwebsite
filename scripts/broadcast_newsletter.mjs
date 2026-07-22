@@ -209,14 +209,9 @@ Post URL "${postUrl}" does not belong to /thoughts/ or /maths/. Skipping broadca
         </div>
 
         <!-- Post Title -->
-        <h1 style="font-size: 26px; font-weight: normal; font-style: italic; color: #ffffff; margin: 0 0 16px 0; line-height: 1.35;">
+        <h1 style="font-size: 26px; font-weight: normal; font-style: italic; color: #ffffff; margin: 0 0 24px 0; line-height: 1.35;">
           ${title}
         </h1>
-
-        <!-- Post Summary Callout Box -->
-        <div style="background-color: rgba(255, 255, 255, 0.03); border-left: 3px solid #a855f7; padding: 14px 18px; margin: 20px 0 28px 0; border-radius: 0 8px 8px 0; color: #e9d5ff; font-size: 15px; font-style: italic; line-height: 1.6;">
-          ${summary}
-        </div>
 
         <!-- CTA Button -->
         <div style="margin-bottom: 32px;">
@@ -237,7 +232,7 @@ Post URL "${postUrl}" does not belong to /thoughts/ or /maths/. Skipping broadca
   console.log(`Sending broadcast for "${title}" to ${subscribers.length} subscriber(s)...`)
   await sendEmail({
     to: subscribers,
-    subject: `[weptune] ${subjectTag}: ${title}`,
+    subject: `${subjectTag}: ${title}`,
     html: htmlContent,
   })
 }
