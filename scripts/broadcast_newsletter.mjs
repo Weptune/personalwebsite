@@ -19,7 +19,7 @@ const SUPABASE_URL = process.env.PUBLIC_SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.PUBLIC_SUPABASE_ANON_KEY
 const RESEND_API_KEY = process.env.RESEND_API_KEY
 const FROM_EMAIL = process.env.NEWSLETTER_FROM_EMAIL || 'weptune <onboarding@resend.dev>'
-const SITE_URL = process.env.SITE_URL || 'https://personalwebsite-gules-seven.vercel.app'
+const SITE_URL = process.env.SITE_URL || 'https://weptune.vercel.app'
 
 // Allowed collections strictly limited to thoughts and maths write-ups
 const ALLOWED_COLLECTIONS = ['thoughts', 'maths']
