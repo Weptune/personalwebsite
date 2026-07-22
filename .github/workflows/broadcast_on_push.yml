@@ -1,0 +1,32 @@
+name: Auto Broadcast New Write-up
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/content/thoughts/**'
+      - 'src/content/maths/**'
+
+jobs:
+  broadcast:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Broadcast Newsletter
+        env:
+          PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
+          PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          SITE_URL: 'https://personalwebsite-gules-seven.vercel.app'
+        run: |
+          node scripts/broadcast_newsletter.mjs
