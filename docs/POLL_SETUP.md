@@ -32,14 +32,17 @@ drop policy if exists "Allow anonymous select guestbook" on guestbook;
 create policy "Allow anonymous insert guestbook" on guestbook for insert with check (true);
 create policy "Allow anonymous select guestbook" on guestbook for select using (true);
 
--- Post Comments (Thoughts & Maths)
+-- Post Comments (Thoughts & Maths with Nested Replies)
 create table if not exists post_comments (
   id uuid default gen_random_uuid() primary key,
   post_id text not null,
+  parent_id uuid references post_comments(id) on delete cascade default null,
   username text not null,
   comment text not null,
   created_at timestamptz default now()
 );
+
+alter table post_comments add column if not exists parent_id uuid references post_comments(id) on delete cascade default null;
 
 alter table post_comments enable row level security;
 drop policy if exists "Allow anonymous insert post_comments" on post_comments;

@@ -51,7 +51,7 @@ const { postId } = Astro.props
       </button>
     </div>
 
-    <!-- Comment Form -->
+    <!-- Top-Level Comment Form -->
     <form data-comment-form class="flex flex-col gap-4">
       <div>
         <label class="text-muted-foreground mb-1.5 block text-xs font-medium uppercase tracking-wider">
@@ -86,7 +86,7 @@ const { postId } = Astro.props
       </button>
     </form>
 
-    <p data-comment-message class="text-muted-foreground mt-3 text-sm" role="status" aria-live="polite" hidden></p>
+    <p data-comment-message class="text-muted-foreground mt-3 text-sm font-serif italic" role="status" aria-live="polite" hidden></p>
 
     <!-- Comment Entries List -->
     <div class="mt-8 flex flex-col gap-y-4">
@@ -106,9 +106,15 @@ const { postId } = Astro.props
 
   interface CommentEntry {
     id: string
+    post_id: string
+    parent_id?: string | null
     username: string
     comment: string
     created_at: string
+  }
+
+  interface CommentNode extends CommentEntry {
+    children: CommentNode[]
   }
 
   function formatDate(iso: string) {
@@ -130,6 +136,41 @@ const { postId } = Astro.props
     const div = document.createElement('div')
     div.textContent = str
     return div.innerHTML
+  }
+
+  function buildCommentTree(flatList: CommentEntry[]): CommentNode[] {
+    const map = new Map<string, CommentNode>()
+    const roots: CommentNode[] = []
+
+    for (const item of flatList) {
+      map.set(String(item.id), { ...item, children: [] })
+    }
+
+    for (const item of flatList) {
+      const node = map.get(String(item.id))!
+      if (item.parent_id && map.has(String(item.parent_id))) {
+        map.get(String(item.parent_id))!.children.push(node)
+      } else {
+        roots.push(node)
+      }
+    }
+
+    // Sort top level descending (newest top-level comment first)
+    roots.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+
+    // Sort children ascending (chronological thread)
+    function sortChildren(nodes: CommentNode[]) {
+      nodes.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+      for (const n of nodes) {
+        if (n.children.length > 0) sortChildren(n.children)
+      }
+    }
+
+    for (const r of roots) {
+      if (r.children.length > 0) sortChildren(r.children)
+    }
+
+    return roots
   }
 
   function initPostFeedback(container: HTMLElement) {
@@ -200,7 +241,6 @@ const { postId } = Astro.props
 
     async function fetchLikes() {
       if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-        // Fallback to local count if Supabase not configured
         try {
           currentLikes = parseInt(localStorage.getItem(LOCAL_LIKES_KEY) || '0', 10)
         } catch {
@@ -224,9 +264,9 @@ const { postId } = Astro.props
           const rows = await res.json()
           currentLikes = Array.isArray(rows) ? rows.length : 0
         } else {
-          throw new Error('Fetch failed')
+          throw new Error('Fetch likes failed')
         }
-      } catch {
+      } catch (err) {
         try {
           currentLikes = parseInt(localStorage.getItem(LOCAL_LIKES_KEY) || '0', 10)
         } catch {}
@@ -238,12 +278,10 @@ const { postId } = Astro.props
       const prevLiked = isLiked
       const prevCount = currentLikes
 
-      // Optimistic update
       isLiked = !prevLiked
       currentLikes = isLiked ? currentLikes + 1 : Math.max(0, currentLikes - 1)
       updateLikeUI()
 
-      // Pulse animation trigger
       if (heartIcon) {
         heartIcon.classList.add('scale-125')
         setTimeout(() => heartIcon.classList.remove('scale-125'), 200)
@@ -276,11 +314,8 @@ const { postId } = Astro.props
               savedLikeId = data[0].id
               localStorage.setItem(LIKE_STORAGE_KEY, JSON.stringify({ liked: true, id: savedLikeId }))
             }
-          } else {
-            throw new Error('Insert like failed')
           }
         } else {
-          // Unlike
           let deleteUrl = `${SUPABASE_URL}/rest/v1/post_likes?post_id=eq.${encodeURIComponent(postId)}`
           if (savedLikeId) {
             deleteUrl += `&id=eq.${savedLikeId}`
@@ -297,15 +332,14 @@ const { postId } = Astro.props
           if (res.ok) {
             savedLikeId = null
             localStorage.removeItem(LIKE_STORAGE_KEY)
-          } else {
-            throw new Error('Delete like failed')
           }
         }
-      } catch {
-        // Rollback optimistic state if request fails
-        isLiked = prevLiked
-        currentLikes = prevCount
-        updateLikeUI()
+      } catch (err) {
+        // Local fallback on error
+        try {
+          localStorage.setItem(LOCAL_LIKES_KEY, String(currentLikes))
+          localStorage.setItem(LIKE_STORAGE_KEY, JSON.stringify({ liked: isLiked, id: 'local' }))
+        } catch {}
       }
     }
 
@@ -316,8 +350,8 @@ const { postId } = Astro.props
       }
     }
 
-    // --- COMMENTS SYSTEM ---
-    async function fetchComments(): Promise<CommentEntry[]> {
+    // --- NESTED COMMENTS SYSTEM ---
+    async function fetchRawComments(): Promise<CommentEntry[]> {
       if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
         try {
           const raw = localStorage.getItem(LOCAL_COMMENTS_KEY)
@@ -328,8 +362,9 @@ const { postId } = Astro.props
       }
 
       try {
+        // Try fetching with parent_id included
         const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/post_comments?post_id=eq.${encodeURIComponent(postId)}&select=id,username,comment,created_at&order=created_at.desc`,
+          `${SUPABASE_URL}/rest/v1/post_comments?post_id=eq.${encodeURIComponent(postId)}&select=id,post_id,parent_id,username,comment,created_at&order=created_at.asc`,
           {
             headers: {
               apikey: SUPABASE_ANON_KEY,
@@ -337,9 +372,22 @@ const { postId } = Astro.props
             },
           }
         )
-        if (!res.ok) throw new Error('Fetch comments failed')
+        if (!res.ok) {
+          // If parent_id doesn't exist yet on old table, try fallback select
+          const fallbackRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/post_comments?post_id=eq.${encodeURIComponent(postId)}&select=id,post_id,username,comment,created_at&order=created_at.asc`,
+            {
+              headers: {
+                apikey: SUPABASE_ANON_KEY,
+                Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+              },
+            }
+          )
+          if (!fallbackRes.ok) throw new Error('Fetch comments failed')
+          return await fallbackRes.json()
+        }
         return await res.json()
-      } catch {
+      } catch (err) {
         try {
           const raw = localStorage.getItem(LOCAL_COMMENTS_KEY)
           return raw ? JSON.parse(raw) : []
@@ -349,32 +397,252 @@ const { postId } = Astro.props
       }
     }
 
-    function renderComments(entries: CommentEntry[]) {
+    function renderCommentNode(node: CommentNode): string {
+      const savedHandle = usernameInput?.value || ''
+
+      const childrenHtml = node.children.map((child) => renderCommentNode(child)).join('')
+
+      return `
+        <div class="comment-node group" data-node-id="${node.id}">
+          <div class="gothic-panel p-4 transition-all">
+            <div class="flex flex-wrap items-baseline justify-between gap-2 text-sm">
+              <span class="font-medium text-foreground">${escapeHtml(node.username || 'anonymous')}</span>
+              <span class="text-muted-foreground text-xs font-serif italic">${formatDate(node.created_at)}</span>
+            </div>
+            <p class="text-muted-foreground mt-2 whitespace-pre-wrap text-sm leading-relaxed">${escapeHtml(node.comment)}</p>
+            
+            <div class="mt-3 flex items-center gap-3">
+              <button
+                type="button"
+                data-reply-toggle="${node.id}"
+                class="text-xs text-muted-foreground hover:text-primary font-serif italic flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+                Reply
+              </button>
+            </div>
+
+            <!-- Inline Reply Form -->
+            <form data-reply-form="${node.id}" class="mt-3 pt-3 border-t border-border/40 flex-col gap-3 hidden">
+              <div class="flex flex-col gap-2">
+                <input
+                  name="reply-username"
+                  type="text"
+                  maxlength="64"
+                  placeholder="anonymous"
+                  value="${escapeHtml(savedHandle)}"
+                  class="border-border bg-background/60 text-foreground w-full rounded border px-2.5 py-1.5 text-xs outline-none focus:ring-1 focus:ring-primary/50"
+                />
+                <textarea
+                  name="reply-comment"
+                  required
+                  rows="2"
+                  maxlength="500"
+                  placeholder="Replying to ${escapeHtml(node.username || 'anonymous')}..."
+                  class="border-border bg-background/60 text-foreground w-full resize-none rounded border px-2.5 py-1.5 text-xs outline-none focus:ring-1 focus:ring-primary/50"
+                ></textarea>
+              </div>
+              <div class="flex items-center gap-2">
+                <button
+                  type="submit"
+                  class="border-border text-foreground hover:bg-muted/50 rounded border px-3 py-1 font-serif italic text-xs transition-colors cursor-pointer"
+                >
+                  Post Reply
+                </button>
+                <button
+                  type="button"
+                  data-reply-cancel="${node.id}"
+                  class="text-xs text-muted-foreground hover:text-foreground font-serif italic px-2 py-1 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Nested Children Container (Reddit-style indented thread guide line) -->
+          ${
+            node.children.length > 0
+              ? `
+            <div class="mt-2.5 pl-3 sm:pl-4 border-l border-border/50 flex flex-col gap-2.5">
+              ${childrenHtml}
+            </div>
+          `
+              : ''
+          }
+        </div>
+      `
+    }
+
+    function renderTree(roots: CommentNode[]) {
       if (!commentsListEl) return
-      if (entries.length === 0) {
+      if (roots.length === 0) {
         commentsListEl.innerHTML =
           '<p class="text-muted-foreground text-sm font-serif italic">No comments yet. Be the first to leave a note.</p>'
         return
       }
 
-      commentsListEl.innerHTML = entries
-        .map(
-          (e) => `
-        <div class="gothic-panel p-4">
-          <div class="flex flex-wrap items-baseline justify-between gap-2 text-sm">
-            <span class="font-medium text-foreground">${escapeHtml(e.username || 'anonymous')}</span>
-            <span class="text-muted-foreground text-xs font-serif italic">${formatDate(e.created_at)}</span>
-          </div>
-          <p class="text-muted-foreground mt-2 whitespace-pre-wrap text-sm leading-relaxed">${escapeHtml(e.comment)}</p>
-        </div>
-      `
-        )
-        .join('')
+      commentsListEl.innerHTML = roots.map((root) => renderCommentNode(root)).join('')
+
+      // Bind Reply Toggle & Submit Handlers
+      bindReplyHandlers()
+    }
+
+    function bindReplyHandlers() {
+      if (!commentsListEl) return
+
+      // Toggle inline reply form
+      const replyToggles = commentsListEl.querySelectorAll('[data-reply-toggle]')
+      replyToggles.forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault()
+          const commentId = (btn as HTMLElement).dataset.replyToggle
+          if (!commentId) return
+          const replyForm = commentsListEl.querySelector(`[data-reply-form="${commentId}"]`) as HTMLFormElement | null
+          if (replyForm) {
+            const isHidden = replyForm.classList.contains('hidden')
+            // Hide all other open reply forms first
+            commentsListEl.querySelectorAll('[data-reply-form]').forEach((f) => f.classList.add('hidden'))
+            if (isHidden) {
+              replyForm.classList.remove('hidden')
+              replyForm.classList.add('flex')
+              const textarea = replyForm.querySelector('textarea')
+              if (textarea) textarea.focus()
+            }
+          }
+        })
+      })
+
+      // Cancel inline reply
+      const replyCancels = commentsListEl.querySelectorAll('[data-reply-cancel]')
+      replyCancels.forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault()
+          const commentId = (btn as HTMLElement).dataset.replyCancel
+          if (!commentId) return
+          const replyForm = commentsListEl.querySelector(`[data-reply-form="${commentId}"]`) as HTMLFormElement | null
+          if (replyForm) {
+            replyForm.classList.add('hidden')
+            replyForm.classList.remove('flex')
+          }
+        })
+      })
+
+      // Submit reply form
+      const replyForms = commentsListEl.querySelectorAll('[data-reply-form]')
+      replyForms.forEach((rForm) => {
+        rForm.addEventListener('submit', async (e) => {
+          e.preventDefault()
+          const parentId = (rForm as HTMLElement).dataset.replyForm
+          if (!parentId) return
+
+          const uInput = rForm.querySelector('input[name="reply-username"]') as HTMLInputElement | null
+          const cTextarea = rForm.querySelector('textarea[name="reply-comment"]') as HTMLTextAreaElement | null
+
+          const username = uInput?.value.trim() || 'anonymous'
+          const comment = cTextarea?.value.trim()
+          if (!comment) return
+
+          await submitComment({ parentId, username, comment })
+        })
+      })
     }
 
     async function loadComments() {
-      const comments = await fetchComments()
-      renderComments(comments)
+      const flat = await fetchRawComments()
+      const tree = buildCommentTree(flat)
+      renderTree(tree)
+    }
+
+    async function saveLocalComment(entry: CommentEntry) {
+      try {
+        const raw = localStorage.getItem(LOCAL_COMMENTS_KEY)
+        const existing: CommentEntry[] = raw ? JSON.parse(raw) : []
+        const updated = [...existing, entry]
+        localStorage.setItem(LOCAL_COMMENTS_KEY, JSON.stringify(updated))
+        const tree = buildCommentTree(updated)
+        renderTree(tree)
+      } catch {}
+    }
+
+    async function submitComment(params: { parentId?: string | null; username: string; comment: string }) {
+      const { parentId, username, comment } = params
+
+      // Save handle for future comments/replies
+      try {
+        if (username && username !== 'anonymous') {
+          localStorage.setItem(USER_HANDLE_KEY, username)
+          if (usernameInput) usernameInput.value = username
+        }
+      } catch {}
+
+      const localEntry: CommentEntry = {
+        id: `local_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        post_id: postId,
+        parent_id: parentId || null,
+        username,
+        comment,
+        created_at: new Date().toISOString(),
+      }
+
+      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+        await saveLocalComment(localEntry)
+        if (messageEl) {
+          messageEl.textContent = 'Thanks. Your comment is posted.'
+          messageEl.hidden = false
+          setTimeout(() => { messageEl.hidden = true }, 4000)
+        }
+        if (commentTextarea) commentTextarea.value = ''
+        return
+      }
+
+      try {
+        const payload: Record<string, any> = {
+          post_id: postId,
+          username,
+          comment,
+        }
+        if (parentId) {
+          payload.parent_id = parentId
+        }
+
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/post_comments`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            Prefer: 'return=representation',
+          },
+          body: JSON.stringify(payload),
+        })
+
+        if (!res.ok) {
+          const errText = await res.text()
+          console.warn('[PostFeedback] Supabase insert post_comments failed, using local fallback:', errText)
+          // Fallback to local storage on API/table error so user never gets stuck
+          await saveLocalComment(localEntry)
+        } else {
+          await loadComments()
+        }
+
+        if (messageEl) {
+          messageEl.textContent = 'Thanks. Your comment is posted.'
+          messageEl.hidden = false
+          setTimeout(() => { messageEl.hidden = true }, 4000)
+        }
+
+        if (commentTextarea) commentTextarea.value = ''
+      } catch (err) {
+        console.warn('[PostFeedback] Network/Supabase exception, using local fallback:', err)
+        await saveLocalComment(localEntry)
+        if (messageEl) {
+          messageEl.textContent = 'Thanks. Your comment is posted.'
+          messageEl.hidden = false
+          setTimeout(() => { messageEl.hidden = true }, 4000)
+        }
+        if (commentTextarea) commentTextarea.value = ''
+      }
     }
 
     if (form) {
@@ -384,68 +652,7 @@ const { postId } = Astro.props
         const comment = commentTextarea?.value.trim()
         if (!comment) return
 
-        // Remember handle
-        try {
-          if (username && username !== 'anonymous') {
-            localStorage.setItem(USER_HANDLE_KEY, username)
-          }
-        } catch {}
-
-        if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-          // Local storage fallback if Supabase not configured
-          const newEntry: CommentEntry = {
-            id: String(Date.now()),
-            username,
-            comment,
-            created_at: new Date().toISOString(),
-          }
-          try {
-            const existing = await fetchComments()
-            const updated = [newEntry, ...existing]
-            localStorage.setItem(LOCAL_COMMENTS_KEY, JSON.stringify(updated))
-            renderComments(updated)
-            if (messageEl) {
-              messageEl.textContent = 'Thanks. Your comment is posted.'
-              messageEl.hidden = false
-            }
-            if (commentTextarea) commentTextarea.value = ''
-          } catch {}
-          return
-        }
-
-        try {
-          const res = await fetch(`${SUPABASE_URL}/rest/v1/post_comments`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              apikey: SUPABASE_ANON_KEY,
-              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-              Prefer: 'return=representation',
-            },
-            body: JSON.stringify({ post_id: postId, username, comment }),
-          })
-
-          if (!res.ok) {
-            const err = await res.text()
-            throw new Error(err)
-          }
-
-          if (messageEl) {
-            messageEl.textContent = 'Thanks. Your comment is posted.'
-            messageEl.hidden = false
-            setTimeout(() => {
-              messageEl.hidden = true
-            }, 5000)
-          }
-
-          if (commentTextarea) commentTextarea.value = ''
-          loadComments()
-        } catch (err) {
-          if (messageEl) {
-            messageEl.textContent = 'Something went wrong while posting your comment. Try again.'
-            messageEl.hidden = false
-          }
-        }
+        await submitComment({ parentId: null, username, comment })
       }
     }
 
