@@ -18,8 +18,8 @@ try {
 const SUPABASE_URL = process.env.PUBLIC_SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.PUBLIC_SUPABASE_ANON_KEY
 const RESEND_API_KEY = process.env.RESEND_API_KEY
-const FROM_EMAIL = process.env.NEWSLETTER_FROM_EMAIL || 'newsletter@resend.dev'
-const SITE_URL = process.env.SITE_URL || 'https://personalwebsite-gules-seven.vercel.app' // or custom domain
+const FROM_EMAIL = process.env.NEWSLETTER_FROM_EMAIL || 'weptune <onboarding@resend.dev>'
+const SITE_URL = process.env.SITE_URL || 'https://personalwebsite-gules-seven.vercel.app'
 
 // Allowed collections strictly limited to thoughts and maths write-ups
 const ALLOWED_COLLECTIONS = ['thoughts', 'maths']
@@ -197,16 +197,22 @@ Post URL "${postUrl}" does not belong to /thoughts/ or /maths/. Skipping broadca
 
   const htmlContent = `
     <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #111; line-height: 1.6;">
-      <h2 style="font-size: 22px; font-weight: normal; font-style: italic; border-bottom: 1px solid #eee; padding-bottom: 12px; margin-bottom: 16px;">
+      <div style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em; color: #888; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 12px;">
+        weptune &bull; new write-up
+      </div>
+      <h2 style="font-size: 24px; font-weight: normal; font-style: italic; margin-bottom: 16px; color: #111;">
         ${title}
       </h2>
       <p style="color: #444; font-size: 15px; margin-bottom: 24px;">
         ${summary}
       </p>
-      <div>
-        <a href="${postUrl}" style="display: inline-block; background: #111; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-size: 14px;">
+      <div style="margin-bottom: 30px;">
+        <a href="${postUrl}" style="display: inline-block; background: #111; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: 500;">
           Read full write-up &rarr;
         </a>
+      </div>
+      <div style="font-size: 12px; color: #888; border-top: 1px solid #eee; padding-top: 16px; font-style: italic;">
+        You received this email because you subscribed to write-ups on <a href="${SITE_URL}" style="color: #666; text-decoration: underline;">weptune</a>.
       </div>
     </div>
   `
