@@ -19,6 +19,77 @@ const SUPABASE_URL = process.env.PUBLIC_SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.PUBLIC_SUPABASE_ANON_KEY
 const RESEND_API_KEY = process.env.RESEND_API_KEY
 const FROM_EMAIL = process.env.NEWSLETTER_FROM_EMAIL || 'newsletter@resend.dev'
+const SITE_URL = process.env.SITE_URL || 'https://personalwebsite-gules-seven.vercel.app' // or custom domain
+
+// Allowed collections strictly limited to thoughts and maths write-ups
+const ALLOWED_COLLECTIONS = ['thoughts', 'maths']
+
+function parseFrontmatter(filePath) {
+  try {
+    const content = fs.readFileSync(filePath, 'utf8')
+    const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/)
+    if (!match) return null
+
+    const yaml = match[1]
+    const data = {}
+    for (const line of yaml.split('\n')) {
+      const [k, ...v] = line.split(':')
+      if (k && v.length) {
+        let val = v.join(':').trim().replace(/^["']|["']$/g, '')
+        data[k.trim()] = val
+      }
+    }
+    return data
+  } catch {
+    return null
+  }
+}
+
+function findLatestPost() {
+  let latestPost = null
+  let maxTime = 0
+
+  for (const collection of ALLOWED_COLLECTIONS) {
+    const dir = path.join('src', 'content', collection)
+    if (!fs.existsSync(dir)) continue
+
+    function scanDir(currentDir) {
+      const entries = fs.readdirSync(currentDir, { withFileTypes: true })
+      for (const entry of entries) {
+        const fullPath = path.join(currentDir, entry.name)
+        if (entry.isDirectory()) {
+          scanDir(fullPath)
+        } else if (entry.isFile() && (entry.name.endsWith('.md') || entry.name.endsWith('.mdx'))) {
+          const fm = parseFrontmatter(fullPath)
+          const relPath = path.relative(dir, fullPath).replace(/\\/g, '/')
+          const slug = relPath.replace(/\.(md|mdx)$/, '').replace(/\/index$/, '')
+
+          let time = fs.statSync(fullPath).mtimeMs
+          if (fm && fm.date) {
+            const parsedDate = new Date(fm.date).getTime()
+            if (!isNaN(parsedDate)) time = parsedDate
+          }
+
+          if (time > maxTime) {
+            maxTime = time
+            latestPost = {
+              collection,
+              slug,
+              title: fm?.title || slug,
+              description: fm?.description || 'A new write-up on the website!',
+              date: fm?.date || new Date(time).toISOString(),
+              url: `${SITE_URL}/${collection}/${slug}`,
+            }
+          }
+        }
+      }
+    }
+
+    scanDir(dir)
+  }
+
+  return latestPost
+}
 
 async function getSubscribers() {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
@@ -81,19 +152,32 @@ async function sendEmail({ to, subject, html }) {
 
 async function main() {
   const args = process.argv.slice(2)
-  const title = args[0]
-  const postUrl = args[1]
-  const summary = args[2] || 'Check out the latest post on the website!'
+  let title = args[0]
+  let postUrl = args[1]
+  let summary = args[2]
 
   if (!title || !postUrl) {
-    console.log(`
-Usage:
-  npm run broadcast "<Post Title>" "<Post URL>" "[Optional Summary]"
+    console.log('No post specified. Scanning for the latest thought or maths write-up...')
+    const latest = findLatestPost()
+    if (!latest) {
+      console.error('No thoughts or maths write-ups found in src/content/thoughts or src/content/maths.')
+      process.exit(1)
+    }
 
-Example:
-  npm run broadcast "Identity Politics" "https://yourdomain.com/thoughts/identity-politics" "A new post on identity politics."
+    title = latest.title
+    postUrl = latest.url
+    summary = summary || latest.description
+    console.log(`Auto-detected latest write-up: "${title}" (${latest.collection})`)
+  }
+
+  // Filter enforcement: ensure URL belongs to thoughts or maths ONLY
+  const isThoughtOrMaths = postUrl.includes('/thoughts/') || postUrl.includes('/maths/')
+  if (!isThoughtOrMaths) {
+    console.log(`
+[Broadcast Filtered] Subscriptions are strictly configured for Thoughts and Maths write-ups.
+Post URL "${postUrl}" does not belong to /thoughts/ or /maths/. Skipping broadcast.
 `)
-    process.exit(1)
+    process.exit(0)
   }
 
   console.log(`Fetching subscribers from Supabase...`)
@@ -107,25 +191,25 @@ Example:
   console.log(`Found ${subscribers.length} subscriber(s): ${subscribers.join(', ')}`)
 
   const htmlContent = `
-    <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #111; line-height: 1.6;">
-      <h2 style="font-size: 22px; font-weight: normal; font-style: italic; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+    <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #111; line-height: 1.6;">
+      <h2 style="font-size: 22px; font-weight: normal; font-style: italic; border-bottom: 1px solid #eee; padding-bottom: 12px; margin-bottom: 16px;">
         ${title}
       </h2>
-      <p style="color: #444; font-size: 15px;">
+      <p style="color: #444; font-size: 15px; margin-bottom: 24px;">
         ${summary}
       </p>
-      <div style="margin-top: 25px;">
-        <a href="${postUrl}" style="display: inline-block; background: #111; color: #fff; text-decoration: none; padding: 10px 18px; border-radius: 4px; font-size: 14px;">
-          Read post &rarr;
+      <div>
+        <a href="${postUrl}" style="display: inline-block; background: #111; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-size: 14px;">
+          Read full write-up &rarr;
         </a>
       </div>
     </div>
   `
 
-  console.log(`Sending broadcast to ${subscribers.length} subscriber(s)...`)
+  console.log(`Sending broadcast for "${title}" to ${subscribers.length} subscriber(s)...`)
   await sendEmail({
     to: subscribers,
-    subject: `New Post: ${title}`,
+    subject: `New Write-up: ${title}`,
     html: htmlContent,
   })
 }
