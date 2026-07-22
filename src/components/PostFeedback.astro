@@ -13,13 +13,13 @@ const { postId } = Astro.props
   aria-label="Post comments and likes"
 >
   <div class="p-6">
-    <!-- Like Button Bar (Above Comments Header) -->
-    <div class="flex items-center justify-end pb-4 mb-6 border-b border-border/50">
+    <!-- Top Action Bar with Left-Aligned Like Button -->
+    <div class="mb-6 flex items-center justify-start">
       <button
         type="button"
         id={`like-btn-${postId.replace(/[^a-zA-Z0-9_-]/g, '-')}`}
         data-like-btn
-        class="group flex items-center gap-2 rounded-full border border-border/80 bg-background/50 px-4 py-2 text-sm font-medium text-foreground transition-all duration-300 hover:border-red-500/50 hover:bg-red-500/10 focus:outline-none focus:ring-1 focus:ring-red-500/50 cursor-pointer"
+        class="group flex items-center gap-2.5 rounded-full border border-border/80 bg-background/40 px-4 py-2 text-sm font-medium text-foreground transition-all duration-300 hover:border-red-500/40 hover:bg-red-500/10 focus:outline-none focus:ring-1 focus:ring-red-500/50 cursor-pointer shadow-sm"
         aria-label="Like this piece"
       >
         <svg
@@ -40,7 +40,7 @@ const { postId } = Astro.props
         <span data-like-text class="font-serif italic">Like</span>
         <span
           data-like-count
-          class="ml-1 rounded-full bg-muted/60 px-2 py-0.5 font-mono text-xs text-muted-foreground"
+          class="ml-0.5 rounded-full bg-muted/60 px-2 py-0.5 font-mono text-xs text-muted-foreground"
         >
           0
         </span>
@@ -48,7 +48,7 @@ const { postId } = Astro.props
     </div>
 
     <!-- Comments Header -->
-    <h3 class="text-lg font-serif italic text-foreground mb-6">
+    <h3 class="text-lg font-serif italic text-foreground mb-4">
       Comments
     </h3>
 
