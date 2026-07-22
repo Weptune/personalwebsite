@@ -121,33 +121,38 @@ async function sendEmail({ to, subject, html }) {
     return false
   }
 
-  try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({
-        from: FROM_EMAIL,
-        to,
-        subject,
-        html,
-      }),
-    })
+  const recipients = Array.isArray(to) ? to : [to]
+  let successCount = 0
 
-    if (!res.ok) {
-      console.error(`Resend API Error [${res.status}]:`, await res.text())
-      return false
+  for (const recipient of recipients) {
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${RESEND_API_KEY}`,
+        },
+        body: JSON.stringify({
+          from: FROM_EMAIL,
+          to: recipient,
+          subject,
+          html,
+        }),
+      })
+
+      if (!res.ok) {
+        console.error(`[Resend Notice for ${recipient}]:`, await res.text())
+      } else {
+        const data = await res.json()
+        console.log(`Email successfully sent to ${recipient}! (ID: ${data.id})`)
+        successCount++
+      }
+    } catch (err) {
+      console.error(`Failed to send email to ${recipient}:`, err.message)
     }
-
-    const data = await res.json()
-    console.log(`Email sent successfully! ID: ${data.id}`)
-    return true
-  } catch (err) {
-    console.error('Failed to send email:', err.message)
-    return false
   }
+
+  return successCount > 0
 }
 
 async function main() {
