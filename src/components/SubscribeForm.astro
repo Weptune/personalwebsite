@@ -1,0 +1,142 @@
+---
+interface Props {
+  class?: string
+}
+
+const { class: className = '' } = Astro.props
+---
+
+<section
+  class={`gothic-panel fade-in-up-soft overflow-hidden p-6 ${className}`}
+  data-subscribe-form-widget
+  aria-label="Subscribe to newsletter"
+>
+  <div class="flex flex-col gap-3">
+    <h3 class="text-base font-serif italic text-foreground">
+      Subscribe to New Posts
+    </h3>
+    <p class="text-xs text-muted-foreground font-serif italic">
+      Get an email whenever a new thought or maths write-up is published. No spam, ever.
+    </p>
+
+    <form data-sub-form class="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center">
+      <input
+        name="email"
+        type="email"
+        required
+        placeholder="your@email.com"
+        class="border-border bg-background/50 text-foreground w-full flex-1 rounded border px-3 py-2 text-sm outline-none transition-colors focus:ring-1 focus:ring-primary/50"
+      />
+      <button
+        type="submit"
+        class="border-border text-foreground hover:bg-muted/50 w-full sm:w-auto rounded border px-4 py-2 font-serif italic text-sm transition-colors cursor-pointer shrink-0"
+      >
+        Subscribe
+      </button>
+    </form>
+
+    <p data-sub-message class="text-muted-foreground text-xs font-serif italic mt-1" role="status" aria-live="polite" hidden></p>
+  </div>
+</section>
+
+<script>
+  const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL as string | undefined
+  const SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string | undefined
+
+  function initSubscribeForm(container: HTMLElement) {
+    const form = container.querySelector('[data-sub-form]') as HTMLFormElement | null
+    const emailInput = form?.querySelector('input[name="email"]') as HTMLInputElement | null
+    const messageEl = container.querySelector('[data-sub-message]') as HTMLElement | null
+
+    const LOCAL_SUBSCRIBERS_KEY = 'pf_local_subscribers'
+    const MY_SUB_KEY = 'pf_user_subscribed_email'
+
+    // Prefill if already subscribed
+    try {
+      const savedEmail = localStorage.getItem(MY_SUB_KEY)
+      if (savedEmail && emailInput) {
+        emailInput.value = savedEmail
+      }
+    } catch {}
+
+    if (form) {
+      form.onsubmit = async (e) => {
+        e.preventDefault()
+        const email = emailInput?.value.trim().toLowerCase()
+        if (!email) return
+
+        try {
+          localStorage.setItem(MY_SUB_KEY, email)
+        } catch {}
+
+        if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+          // Local storage fallback if Supabase not configured
+          try {
+            const raw = localStorage.getItem(LOCAL_SUBSCRIBERS_KEY)
+            const list: string[] = raw ? JSON.parse(raw) : []
+            if (!list.includes(email)) {
+              list.push(email)
+              localStorage.setItem(LOCAL_SUBSCRIBERS_KEY, JSON.stringify(list))
+            }
+          } catch {}
+
+          if (messageEl) {
+            messageEl.textContent = 'Thanks for subscribing!'
+            messageEl.hidden = false
+          }
+          return
+        }
+
+        try {
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/subscribers`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              apikey: SUPABASE_ANON_KEY,
+              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+              Prefer: 'return=representation',
+            },
+            body: JSON.stringify({ email }),
+          })
+
+          if (res.ok || res.status === 409) {
+            // 409 conflict means already subscribed
+            if (messageEl) {
+              messageEl.textContent = res.status === 409 ? 'You are already subscribed!' : 'Thanks for subscribing!'
+              messageEl.hidden = false
+            }
+          } else {
+            // Local fallback if table missing
+            try {
+              const raw = localStorage.getItem(LOCAL_SUBSCRIBERS_KEY)
+              const list: string[] = raw ? JSON.parse(raw) : []
+              if (!list.includes(email)) {
+                list.push(email)
+                localStorage.setItem(LOCAL_SUBSCRIBERS_KEY, JSON.stringify(list))
+              }
+            } catch {}
+
+            if (messageEl) {
+              messageEl.textContent = 'Thanks for subscribing!'
+              messageEl.hidden = false
+            }
+          }
+        } catch (err) {
+          // Fallback to local storage on error
+          if (messageEl) {
+            messageEl.textContent = 'Thanks for subscribing!'
+            messageEl.hidden = false
+          }
+        }
+      }
+    }
+  }
+
+  function initAllSubscribeForms() {
+    const containers = document.querySelectorAll('[data-subscribe-form-widget]')
+    containers.forEach((c) => initSubscribeForm(c as HTMLElement))
+  }
+
+  initAllSubscribeForms()
+  document.addEventListener('astro:page-load', initAllSubscribeForms)
+</script>

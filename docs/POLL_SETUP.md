@@ -64,6 +64,19 @@ drop policy if exists "Allow anonymous delete post_likes" on post_likes;
 create policy "Allow anonymous insert post_likes" on post_likes for insert with check (true);
 create policy "Allow anonymous select post_likes" on post_likes for select using (true);
 create policy "Allow anonymous delete post_likes" on post_likes for delete using (true);
+
+-- Email Subscribers
+create table if not exists subscribers (
+  id uuid default gen_random_uuid() primary key,
+  email text unique not null,
+  created_at timestamptz default now()
+);
+
+alter table subscribers enable row level security;
+drop policy if exists "Allow anonymous insert subscribers" on subscribers;
+drop policy if exists "Allow anonymous select subscribers" on subscribers;
+create policy "Allow anonymous insert subscribers" on subscribers for insert with check (true);
+create policy "Allow anonymous select subscribers" on subscribers for select using (true);
 ```
 
 ## 2. Add your API key to .env
@@ -72,6 +85,15 @@ Copy your **publishable (anon) key** from Dashboard > Project Settings > API Key
 
 ```
 PUBLIC_SUPABASE_ANON_KEY=your-publishable-key-here
+RESEND_API_KEY=re_123... # Optional: get free API key from https://resend.com
 ```
 
-The project URL is already set. Rebuild the site.
+## 3. How to email subscribers when you post a new write-up
+
+Whenever you publish a new post, run:
+
+```bash
+npm run broadcast "Post Title" "https://yourdomain.com/thoughts/slug" "Summary text here"
+```
+
+This will automatically fetch all subscriber emails from Supabase and send an email broadcast via Resend!

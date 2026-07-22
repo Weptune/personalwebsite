@@ -9,6 +9,7 @@
     "build": "astro check && astro build",
     "preview": "astro preview",
     "astro": "astro",
+    "broadcast": "node scripts/broadcast_newsletter.mjs",
     "prettier": "prettier --write **/*.{ts,tsx,css,astro} --ignore-path .gitignore"
   },
   "dependencies": {
