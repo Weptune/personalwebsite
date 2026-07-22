@@ -24,6 +24,8 @@ const SITE_URL = process.env.SITE_URL || 'https://weptune.dev'
 // Allowed collections strictly limited to thoughts and maths write-ups
 const ALLOWED_COLLECTIONS = ['thoughts', 'maths']
 
+import { execSync } from 'child_process'
+
 function parseFrontmatter(filePath) {
   try {
     const content = fs.readFileSync(filePath, 'utf8')
@@ -45,50 +47,52 @@ function parseFrontmatter(filePath) {
   }
 }
 
-function findLatestPost() {
-  let latestPost = null
-  let maxTime = 0
+function findLatestPostFromGitDiff() {
+  try {
+    const output = execSync('git diff HEAD~1 HEAD --name-only', { encoding: 'utf8' })
+    const diffFiles = output
+      .split('\n')
+      .map((f) => f.trim().replace(/\\/g, '/'))
+      .filter(Boolean)
 
-  for (const collection of ALLOWED_COLLECTIONS) {
-    const dir = path.join('src', 'content', collection)
-    if (!fs.existsSync(dir)) continue
+    const matchedFile = diffFiles.find(
+      (f) =>
+        (f.startsWith('src/content/thoughts/') || f.startsWith('src/content/maths/')) &&
+        (f.endsWith('.md') || f.endsWith('.mdx'))
+    )
 
-    function scanDir(currentDir) {
-      const entries = fs.readdirSync(currentDir, { withFileTypes: true })
-      for (const entry of entries) {
-        const fullPath = path.join(currentDir, entry.name)
-        if (entry.isDirectory()) {
-          scanDir(fullPath)
-        } else if (entry.isFile() && (entry.name.endsWith('.md') || entry.name.endsWith('.mdx'))) {
-          const fm = parseFrontmatter(fullPath)
-          const relPath = path.relative(dir, fullPath).replace(/\\/g, '/')
-          const slug = relPath.replace(/\.(md|mdx)$/, '').replace(/\/index$/, '')
+    if (matchedFile && fs.existsSync(matchedFile)) {
+      const isMaths = matchedFile.startsWith('src/content/maths/')
+      const collection = isMaths ? 'maths' : 'thoughts'
+      const baseDir = `src/content/${collection}`
+      const relPath = path.relative(baseDir, matchedFile).replace(/\\/g, '/')
+      const slug = relPath.replace(/\.(md|mdx)$/, '').replace(/\/index$/, '')
+      const fm = parseFrontmatter(matchedFile)
 
-          let time = fs.statSync(fullPath).mtimeMs
-          if (fm && fm.date) {
-            const parsedDate = new Date(fm.date).getTime()
-            if (!isNaN(parsedDate)) time = parsedDate
-          }
-
-          if (time > maxTime) {
-            maxTime = time
-            latestPost = {
-              collection,
-              slug,
-              title: fm?.title || slug,
-              description: fm?.description || 'A new write-up on the website!',
-              date: fm?.date || new Date(time).toISOString(),
-              url: `${SITE_URL}/${collection}/${slug}`,
-            }
-          }
-        }
+      return {
+        collection,
+        slug,
+        title: fm?.title || slug,
+        description: fm?.description || 'A new write-up on the website!',
+        date: fm?.date || new Date().toISOString(),
+        url: `${SITE_URL}/${collection}/${slug}`,
       }
     }
+  } catch {
+    // Fallback if git diff is unavailable
+  }
+  return null
+}
 
-    scanDir(dir)
+function findLatestPost() {
+  // First priority: check if a thought or maths file was modified in the current git commit
+  const commitPost = findLatestPostFromGitDiff()
+  if (commitPost) {
+    return commitPost
   }
 
-  return latestPost
+  // If git diff found no modified thought/maths write-up, return null to skip broadcast
+  return null
 }
 
 async function getSubscribers() {
@@ -165,8 +169,8 @@ async function main() {
     console.log('No post specified. Scanning for the latest thought or maths write-up...')
     const latest = findLatestPost()
     if (!latest) {
-      console.error('No thoughts or maths write-ups found in src/content/thoughts or src/content/maths.')
-      process.exit(1)
+      console.log('[Newsletter Notice] No thoughts or maths write-ups were added or modified in the latest git commit. Skipping email broadcast.')
+      process.exit(0)
     }
 
     title = latest.title
