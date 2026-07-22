@@ -13,12 +13,8 @@ const { postId } = Astro.props
   aria-label="Post comments and likes"
 >
   <div class="p-6">
-    <!-- Comments Header & Like Button -->
-    <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
-      <h3 class="text-lg font-serif italic text-foreground">
-        Comments
-      </h3>
-
+    <!-- Like Button Bar (Above Comments Header) -->
+    <div class="flex items-center justify-end pb-4 mb-6 border-b border-border/50">
       <button
         type="button"
         id={`like-btn-${postId.replace(/[^a-zA-Z0-9_-]/g, '-')}`}
@@ -50,6 +46,11 @@ const { postId } = Astro.props
         </span>
       </button>
     </div>
+
+    <!-- Comments Header -->
+    <h3 class="text-lg font-serif italic text-foreground mb-6">
+      Comments
+    </h3>
 
     <!-- Top-Level Comment Form -->
     <form data-comment-form class="flex flex-col gap-4">
