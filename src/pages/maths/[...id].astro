@@ -1,5 +1,6 @@
 ---
 import Breadcrumbs from '@/components/Breadcrumbs.astro'
+import PostFeedback from '@/components/PostFeedback.astro'
 import PostHead from '@/components/PostHead.astro'
 import PostNavigation from '@/components/PostNavigation.astro'
 import SubpostsHeader from '@/components/SubpostsHeader.astro'
@@ -146,7 +147,8 @@ const showTOC = tocSections.length > 0 && tocSections.some((s) => s.headings.len
         <Content />
       </div>
 
-      <footer class="mt-12">
+      <footer class="mt-12 space-y-12">
+        <PostFeedback postId={`maths/${currentPostId}`} />
         <PostNavigation
           newerPost={navigation.newer}
           olderPost={navigation.older}

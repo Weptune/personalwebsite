@@ -31,6 +31,36 @@ drop policy if exists "Allow anonymous insert guestbook" on guestbook;
 drop policy if exists "Allow anonymous select guestbook" on guestbook;
 create policy "Allow anonymous insert guestbook" on guestbook for insert with check (true);
 create policy "Allow anonymous select guestbook" on guestbook for select using (true);
+
+-- Post Comments (Thoughts & Maths)
+create table if not exists post_comments (
+  id uuid default gen_random_uuid() primary key,
+  post_id text not null,
+  username text not null,
+  comment text not null,
+  created_at timestamptz default now()
+);
+
+alter table post_comments enable row level security;
+drop policy if exists "Allow anonymous insert post_comments" on post_comments;
+drop policy if exists "Allow anonymous select post_comments" on post_comments;
+create policy "Allow anonymous insert post_comments" on post_comments for insert with check (true);
+create policy "Allow anonymous select post_comments" on post_comments for select using (true);
+
+-- Post Likes (Thoughts & Maths)
+create table if not exists post_likes (
+  id uuid default gen_random_uuid() primary key,
+  post_id text not null,
+  created_at timestamptz default now()
+);
+
+alter table post_likes enable row level security;
+drop policy if exists "Allow anonymous insert post_likes" on post_likes;
+drop policy if exists "Allow anonymous select post_likes" on post_likes;
+drop policy if exists "Allow anonymous delete post_likes" on post_likes;
+create policy "Allow anonymous insert post_likes" on post_likes for insert with check (true);
+create policy "Allow anonymous select post_likes" on post_likes for select using (true);
+create policy "Allow anonymous delete post_likes" on post_likes for delete using (true);
 ```
 
 ## 2. Add your API key to .env
