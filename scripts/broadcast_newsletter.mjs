@@ -195,24 +195,41 @@ Post URL "${postUrl}" does not belong to /thoughts/ or /maths/. Skipping broadca
 
   console.log(`Found ${subscribers.length} subscriber(s): ${subscribers.join(', ')}`)
 
+  const isMaths = postUrl.includes('/maths/')
+  const categoryLabel = isMaths ? 'Maths Write-up' : 'Thought Write-up'
+  const subjectTag = isMaths ? 'New Maths Write-up' : 'New Thought'
+
   const htmlContent = `
-    <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #111; line-height: 1.6;">
-      <div style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em; color: #888; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 12px;">
-        weptune &bull; new write-up
-      </div>
-      <h2 style="font-size: 24px; font-weight: normal; font-style: italic; margin-bottom: 16px; color: #111;">
-        ${title}
-      </h2>
-      <p style="color: #444; font-size: 15px; margin-bottom: 24px;">
-        ${summary}
-      </p>
-      <div style="margin-bottom: 30px;">
-        <a href="${postUrl}" style="display: inline-block; background: #111; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: 500;">
-          Read full write-up &rarr;
-        </a>
-      </div>
-      <div style="font-size: 12px; color: #888; border-top: 1px solid #eee; padding-top: 16px; font-style: italic;">
-        You received this email because you subscribed to write-ups on <a href="${SITE_URL}" style="color: #666; text-decoration: underline;">weptune</a>.
+    <div style="background-color: #090511; padding: 40px 16px; font-family: Georgia, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+      <div style="max-width: 560px; margin: 0 auto; background-color: #130b22; border: 1px solid #2e1d4d; border-radius: 12px; padding: 32px 28px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        
+        <!-- Header Category Badge -->
+        <div style="display: inline-block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.15em; color: #c4b5fd; font-weight: 600; background-color: rgba(196, 181, 253, 0.1); border: 1px solid rgba(196, 181, 253, 0.2); padding: 4px 10px; border-radius: 9999px; margin-bottom: 20px;">
+          WEPTUNE &bull; ${categoryLabel}
+        </div>
+
+        <!-- Post Title -->
+        <h1 style="font-size: 26px; font-weight: normal; font-style: italic; color: #ffffff; margin: 0 0 16px 0; line-height: 1.35;">
+          ${title}
+        </h1>
+
+        <!-- Post Summary Callout Box -->
+        <div style="background-color: rgba(255, 255, 255, 0.03); border-left: 3px solid #a855f7; padding: 14px 18px; margin: 20px 0 28px 0; border-radius: 0 8px 8px 0; color: #e9d5ff; font-size: 15px; font-style: italic; line-height: 1.6;">
+          ${summary}
+        </div>
+
+        <!-- CTA Button -->
+        <div style="margin-bottom: 32px;">
+          <a href="${postUrl}" style="display: inline-block; background: linear-gradient(135deg, #7c3aed, #a855f7); color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 9999px; font-size: 14px; font-weight: 600; letter-spacing: 0.02em; box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);">
+            Read write-up on weptune &rarr;
+          </a>
+        </div>
+
+        <!-- Footer Note -->
+        <div style="font-size: 12px; color: #94a3b8; border-top: 1px solid #2e1d4d; padding-top: 20px; font-style: italic; line-height: 1.5;">
+          You received this email notification because you subscribed to new write-ups on <a href="${SITE_URL}" style="color: #c4b5fd; text-decoration: underline;">weptune</a>.
+        </div>
+
       </div>
     </div>
   `
@@ -220,7 +237,7 @@ Post URL "${postUrl}" does not belong to /thoughts/ or /maths/. Skipping broadca
   console.log(`Sending broadcast for "${title}" to ${subscribers.length} subscriber(s)...`)
   await sendEmail({
     to: subscribers,
-    subject: `New Write-up: ${title}`,
+    subject: `[weptune] ${subjectTag}: ${title}`,
     html: htmlContent,
   })
 }
