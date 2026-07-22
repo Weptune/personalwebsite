@@ -111,6 +111,7 @@ const { postId } = Astro.props
     username: string
     comment: string
     created_at: string
+    likes_count?: number
   }
 
   interface CommentNode extends CommentEntry {
@@ -204,11 +205,12 @@ const { postId } = Astro.props
       } catch {}
     }
 
-    // --- LIKES SYSTEM ---
+    // --- POST LIKES SYSTEM ---
     let currentLikes = 0
     let isLiked = false
     let savedLikeId: string | null = null
 
+    // Load initial liked status from localStorage
     try {
       const storedLike = localStorage.getItem(LIKE_STORAGE_KEY)
       if (storedLike) {
@@ -240,46 +242,59 @@ const { postId } = Astro.props
     }
 
     async function fetchLikes() {
-      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-        try {
-          currentLikes = parseInt(localStorage.getItem(LOCAL_LIKES_KEY) || '0', 10)
-        } catch {
-          currentLikes = 0
-        }
-        updateLikeUI()
-        return
-      }
-
+      // Re-read local stored liked state
       try {
-        const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/post_likes?post_id=eq.${encodeURIComponent(postId)}&select=id`,
-          {
-            headers: {
-              apikey: SUPABASE_ANON_KEY,
-              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-            },
-          }
-        )
-        if (res.ok) {
-          const rows = await res.json()
-          currentLikes = Array.isArray(rows) ? rows.length : 0
-        } else {
-          throw new Error('Fetch likes failed')
+        const storedLike = localStorage.getItem(LIKE_STORAGE_KEY)
+        if (storedLike) {
+          const parsed = JSON.parse(storedLike)
+          isLiked = Boolean(parsed.liked)
+          savedLikeId = parsed.id || null
         }
-      } catch (err) {
+      } catch {}
+
+      let dbCount = 0
+      try {
+        dbCount = parseInt(localStorage.getItem(LOCAL_LIKES_KEY) || '0', 10)
+      } catch {}
+
+      if (SUPABASE_URL && SUPABASE_ANON_KEY) {
         try {
-          currentLikes = parseInt(localStorage.getItem(LOCAL_LIKES_KEY) || '0', 10)
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/post_likes?post_id=eq.${encodeURIComponent(postId)}&select=id`,
+            {
+              headers: {
+                apikey: SUPABASE_ANON_KEY,
+                Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+              },
+            }
+          )
+          if (res.ok) {
+            const rows = await res.json()
+            if (Array.isArray(rows)) {
+              dbCount = Math.max(dbCount, rows.length)
+            }
+          }
         } catch {}
       }
+
+      currentLikes = dbCount
+      if (isLiked && currentLikes === 0) {
+        currentLikes = 1
+      }
+
       updateLikeUI()
     }
 
     async function toggleLike() {
-      const prevLiked = isLiked
-      const prevCount = currentLikes
-
-      isLiked = !prevLiked
+      isLiked = !isLiked
       currentLikes = isLiked ? currentLikes + 1 : Math.max(0, currentLikes - 1)
+
+      // Always persist liked status & count to localStorage
+      try {
+        localStorage.setItem(LOCAL_LIKES_KEY, String(currentLikes))
+        localStorage.setItem(LIKE_STORAGE_KEY, JSON.stringify({ liked: isLiked, id: savedLikeId || 'local' }))
+      } catch {}
+
       updateLikeUI()
 
       if (heartIcon) {
@@ -287,13 +302,7 @@ const { postId } = Astro.props
         setTimeout(() => heartIcon.classList.remove('scale-125'), 200)
       }
 
-      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-        try {
-          localStorage.setItem(LOCAL_LIKES_KEY, String(currentLikes))
-          localStorage.setItem(LIKE_STORAGE_KEY, JSON.stringify({ liked: isLiked, id: 'local' }))
-        } catch {}
-        return
-      }
+      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return
 
       try {
         if (isLiked) {
@@ -331,22 +340,64 @@ const { postId } = Astro.props
 
           if (res.ok) {
             savedLikeId = null
-            localStorage.removeItem(LIKE_STORAGE_KEY)
           }
         }
-      } catch (err) {
-        // Local fallback on error
-        try {
-          localStorage.setItem(LOCAL_LIKES_KEY, String(currentLikes))
-          localStorage.setItem(LIKE_STORAGE_KEY, JSON.stringify({ liked: isLiked, id: 'local' }))
-        } catch {}
-      }
+      } catch {}
     }
 
     if (likeBtn) {
       likeBtn.onclick = (e) => {
         e.preventDefault()
         toggleLike()
+      }
+    }
+
+    // --- COMMENT LIKES SYSTEM ---
+    function getCommentLikeState(commentId: string): { liked: boolean; count: number } {
+      try {
+        const liked = localStorage.getItem(`pf_comment_liked_${commentId}`) === 'true'
+        const count = parseInt(localStorage.getItem(`pf_comment_count_${commentId}`) || '0', 10)
+        return { liked, count }
+      } catch {
+        return { liked: false, count: 0 }
+      }
+    }
+
+    function toggleCommentLike(commentId: string, btnEl: HTMLElement) {
+      const state = getCommentLikeState(commentId)
+      const newLiked = !state.liked
+      const newCount = newLiked ? state.count + 1 : Math.max(0, state.count - 1)
+
+      try {
+        localStorage.setItem(`pf_comment_liked_${commentId}`, String(newLiked))
+        localStorage.setItem(`pf_comment_count_${commentId}`, String(newCount))
+      } catch {}
+
+      // Update UI elements for this comment
+      const heartSvg = btnEl.querySelector('svg')
+      const countSpan = btnEl.querySelector('[data-comment-like-count]')
+
+      if (countSpan) countSpan.textContent = String(newCount)
+
+      if (heartSvg) {
+        if (newLiked) {
+          heartSvg.setAttribute('fill', 'oklch(0.65 0.22 15)')
+          heartSvg.setAttribute('stroke', 'oklch(0.65 0.22 15)')
+          heartSvg.classList.remove('text-muted-foreground')
+          heartSvg.classList.add('text-red-500', 'scale-110')
+          btnEl.classList.add('text-red-500')
+          btnEl.classList.remove('text-muted-foreground')
+        } else {
+          heartSvg.setAttribute('fill', 'none')
+          heartSvg.setAttribute('stroke', 'currentColor')
+          heartSvg.classList.remove('text-red-500', 'scale-110')
+          heartSvg.classList.add('text-muted-foreground')
+          btnEl.classList.remove('text-red-500')
+          btnEl.classList.add('text-muted-foreground')
+        }
+
+        heartSvg.classList.add('scale-125')
+        setTimeout(() => heartSvg.classList.remove('scale-125'), 200)
       }
     }
 
@@ -362,7 +413,6 @@ const { postId } = Astro.props
       }
 
       try {
-        // Try fetching with parent_id included
         const res = await fetch(
           `${SUPABASE_URL}/rest/v1/post_comments?post_id=eq.${encodeURIComponent(postId)}&select=id,post_id,parent_id,username,comment,created_at&order=created_at.asc`,
           {
@@ -373,7 +423,6 @@ const { postId } = Astro.props
           }
         )
         if (!res.ok) {
-          // If parent_id doesn't exist yet on old table, try fallback select
           const fallbackRes = await fetch(
             `${SUPABASE_URL}/rest/v1/post_comments?post_id=eq.${encodeURIComponent(postId)}&select=id,post_id,username,comment,created_at&order=created_at.asc`,
             {
@@ -399,6 +448,7 @@ const { postId } = Astro.props
 
     function renderCommentNode(node: CommentNode): string {
       const savedHandle = usernameInput?.value || ''
+      const commentState = getCommentLikeState(node.id)
 
       const childrenHtml = node.children.map((child) => renderCommentNode(child)).join('')
 
@@ -411,7 +461,34 @@ const { postId } = Astro.props
             </div>
             <p class="text-muted-foreground mt-2 whitespace-pre-wrap text-sm leading-relaxed">${escapeHtml(node.comment)}</p>
             
-            <div class="mt-3 flex items-center gap-3">
+            <div class="mt-3 flex items-center gap-4">
+              <!-- Comment Like Button -->
+              <button
+                type="button"
+                data-comment-like="${node.id}"
+                class="text-xs font-serif italic flex items-center gap-1.5 transition-colors cursor-pointer ${
+                  commentState.liked ? 'text-red-500' : 'text-muted-foreground hover:text-red-500'
+                }"
+                aria-label="Like comment"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="${commentState.liked ? 'oklch(0.65 0.22 15)' : 'none'}"
+                  stroke="${commentState.liked ? 'oklch(0.65 0.22 15)' : 'currentColor'}"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="transition-all duration-300 ${commentState.liked ? 'text-red-500 scale-110' : 'text-muted-foreground'}"
+                >
+                  <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
+                </svg>
+                <span data-comment-like-count="${node.id}">${commentState.count}</span>
+              </button>
+
+              <!-- Reply Button -->
               <button
                 type="button"
                 data-reply-toggle="${node.id}"
@@ -484,12 +561,22 @@ const { postId } = Astro.props
 
       commentsListEl.innerHTML = roots.map((root) => renderCommentNode(root)).join('')
 
-      // Bind Reply Toggle & Submit Handlers
       bindReplyHandlers()
     }
 
     function bindReplyHandlers() {
       if (!commentsListEl) return
+
+      // Bind Comment Likes
+      const commentLikeBtns = commentsListEl.querySelectorAll('[data-comment-like]')
+      commentLikeBtns.forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault()
+          const commentId = (btn as HTMLElement).dataset.commentLike
+          if (!commentId) return
+          toggleCommentLike(commentId, btn as HTMLElement)
+        })
+      })
 
       // Toggle inline reply form
       const replyToggles = commentsListEl.querySelectorAll('[data-reply-toggle]')
@@ -501,7 +588,6 @@ const { postId } = Astro.props
           const replyForm = commentsListEl.querySelector(`[data-reply-form="${commentId}"]`) as HTMLFormElement | null
           if (replyForm) {
             const isHidden = replyForm.classList.contains('hidden')
-            // Hide all other open reply forms first
             commentsListEl.querySelectorAll('[data-reply-form]').forEach((f) => f.classList.add('hidden'))
             if (isHidden) {
               replyForm.classList.remove('hidden')
@@ -568,7 +654,6 @@ const { postId } = Astro.props
     async function submitComment(params: { parentId?: string | null; username: string; comment: string }) {
       const { parentId, username, comment } = params
 
-      // Save handle for future comments/replies
       try {
         if (username && username !== 'anonymous') {
           localStorage.setItem(USER_HANDLE_KEY, username)
@@ -618,9 +703,6 @@ const { postId } = Astro.props
         })
 
         if (!res.ok) {
-          const errText = await res.text()
-          console.warn('[PostFeedback] Supabase insert post_comments failed, using local fallback:', errText)
-          // Fallback to local storage on API/table error so user never gets stuck
           await saveLocalComment(localEntry)
         } else {
           await loadComments()
@@ -633,8 +715,7 @@ const { postId } = Astro.props
         }
 
         if (commentTextarea) commentTextarea.value = ''
-      } catch (err) {
-        console.warn('[PostFeedback] Network/Supabase exception, using local fallback:', err)
+      } catch {
         await saveLocalComment(localEntry)
         if (messageEl) {
           messageEl.textContent = 'Thanks. Your comment is posted.'

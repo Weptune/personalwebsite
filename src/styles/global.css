@@ -280,8 +280,8 @@ body {
   background:
     linear-gradient(
       180deg,
-      color-mix(in oklch, var(--background) 30%, transparent),
-      color-mix(in oklch, var(--background) 65%, transparent)
+      rgba(10, 6, 18, 0.85),
+      rgba(5, 3, 10, 0.94)
     );
   border: 1px solid var(--border);
   border-radius: 0.75rem;
@@ -642,12 +642,17 @@ body {
     0 0 30px rgba(130, 60, 220, 0.15) !important;
 }
 
-/* Gothic panels — subtle purple tint on border */
+/* Gothic panels — subtle purple tint on border & dark glass background */
 [data-celestial-theme="stars"] .gothic-panel {
-  border-color: rgba(160, 100, 255, 0.12) !important;
+  background: linear-gradient(
+    180deg,
+    rgba(14, 8, 24, 0.88),
+    rgba(8, 4, 16, 0.95)
+  ) !important;
+  border-color: rgba(160, 100, 255, 0.18) !important;
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.65),
-    inset 0 0 1px rgba(200, 150, 255, 0.03) !important;
+    0 8px 32px rgba(0, 0, 0, 0.75),
+    inset 0 0 1px rgba(200, 150, 255, 0.04) !important;
   transition: border-color 0.4s ease, box-shadow 0.4s ease !important;
 }
 
