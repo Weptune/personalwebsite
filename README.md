@@ -4,9 +4,9 @@
 
 <br/>
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/Weptune/personalwebsite/main/public/static/ramona.gif?v=2" width="380" alt="Ramona Flowers" />
-</p>
+<div align="center">
+    <img src="https://github.com/Weptune/personalwebsite/blob/main/public/static/ramona.webp?raw=true" width="380px" alt="Ramona Flowers" />
+</div>
 
 <br/>
 
