@@ -1,6 +1,7 @@
-name: Auto Broadcast New Write-up
+name: Broadcast Newsletter
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -10,6 +11,8 @@ on:
 
 jobs:
   broadcast:
+    # Only run if commit message explicitly contains [broadcast] or [newsletter], or if manually triggered via GitHub Actions UI
+    if: "contains(github.event.head_commit.message, '[broadcast]') || contains(github.event.head_commit.message, '[newsletter]') || github.event_name == 'workflow_dispatch'"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
