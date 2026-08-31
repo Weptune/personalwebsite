@@ -1,177 +1,171 @@
 ---
 title: 'spectral graphs are fun :D'
-description: 'How turning a tangled network into a bunch of physical springs and computing Graph Laplacian eigenvectors magically solves 2D graph layout and bottleneck partitioning.'
+description: 'How turning a network into a system of quadratic constraints and computing Graph Laplacian eigenvectors solves 2D graph layout and bottleneck partitioning.'
 date: 2026-08-31
 tags: ['linear-algebra', 'graph-theory', 'algorithms', 'maths']
 image: './cover.jpg'
 pinned: false
 ---
 
-graphs are weirdly annoying to visualize.
+Two common problems in graph theory look purely combinatorial on the surface:
 
-if someone gives you a list of 500 vertices and 2,000 edges, how do you actually draw that on a screen without it turning into a giant bowl of tangled noodles? if you place the dots randomly, you get a mess. if you try to drag them around by hand, you will be sitting there all night.
+1. **Graph Layout**: Given a set of vertices and edges, compute coordinates $(x_u, y_u)$ for each vertex in 2D space such that connected vertices are positioned near each other while avoiding unnecessary edge crossings.
+2. **Graph Partitioning**: Partition the vertices into two subsets of roughly equal size such that the number of cut edges across the partition is minimized.
 
-and what if you want to split that network into two roughly equal halves while cutting through as few edges as possible? checking every possible combination by hand or brute force is computationally impossible (np hard).
-
-the reason spectral graph theory is so cool is that both problems get solved by the exact same piece of math. you treat every edge like a physical spring, write down a single matrix called the **Graph Laplacian**, compute its eigenvectors, and the geometry figures itself out.
+Finding the optimal balanced partition (minimizing conductance) is NP hard. Yet both problems can be approximated directly using linear algebra by computing the eigenvectors of a single symmetric matrix called the **Graph Laplacian**.
 
 ---
 
-## turning a graph into springs
+## 1. The Graph Laplacian and Quadratic Forms
 
-say you have an undirected graph $G = (V, E)$ with $n$ vertices.
+Let $G = (V, E)$ be an undirected, unweighted graph with $n$ vertices.
 
-we turn it into math using two basic matrices:
+We define two matrices associated with $G$:
+* **The Degree Matrix ($D$)**: an $n \times n$ diagonal matrix where $D_{uu} = \text{deg}(u)$ is the degree of vertex $u$.
+* **The Adjacency Matrix ($A$)**: an $n \times n$ symmetric matrix where $A_{uv} = 1$ if $(u, v) \in E$, and $A_{uv} = 0$ otherwise.
 
-1. **The Degree Matrix ($D$)**: an $n \times n$ diagonal matrix where each diagonal number $D_{uu}$ is just the number of connections vertex $u$ has.
-2. **The Adjacency Matrix ($A$)**: where $A_{uv} = 1$ if vertices $u$ and $v$ share an edge, and $0$ if they do not.
-
-the **Graph Laplacian** $L$ is just their difference:
+The **Graph Laplacian** $L$ is defined as:
 
 $$L = D - A$$
 
-now imagine assigning a 1D position $x_u$ on a number line to every vertex $u$, collected into a vector $x = (x_1, x_2, \dots, x_n)^T$.
-
-watch what happens when you multiply out $x^T L x$:
+Suppose we assign a real value $x_u \in \mathbb{R}$ to each vertex $u$, forming a vector $x = (x_1, \dots, x_n)^T \in \mathbb{R}^n$. Evaluating the quadratic form $x^T L x$ gives:
 
 $$x^T L x = x^T D x - x^T A x = \sum_{u \in V} \text{deg}(u) x_u^2 - 2 \sum_{(u, v) \in E} x_u x_v$$
 
-since $\text{deg}(u)$ is just counting the edges touching vertex $u$, every edge $(u, v)$ adds $x_u^2$ once and $x_v^2$ once. if you regroup the terms by edges, the whole thing simplifies to:
+Since $\text{deg}(u) = \sum_{v : (u, v) \in E} 1$, we can rewrite the first sum over edges:
 
 $$x^T L x = \sum_{(u, v) \in E} (x_u - x_v)^2$$
 
-this is literally Hooke's Law for springs.
+This formulation reveals the physical intuition behind $L$. If we view each edge as a unit spring connecting vertices along a 1D coordinate axis, $x^T L x$ represents the total potential energy of the system. Minimizing $x^T L x$ corresponds to finding vertex positions that minimize the total squared distance between connected pairs.
 
-if every edge is a spring, $x^T L x$ is the total energy stored in the stretched springs. if connected vertices are placed close together on the line, $(x_u - x_v)^2$ is tiny and energy is low. if connected vertices get yanked far apart, the energy spikes.
-
-because $(x_u - x_v)^2 \ge 0$ for every single edge, $x^T L x \ge 0$ for every vector $x$. this means $L$ is always **positive semidefinite**, so its eigenvalues are all real and nonnegative:
+Because $(x_u - x_v)^2 \ge 0$ for every edge, $x^T L x \ge 0$ for all $x \in \mathbb{R}^n$. Thus, $L$ is **positive semidefinite** ($L \succeq 0$), and all its eigenvalues are real and nonnegative:
 
 $$0 = \lambda_1 \le \lambda_2 \le \lambda_3 \le \dots \le \lambda_n$$
 
 ---
 
-## a concrete four node example
+## 2. The Trivial Solution and the Fiedler Vector
 
-to see how this actually plays out with real numbers, take a simple 4 node line:
+If we simply minimize $x^T L x$ without constraints, the minimum is 0, achieved by setting all $x_u$ equal to a constant $c$. 
+
+This corresponds to the all ones vector $\mathbf{1} = (1, 1, \dots, 1)^T$:
+
+$$L \mathbf{1} = (D - A)\mathbf{1} = \mathbf{0}$$
+
+Thus, $\lambda_1 = 0$ is always an eigenvalue of $L$ with eigenvector $v_1 = \mathbf{1}$. In general, the multiplicity of the 0 eigenvalue equals the number of connected components in $G$.
+
+To obtain a non-trivial coordinate assignment, we enforce two normalization conditions:
+1. **Centering at the origin**: $\sum_{u \in V} x_u = 0$, which is equivalent to $x \perp \mathbf{1}$.
+2. **Fixed variance**: $\sum_{u \in V} x_u^2 = 1$, which is equivalent to $\|x\|_2 = 1$.
+
+We then consider the constrained optimization problem:
+
+$$\min_{\substack{\|x\|_2 = 1 \\ x \perp \mathbf{1}}} x^T L x$$
+
+By the Rayleigh-Ritz theorem, the solution to this problem is given by the eigenvector corresponding to the **second smallest eigenvalue** $\lambda_2$ of $L$. 
+
+This eigenvector $v_2$ is known as the **Fiedler vector**, and $\lambda_2$ is called the **algebraic connectivity** of the graph.
+
+---
+
+## 3. A Worked Example: The 4-Node Path Graph
+
+Consider a 4-node path graph:
 
 ```
 (1) === (2) === (3) === (4)
 ```
 
-the degree matrix $D$ and adjacency matrix $A$ are:
+The degree matrix $D$ and adjacency matrix $A$ are:
 
 $$D = \begin{pmatrix} 1 & 0 & 0 & 0 \\ 0 & 2 & 0 & 0 \\ 0 & 0 & 2 & 0 \\ 0 & 0 & 0 & 1 \end{pmatrix}, \quad A = \begin{pmatrix} 0 & 1 & 0 & 0 \\ 1 & 0 & 1 & 0 \\ 0 & 1 & 0 & 1 \\ 0 & 0 & 1 & 0 \end{pmatrix}$$
 
-subtracting them gives $L$:
+The Laplacian $L = D - A$ is:
 
-$$L = D - A = \begin{pmatrix} 1 & -1 & 0 & 0 \\ -1 & 2 & -1 & 0 \\ 0 & -1 & 2 & -1 \\ 0 & 0 & -1 & 1 \end{pmatrix}$$
+$$L = \begin{pmatrix} 1 & -1 & 0 & 0 \\ -1 & 2 & -1 & 0 \\ 0 & -1 & 2 & -1 \\ 0 & 0 & -1 & 1 \end{pmatrix}$$
 
-notice that every row adds up to 0. if you multiply $L$ by a vector of all ones $\mathbf{1} = (1, 1, 1, 1)^T$, you get all zeros:
+The characteristic polynomial of $L$ factors as:
 
-$$L \mathbf{1} = \mathbf{0}$$
+$$\det(L - \lambda I) = \lambda (\lambda - 2) (\lambda^2 - 4\lambda + 2) = 0$$
 
-so the smallest eigenvalue is always $\lambda_1 = 0$, with eigenvector $v_1 = \mathbf{1}$.
+The eigenvalues are:
 
-in physical terms, if you place every node on top of the exact same spot ($x_1 = x_2 = x_3 = x_4 = c$), no spring gets stretched at all, so the total energy is 0. it is a valid solution, but completely useless if we want to actually draw or split anything :p
+$$\lambda_1 = 0, \quad \lambda_2 = 2 - \sqrt{2} \approx 0.586, \quad \lambda_3 = 2.0, \quad \lambda_4 = 2 + \sqrt{2} \approx 3.414$$
 
----
+The normalized Fiedler eigenvector $v_2$ for $\lambda_2 = 2 - \sqrt{2}$ is:
 
-## the fiedler vector
+$$v_2 = \frac{1}{2} \begin{pmatrix} -\sqrt{1 + 1/\sqrt{2}} \\ -\sqrt{1 - 1/\sqrt{2}} \\ +\sqrt{1 - 1/\sqrt{2}} \\ +\sqrt{1 + 1/\sqrt{2}} \end{pmatrix} \approx \begin{pmatrix} -0.653 \\ -0.271 \\ +0.271 \\ +0.653 \end{pmatrix}$$
 
-to get a useful layout, we have to prevent all the vertices from collapsing into a single dot. we add two rules:
+The entries of $v_2$ assign coordinates to the vertices in order along a 1D line:
+* $v_2(1) \approx -0.653$
+* $v_2(2) \approx -0.271$
+* $v_2(3) \approx +0.271$
+* $v_2(4) \approx +0.653$
 
-1. **Center the layout at zero**: $\sum x_u = 0$ (so $x \perp \mathbf{1}$).
-2. **Fix the scale**: $\sum x_u^2 = 1$ (so $\|x\|_2 = 1$).
-
-now we ask: what vector $x$ minimizes spring energy under these two rules?
-
-$$\min_{\substack{\|x\|_2 = 1 \\ x \perp \mathbf{1}}} x^T L x$$
-
-the Courant Fischer theorem tells us the answer immediately: it is the **second smallest eigenvector** of $L$, known as the **Fiedler vector** $v_2$, and the minimum energy is the second eigenvalue $\lambda_2$.
-
-if you run the numbers for our 4 node line:
-
-$$\lambda_1 = 0, \quad \lambda_2 \approx 0.586, \quad \lambda_3 = 2.0, \quad \lambda_4 \approx 3.414$$
-
-and the Fiedler vector $v_2$ comes out to:
-
-$$v_2 \approx \begin{pmatrix} -0.653 \\ -0.271 \\ +0.271 \\ +0.653 \end{pmatrix}$$
-
-look at what happened:
-* node 1 lands at $-0.653$
-* node 2 lands at $-0.271$
-* node 3 lands at $+0.271$
-* node 4 lands at $+0.653$
-
-without telling the matrix anything about geometry, the eigenvectors sorted the vertices into an evenly spaced line from left to right.
+The eigenvector recovers the linear ordering and symmetric spacing of the path graph purely from the entries of $L$.
 
 ---
 
-## drawing graphs in 2D
+## 4. 2D Spectral Graph Drawing
 
-if you want a 2D layout instead of a 1D line, you just grab two eigenvectors:
-* use $v_2$ for the x coordinates
-* use $v_3$ for the y coordinates (which is perpendicular to both $\mathbf{1}$ and $v_2$)
+To embed a graph in $\mathbb{R}^2$, we compute two orthogonal 1D coordinate assignments. 
 
-each vertex $u$ gets placed at the coordinate $(v_2(u), v_3(u))$.
+We choose:
+* X-coordinates from the second eigenvector: $x = v_2$
+* Y-coordinates from the third eigenvector: $y = v_3$ (which satisfies $v_3 \perp \mathbf{1}$ and $v_3 \perp v_2$)
 
-here is what happens when you compare embedding using the smallest nontrivial eigenvectors versus the largest ones:
+Each vertex $u$ is plotted at the point $(v_2(u), v_3(u))$.
+
+The figure below compares embeddings generated by the smallest non-trivial eigenvectors $(v_2, v_3)$ against embeddings generated by the largest eigenvectors $(v_n, v_{n-1})$:
 
 ![Spectral Graph Embeddings: Cycle and Grid Graphs](./spectral_embeddings.png)
 
-### why the shapes look like that:
-* **Top Left (20 node cycle with $v_2, v_3$)**: the cycle embeds as a clean circle. the Laplacian of a cycle is a circulant matrix, so its eigenvectors are discrete sines and cosines $(\cos(2\pi k / n), \sin(2\pi k / n))$. minimizing spring energy naturally pulls the loop into an untangled round polygon.
-* **Top Right (20 node cycle with largest eigenvectors)**: using the largest eigenvectors does the exact opposite. it maximizes spring stretch, forcing neighbors as far apart as possible into a spiky star.
-* **Bottom Left ($20 \times 20$ grid with $v_2, v_3$)**: the grid unfolds into a planar mesh with zero crossed lines.
-* **Bottom Right ($20 \times 20$ grid with largest eigenvectors)**: pinches the grid into a bowtie mess.
+### Mathematical Basis for the Layouts:
+* **Top Left (20-node cycle with $v_2, v_3$)**: The Laplacian of a cycle graph is a circulant matrix. Its eigenvectors are discrete Fourier modes of the form $v(k) = (\cos(2\pi j k / n))_{j=1}^n$ and $(\sin(2\pi j k / n))_{j=1}^n$. Plotting $(v_2, v_3)$ evaluates the fundamental frequency ($k=1$), reconstructing a regular polygon in the plane.
+* **Top Right (20-node cycle with $v_n, v_{n-1}$)**: The largest eigenvectors maximize the quadratic form $\sum (x_u - x_v)^2$, forcing adjacent vertices to opposite sides of the origin.
+* **Bottom Left ($20 \times 20$ grid with $v_2, v_3$)**: The Cartesian product structure of the grid yields tensor-product eigenvectors that untangle the vertices into a planar grid.
+* **Bottom Right ($20 \times 20$ grid with $v_n, v_{n-1}$)**: High-frequency eigenmodes create a heavily self-intersecting configuration.
 
 ---
 
-## finding bottlenecks
+## 5. Spectral Graph Partitioning
 
-now for graph partitioning.
+The Fiedler vector also provides an approximation for the graph cut problem.
 
-say you have a network and you want to slice it into two groups $S$ and $\bar{S}$ so that both groups are reasonably balanced and you cut through as few edges as possible.
-
-we measure cut quality using **conductance** $\phi(S)$:
+For a subset of vertices $S \subset V$, let $\bar{S} = V \setminus S$. The **conductance** $\phi(S)$ is defined as:
 
 $$\phi(S) = \frac{|E(S, \bar{S})|}{\min(|S|, |\bar{S}|)}$$
 
-conductance is just the ratio of cut edges over the size of the smaller piece. smaller conductance means a cleaner cut through a narrow bottleneck.
+Where $|E(S, \bar{S})|$ is the number of edges with one endpoint in $S$ and one in $\bar{S}$. The conductance of the graph is:
 
-finding the best cut is np hard, but the Fiedler vector gives a super clean approximation with the **Sweep Cut algorithm**:
+$$\phi(G) = \min_{\substack{S \subset V \\ 0 < |S| \le |V|/2}} \phi(S)$$
 
-```
-[Sort vertices by Fiedler value v₂(u)]
-  u₁  ≤  u₂  ≤  u₃  ≤  ...  ≤  uₙ
-   │      │      │
-   ▼      ▼      ▼
- Sweep a line across the sorted list
- Check conductance φ(Sₖ) for each prefix
- Pick the split with the lowest score
-```
+Finding the subset $S$ that minimizes conductance is NP hard. The **Sweep Cut algorithm** uses $v_2$ to find an approximate solution:
 
-in our 4 node example, $v_2 = (-0.653, -0.271, +0.271, +0.653)$.
+1. Compute the Fiedler vector $v_2$ of $L$.
+2. Sort the vertices such that $v_2(u_1) \le v_2(u_2) \le \dots \le v_2(u_n)$.
+3. Evaluate the conductance of each prefix set $S_k = \{u_1, \dots, u_k\}$ for $k = 1, \dots, n-1$.
+4. Select the prefix cut that achieves the minimum conductance.
 
-the values split cleanly across zero between node 2 and node 3. putting $\{1, 2\}$ on one side and $\{3, 4\}$ on the other cuts only 1 edge, giving the exact optimal split.
+In our 4-node path example, $v_2 = (-0.653, -0.271, +0.271, +0.653)$. The sign changes between vertices 2 and 3. The partition $S = \{1, 2\}$ and $\bar{S} = \{3, 4\}$ cuts exactly 1 edge with $|S| = 2$, yielding conductance $\phi(S) = 1/2$, which is optimal.
 
-### cheeger's inequality
+### Cheeger's Inequality
 
-why does sorting by $v_2$ work so well? **Cheeger's Inequality** proves that the discrete cut quality $\phi(G)$ is tightly trapped by the continuous eigenvalue $\lambda_2$:
+The theoretical guarantee for spectral partitioning is provided by **Cheeger's Inequality** (adapted to graphs by Alon and Milman):
 
 $$\frac{\lambda_2}{2} \le \phi(G) \le \sqrt{2 d_{\max} \lambda_2}$$
 
-where $d_{\max}$ is the maximum degree in the graph.
+Where $d_{\max}$ is the maximum degree in $G$.
 
-this tells you:
-* if $\lambda_2 \approx 0$, the graph has an obvious bottleneck (like two dense clusters joined by a single weak link).
-* if $\lambda_2$ is large, the graph is an **expander**, meaning it is so tightly connected that no easy bottleneck exists anywhere.
+This inequality establishes that:
+* If $\lambda_2$ is close to 0, there exists a cut with small conductance (a sparse bottleneck).
+* If $\lambda_2$ is bounded away from 0, the graph is an **expander graph**, and no sparse cut exists.
 
 ---
 
-## python snippet
+## 6. Implementation
 
-here is how to compute spectral coordinates and run the sweep cut in a few lines of python:
+The following Python function computes the 2D spectral coordinates and performs the sweep cut on a sparse adjacency matrix:
 
 ```python
 import numpy as np
@@ -179,20 +173,16 @@ import scipy.sparse as sp
 import scipy.sparse.linalg as sla
 
 def spectral_embedding(adj_matrix):
-    """
-    Takes an adjacency matrix and returns (x, y) coordinates
-    for each vertex using eigenvectors v2 and v3.
-    """
+    """Computes 2D coordinates (v2, v3) from the Graph Laplacian."""
     degrees = np.array(adj_matrix.sum(axis=1)).flatten()
     n = len(degrees)
     
-    # Laplacian L = D - A
+    # Construct Laplacian L = D - A
     L = sp.diags(degrees) - adj_matrix
     
-    # Compute 3 smallest eigenvalues & eigenvectors
+    # Compute the 3 smallest eigenvalues and eigenvectors
     vals, vecs = sla.eigsh(L.astype(float), k=3, which='SM')
     
-    # Sort in ascending eigenvalue order
     order = np.argsort(vals)
     v2 = vecs[:, order[1]]
     v3 = vecs[:, order[2]]
@@ -200,9 +190,7 @@ def spectral_embedding(adj_matrix):
     return v2, v3
 
 def sweep_cut(adj_matrix):
-    """
-    Finds the cleanest bottleneck cut by sweeping along v2.
-    """
+    """Finds the minimal conductance cut along the Fiedler vector."""
     v2, _ = spectral_embedding(adj_matrix)
     order = np.argsort(v2)
     n = len(order)
@@ -210,7 +198,6 @@ def sweep_cut(adj_matrix):
     best_cond = float('inf')
     best_split = None
     
-    # Sweep through all prefix subsets
     for k in range(1, n):
         S = set(order[:k])
         cut_edges = sum(
@@ -229,14 +216,12 @@ def sweep_cut(adj_matrix):
 
 ---
 
-## quick summary
+## 7. Summary
 
-| Object | Matrix View | Spring View | What It Does |
-| :--- | :--- | :--- | :--- |
-| **$L = D - A$** | Laplacian matrix | Total potential energy operator | Encodes all connections and degrees |
-| **$\lambda_1 = 0, v_1 = \mathbf{1}$** | Smallest eigenvalue | Zero energy rigid shift | Counts disconnected components |
-| **$\lambda_2, v_2$** | Fiedler eigenvalue & vector | Lowest vibrational mode | Spreads vertices along bottlenecks |
-| **$v_2, v_3$** | 2nd and 3rd eigenvectors | First two 2D harmonics | Automatic 2D graph layout |
-| **Cheeger's Bound** | $\lambda_2 / 2 \le \phi(G) \le \sqrt{2 d_{\max} \lambda_2}$ | Slowest acoustic vibration | Bounds minimum cut conductance |
-
-pretending a graph is made of little physical springs turns an impossible search into basic linear algebra, giving you a camera to draw networks and a clean way to slice them apart.
+| Object | Linear Algebra Definition | Graph-Theoretic Meaning |
+| :--- | :--- | :--- |
+| **$L = D - A$** | Laplacian matrix | Quadratic energy operator on vertex coordinates |
+| **$\lambda_1 = 0, v_1 = \mathbf{1}$** | Smallest eigenvalue and eigenvector | Constant coordinate state; multiplicity gives connected components |
+| **$\lambda_2, v_2$** | Second eigenvalue (algebraic connectivity) and Fiedler vector | Lowest non-trivial energy mode; orders vertices along bottlenecks |
+| **$v_2, v_3$** | Second and third eigenvectors | First two orthogonal harmonic coordinates for 2D layout |
+| **Cheeger's Bound** | $\lambda_2 / 2 \le \phi(G) \le \sqrt{2 d_{\max} \lambda_2}$ | Two-sided bound relating continuous eigenvalue to discrete conductance |
