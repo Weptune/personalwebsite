@@ -9,9 +9,9 @@ pinned: false
 
 Graphs are weirdly frustrating to visualize. 
 
-If someone hands you an abstract list of 500 vertices and 2,000 edges, how on earth do you draw it on a screen? If you place the vertices randomly, you end up with a hairball of crossed lines. If you try to hand-tune it, you'll be dragging dots around for hours.
+If someone hands you an abstract list of 500 vertices and 2,000 edges, how on earth do you draw it on a screen? If you place the vertices randomly, you end up with a hairball of crossed lines. If you try to manually tweak it, you will be dragging dots around for hours.
 
-And what if you need to chop that network in half along its natural "weak spot" (like finding clusters in a social network or dividing a circuit layout across two chips)? Checking all possible cuts is a brutal NP-hard combinatorial nightmare.
+And what if you need to chop that network in half along its natural "weak spot" (like finding clusters in a social network or dividing a circuit layout across two chips)? Checking all possible cuts is a brutal NP hard combinatorial nightmare.
 
 The punchline is that both problems have the exact same solution, and it comes from physics and linear algebra. You pretend every edge in your graph is a little physical spring, write down a single matrix called the **Graph Laplacian**, compute its eigenvectors, and everything falls right into place ^\_^
 
@@ -19,7 +19,7 @@ The punchline is that both problems have the exact same solution, and it comes f
 
 ## Turning a Graph into a Physical Spring Mesh
 
-Let's say we have an undirected graph $G = (V, E)$ with $n$ vertices. 
+Let us say we have an undirected graph $G = (V, E)$ with $n$ vertices. 
 
 To turn it into math, we build two simple matrices:
 1. **The Degree Matrix ($D$)**: an $n \times n$ diagonal matrix where each diagonal entry $D_{uu}$ is just the number of neighbors vertex $u$ has.
@@ -43,20 +43,20 @@ This is Hooke's Law for springs. If every edge is a spring of unit stiffness, $x
 
 If connected nodes sit near each other, the energy is small. If connected nodes get pulled far apart, the energy shoots up. 
 
-Because $(x_u - x_v)^2 \ge 0$ for every edge, $x^T L x \ge 0$ for every possible vector $x$. That means $L$ is always **positive semidefinite**, so its eigenvalues are all real and non-negative:
+Because $(x_u - x_v)^2 \ge 0$ for every edge, $x^T L x \ge 0$ for every possible vector $x$. That means $L$ is always **positive semidefinite**, so its eigenvalues are all real and nonnegative:
 
 $$0 = \lambda_1 \le \lambda_2 \le \lambda_3 \le \dots \le \lambda_n$$
 
 ---
 
-## A Concrete 4-Node Example
+## A Concrete Four Node Example
 
-Let's work through a toy example so this isn't just floating in the abstract. 
+Let us work through a toy example so this is not just floating in the abstract. 
 
-Take a simple 4-node path graph:
+Take a simple 4 node path graph:
 
 ```
-(1) --- (2) --- (3) --- (4)
+(1) === (2) === (3) === (4)
 ```
 
 The degree matrix $D$ and adjacency matrix $A$ are:
@@ -67,13 +67,13 @@ Subtracting them gives our Laplacian $L$:
 
 $$L = D - A = \begin{pmatrix} 1 & -1 & 0 & 0 \\ -1 & 2 & -1 & 0 \\ 0 & -1 & 2 & -1 \\ 0 & 0 & -1 & 1 \end{pmatrix}$$
 
-Notice how every row sums to 0. If you multiply $L$ by the all-ones vector $\mathbf{1} = (1, 1, 1, 1)^T$, you get all zeros:
+Notice how every row sums to 0. If you multiply $L$ by the all ones vector $\mathbf{1} = (1, 1, 1, 1)^T$, you get all zeros:
 
 $$L \mathbf{1} = \mathbf{0}$$
 
 This means the smallest eigenvalue is always $\lambda_1 = 0$, with eigenvector $v_1 = \mathbf{1}$. 
 
-In physics terms, placing every node at the exact same location ($x_1 = x_2 = x_3 = x_4 = c$) produces zero spring stretch, so zero energy. It's a completely valid solution, but also completely useless if we want to draw or partition anything :p
+In physics terms, placing every node at the exact same location ($x_1 = x_2 = x_3 = x_4 = c$) produces zero spring stretch, so zero energy. It is a completely valid solution, but also completely useless if we want to draw or partition anything :p
 
 ---
 
@@ -88,9 +88,9 @@ Now we want to find the vector $x$ that minimizes the spring energy under these 
 
 $$\min_{\substack{\|x\|_2 = 1 \\ x \perp \mathbf{1}}} x^T L x$$
 
-Linear algebra gives us a free lunch here: the Courant-Fischer theorem says the vector that solves this is precisely the **second smallest eigenvector** of $L$, called the **Fiedler vector** $v_2$, and the minimum energy you get is the second eigenvalue $\lambda_2$.
+Linear algebra gives us a free lunch here: the Courant Fischer theorem says the vector that solves this is precisely the **second smallest eigenvector** of $L$, called the **Fiedler vector** $v_2$, and the minimum energy you get is the second eigenvalue $\lambda_2$.
 
-If you compute the eigenvalues and eigenvectors of our 4-node path graph, you get:
+If you compute the eigenvalues and eigenvectors of our 4 node path graph, you get:
 
 $$\lambda_1 = 0, \quad \lambda_2 \approx 0.586, \quad \lambda_3 = 2.0, \quad \lambda_4 \approx 3.414$$
 
@@ -99,10 +99,10 @@ And the Fiedler vector $v_2$ is:
 $$v_2 \approx \begin{pmatrix} -0.653 \\ -0.271 \\ +0.271 \\ +0.653 \end{pmatrix}$$
 
 Look at those numbers:
-- Node 1 gets placed at $-0.653$
-- Node 2 at $-0.271$
-- Node 3 at $+0.271$
-- Node 4 at $+0.653$
+* Node 1 gets placed at $-0.653$
+* Node 2 at $-0.271$
+* Node 3 at $+0.271$
+* Node 4 at $+0.653$
 
 The math literally laid out the path in a perfectly straight, evenly spaced line from left to right. It figured out the 1D geometry of the graph purely from the matrix entries.
 
@@ -113,20 +113,20 @@ The math literally laid out the path in a perfectly straight, evenly spaced line
 What if we want a 2D drawing instead of 1D?
 
 Easy: we need two orthogonal coordinates $(x_u, y_u)$ for each vertex $u$. 
-- For the x-coordinates, we use the 2nd eigenvector $v_2$.
-- For the y-coordinates, we use the 3rd eigenvector $v_3$ (which is orthogonal to both $\mathbf{1}$ and $v_2$).
+* For the x coordinates, we use the 2nd eigenvector $v_2$.
+* For the y coordinates, we use the 3rd eigenvector $v_3$ (which is orthogonal to both $\mathbf{1}$ and $v_2$).
 
 Each vertex $u$ is plotted at the point $(v_2(u), v_3(u))$.
 
-Look at what happens when you compare embedding using the smallest non-trivial eigenvectors versus embedding using the *largest* eigenvectors:
+Look at what happens when you compare embedding using the smallest nontrivial eigenvectors versus embedding using the *largest* eigenvectors:
 
 ![Spectral Graph Embeddings: Cycle and Grid Graphs](./spectral_embeddings.png)
 
 ### Why the plots look the way they do:
-- **Top-Left (20-Cycle Graph with $v_2, v_3$)**: The 20-cycle graph embeds as a clean, geometrically round circle. Because the Laplacian of a cycle graph is a circulant matrix, its eigenvectors are discrete Fourier modes, essentially $\cos(2\pi k / n)$ and $\sin(2\pi k / n)$. Minimizing spring tension naturally bends the path into an untangled circle.
-- **Top-Right (20-Cycle Graph with largest eigenvectors)**: Using the largest eigenvectors does the exact opposite. It maximizes $(x_u - x_v)^2$, forcing adjacent nodes as far apart as possible and turning the circle inside-out into a spiky star.
-- **Bottom-Left ($20 \times 20$ Grid Graph with $v_2, v_3$)**: The square grid untangles into a neat diamond-rotated planar mesh with zero edge crossings.
-- **Bottom-Right ($20 \times 20$ Grid Graph with largest eigenvectors)**: Pinches and twists the grid into a chaotic butterfly shape.
+* **Top Left (20 Node Cycle Graph with $v_2, v_3$)**: The 20 node cycle graph embeds as a clean, geometrically round circle. Because the Laplacian of a cycle graph is a circulant matrix, its eigenvectors are discrete Fourier modes, essentially $\cos(2\pi k / n)$ and $\sin(2\pi k / n)$. Minimizing spring tension naturally bends the path into an untangled circle.
+* **Top Right (20 Node Cycle Graph with largest eigenvectors)**: Using the largest eigenvectors does the exact opposite. It maximizes $(x_u - x_v)^2$, forcing adjacent nodes as far apart as possible and turning the circle inside out into a spiky star.
+* **Bottom Left ($20 \times 20$ Grid Graph with $v_2, v_3$)**: The square grid untangles into a neat diamond rotated planar mesh with zero edge crossings.
+* **Bottom Right ($20 \times 20$ Grid Graph with largest eigenvectors)**: Pinches and twists the grid into a chaotic butterfly shape.
 
 ---
 
@@ -142,7 +142,7 @@ We measure how good a cut is using **conductance** $\phi(S)$:
 
 $$\phi(S) = \frac{|E(S, \bar{S})|}{\min(|S|, |\bar{S}|)}$$
 
-Finding the cut that minimizes conductance across all subsets is NP-hard. But the Fiedler vector gives us a fast approximation called the **Sweep Cut algorithm**:
+Finding the cut that minimizes conductance across all subsets is NP hard. But the Fiedler vector gives us a fast approximation called the **Sweep Cut algorithm**:
 
 ```
 [Sort nodes by Fiedler value v₂(u)]
@@ -154,7 +154,7 @@ Finding the cut that minimizes conductance across all subsets is NP-hard. But th
  Pick the split with lowest conductance
 ```
 
-In our 4-node example earlier, $v_2 = (-0.653, -0.271, +0.271, +0.653)$. 
+In our 4 node example earlier, $v_2 = (-0.653, -0.271, +0.271, +0.653)$. 
 
 The values split cleanly around zero between nodes 2 and 3. Putting $\{1, 2\}$ on one side and $\{3, 4\}$ on the other cuts exactly 1 edge, giving the optimal cut.
 
@@ -167,14 +167,14 @@ $$\frac{\lambda_2}{2} \le \phi(G) \le \sqrt{2 d_{\max} \lambda_2}$$
 Where $d_{\max}$ is the maximum vertex degree in the graph.
 
 This tells us:
-- If $\lambda_2 \approx 0$, the graph has a severe bottleneck (like two dense clusters connected by a thin bridge).
-- If $\lambda_2$ is large, the graph is an **expander**, meaning it is so well-connected that no small bottleneck cut exists anywhere.
+* If $\lambda_2 \approx 0$, the graph has a severe bottleneck (like two dense clusters connected by a thin bridge).
+* If $\lambda_2$ is large, the graph is an **expander**, meaning it is so well connected that no small bottleneck cut exists anywhere.
 
 ---
 
 ## Python Code: Doing It from Scratch
 
-Here is a clean Python script using `numpy` and `scipy` to compute the 2D spectral embedding and run the sweep-cut:
+Here is a clean Python script using `numpy` and `scipy` to compute the 2D spectral embedding and run the sweep cut:
 
 ```python
 import numpy as np
@@ -237,9 +237,9 @@ def sweep_cut(adj_matrix):
 | Object | Matrix View | Physical Spring View | What It Gives You |
 | :--- | :--- | :--- | :--- |
 | **$L = D - A$** | Laplacian matrix | Total potential energy operator | Encodes all connectivity and degrees |
-| **$\lambda_1 = 0, v_1 = \mathbf{1}$** | Smallest eigenvalue | Rigid body zero-energy shift | Number of disconnected components |
-| **$\lambda_2, v_2$** | Second eigenvalue (Fiedler) | Lowest non-trivial vibrational mode | 1D coordinate spreading nodes along bottlenecks |
-| **$v_2, v_3$** | 2nd & 3rd eigenvectors | First two spatial harmonics | Automatic 2D graph layout |
+| **$\lambda_1 = 0, v_1 = \mathbf{1}$** | Smallest eigenvalue | Rigid body zero energy shift | Number of disconnected components |
+| **$\lambda_2, v_2$** | Second eigenvalue (Fiedler) | Lowest nontrivial vibrational mode | 1D coordinate spreading nodes along bottlenecks |
+| **$v_2, v_3$** | 2nd and 3rd eigenvectors | First two spatial harmonics | Automatic 2D graph layout |
 | **Cheeger's Bound** | $\lambda_2 / 2 \le \phi(G) \le \sqrt{2 d_{\max} \lambda_2}$ | Energy of slowest acoustic mode | Rigorous bound on bottleneck conductance |
 
 Turning combinatorial graphs into continuous spring systems gives you both a natural camera to visualize networks and a mathematical scalpel to slice them apart.
