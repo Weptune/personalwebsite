@@ -101,13 +101,15 @@ const showTOC = tocSections.length > 0 && tocSections.some((s) => s.headings.len
 
     {
       post.data.image && (
-        <Image
-          src={post.data.image}
-          alt={post.data.title}
-          width={1200}
-          height={630}
-          class="col-span-full mx-auto w-full max-w-xl max-h-[340px] rounded-lg object-cover shadow-md"
-        />
+        <div class="col-span-full flex justify-center">
+          <Image
+            src={post.data.image}
+            alt={post.data.title}
+            width={1200}
+            height={1000}
+            class="max-w-xs sm:max-w-sm max-h-[420px] w-auto h-auto rounded-lg object-contain shadow-md"
+          />
+        </div>
       )
     }
 
