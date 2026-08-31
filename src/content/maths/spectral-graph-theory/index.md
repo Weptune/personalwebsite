@@ -1,5 +1,5 @@
 ---
-title: 'Spectral Graph Theory: Drawing Graphs and Slicing Bottlenecks with Eigenvalues'
+title: 'spectral graphs are fun :D'
 description: 'How turning a tangled network into a bunch of physical springs and computing Graph Laplacian eigenvectors magically solves 2D graph layout and bottleneck partitioning.'
 date: 2026-08-31
 tags: ['linear-algebra', 'graph-theory', 'algorithms', 'maths']
