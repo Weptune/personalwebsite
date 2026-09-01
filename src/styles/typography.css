@@ -36,32 +36,33 @@
   }
 
   /* ============================================
-     DARK MODE: Text glow for readability
+     DARK MODE: Text glow for readability (toggled via data-text-glow)
      ============================================ */
-  [data-theme='dark'] .prose p {
+  [data-theme='dark']:not([data-text-glow='off']) .prose p,
+  [data-theme='dark']:not([data-text-glow='off']) .prose li,
+  [data-theme='dark']:not([data-text-glow='off']) .prose td {
     text-shadow: 0 0 4px rgba(255, 255, 255, 0.6), 0 0 12px rgba(255, 255, 255, 0.4), 0 0 18px rgba(255, 255, 255, 0.2) !important;
   }
 
-  [data-theme='dark'] .prose li {
-    text-shadow: 0 0 4px rgba(255, 255, 255, 0.6), 0 0 12px rgba(255, 255, 255, 0.4), 0 0 18px rgba(255, 255, 255, 0.2) !important;
-  }
-
-  [data-theme='dark'] .prose td {
-    text-shadow: 0 0 4px rgba(255, 255, 255, 0.6), 0 0 12px rgba(255, 255, 255, 0.4), 0 0 18px rgba(255, 255, 255, 0.2) !important;
-  }
-
-  [data-theme='dark'] .prose h1,
-  [data-theme='dark'] .prose h2,
-  [data-theme='dark'] .prose h3,
-  [data-theme='dark'] .prose h4,
-  [data-theme='dark'] .prose h5,
-  [data-theme='dark'] .prose h6 {
+  [data-theme='dark']:not([data-text-glow='off']) .prose h1,
+  [data-theme='dark']:not([data-text-glow='off']) .prose h2,
+  [data-theme='dark']:not([data-text-glow='off']) .prose h3,
+  [data-theme='dark']:not([data-text-glow='off']) .prose h4,
+  [data-theme='dark']:not([data-text-glow='off']) .prose h5,
+  [data-theme='dark']:not([data-text-glow='off']) .prose h6 {
     text-shadow: 0 0 6px rgba(255, 255, 255, 0.8), 0 0 16px rgba(255, 255, 255, 0.5), 0 0 24px rgba(255, 255, 255, 0.3) !important;
   }
 
-  [data-theme='dark'] .prose a,
-  [data-theme='dark'] .prose strong {
+  [data-theme='dark']:not([data-text-glow='off']) .prose a,
+  [data-theme='dark']:not([data-text-glow='off']) .prose strong {
     text-shadow: 0 0 4px rgba(255, 255, 255, 0.7), 0 0 14px rgba(255, 255, 255, 0.4), 0 0 20px rgba(255, 255, 255, 0.2) !important;
+  }
+
+  /* When text glow is disabled: strip all text glow across all elements */
+  [data-text-glow='off'] *,
+  [data-text-glow='off'] *::before,
+  [data-text-glow='off'] *::after {
+    text-shadow: none !important;
   }
 
   /* ============================================

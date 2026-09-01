@@ -44,6 +44,9 @@ import Favicons from './Favicons.astro'
     ;(() => {
       document.documentElement.setAttribute('data-theme', 'dark');
       localStorage.setItem('theme', 'dark');
+
+      const textGlow = localStorage.getItem('text-glow') || 'on';
+      document.documentElement.setAttribute('data-text-glow', textGlow);
       
       let theme = localStorage.getItem('celestial-theme');
       if (!theme) {

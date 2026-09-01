@@ -3273,6 +3273,7 @@ const { class: className } = Astro.props
         const active = palettes[storedTheme] || palettes.stars
         const root = document.documentElement
         root.setAttribute('data-celestial-theme', storedTheme)
+        root.setAttribute('data-text-glow', localStorage.getItem('text-glow') || 'on')
         root.style.setProperty('--primary', active.p)
         root.style.setProperty('--nebula-color-1', active.c1)
         root.style.setProperty('--nebula-color-2', active.c2)
