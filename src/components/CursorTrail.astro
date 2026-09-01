@@ -197,9 +197,15 @@
       capParticles()
     }
 
+    let isRunning = false
+
     const onMove = (e: MouseEvent) => {
       pendingX = e.clientX
       pendingY = e.clientY
+      if (!isRunning && !document.hidden) {
+        isRunning = true
+        raf = requestAnimationFrame(draw)
+      }
     }
 
     const onThemeChange = () => {
@@ -208,7 +214,20 @@
       history.length = 0
     }
 
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        if (isRunning) {
+          cancelAnimationFrame(raf)
+          isRunning = false
+        }
+      }
+    }
+
     const draw = () => {
+      if (document.hidden) {
+        isRunning = false
+        return
+      }
       if (pendingX > 0) {
         pmx = mx
         pmy = my
@@ -425,18 +444,26 @@
         }
       }
 
+      // When no particles remain and mouse is stationary, sleep the loop to save 100% CPU/GPU
+      if (particles.length === 0 && history.length === 0 && pendingX < 0) {
+        ctx.clearRect(0, 0, w, h)
+        isRunning = false
+        return
+      }
+
       raf = requestAnimationFrame(draw)
     }
 
     window.addEventListener('resize', resize)
     document.addEventListener('mousemove', onMove, { passive: true })
     document.addEventListener('celestial-theme-change', onThemeChange)
-    raf = requestAnimationFrame(draw)
+    document.addEventListener('visibilitychange', onVisibilityChange)
 
     return () => {
       window.removeEventListener('resize', resize)
       document.removeEventListener('mousemove', onMove)
       document.removeEventListener('celestial-theme-change', onThemeChange)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
       cancelAnimationFrame(raf)
       canvas.style.display = 'none'
     }

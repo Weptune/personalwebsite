@@ -207,14 +207,27 @@ const showTOC = tocSections.length > 0 && tocSections.some((s) => s.headings.len
         btn.addEventListener('click', () =>
           window.scrollTo({ top: 0, behavior: 'smooth' })
         )
+        let isFooterVisible = false
+        const observer = new IntersectionObserver((entries) => {
+          isFooterVisible = entries[0]?.isIntersecting ?? false
+          btn.classList.toggle('hidden', window.scrollY <= 300 || isFooterVisible)
+        })
+        observer.observe(footer)
+
+        let scrollTicking = false
         window.addEventListener(
           'scroll',
           () => {
-            const footerRect = footer.getBoundingClientRect()
-            btn.classList.toggle(
-              'hidden',
-              window.scrollY <= 300 || footerRect.top <= window.innerHeight
-            )
+            if (!scrollTicking) {
+              scrollTicking = true
+              requestAnimationFrame(() => {
+                btn.classList.toggle(
+                  'hidden',
+                  window.scrollY <= 300 || isFooterVisible
+                )
+                scrollTicking = false
+              })
+            }
           },
           { passive: true }
         )

@@ -32,7 +32,7 @@ const { class: className } = Astro.props
   </Head>
   <body class="flex h-fit min-h-screen flex-col font-sans overflow-x-hidden w-full">
     <CursorTrail />
-    <div id="celestial-bg" class="pointer-events-none fixed inset-0 z-0" aria-hidden="true">
+    <div id="celestial-bg" class="pointer-events-none fixed inset-0 z-0 will-change-transform [transform:translateZ(0)] [contain:paint]" aria-hidden="true">
       <canvas
         id="starfield-webgl"
         class="absolute inset-0 h-full w-full opacity-0 transition-opacity duration-1000"
@@ -68,6 +68,11 @@ const { class: className } = Astro.props
       let starfieldCleanup = null
       let webglCleanup = null
 
+      function getWebGLScale() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 1.25)
+        return Math.max(0.5, dpr * 0.65)
+      }
+
       function startWebGLSun() {
         const canvas = document.getElementById('starfield-webgl')
         if (!canvas) return null
@@ -76,8 +81,9 @@ const { class: className } = Astro.props
 
         let width = window.innerWidth
         let height = window.innerHeight
-        canvas.width = width
-        canvas.height = height
+        let scale = getWebGLScale()
+        canvas.width = Math.round(width * scale)
+        canvas.height = Math.round(height * scale)
 
         const vsSource = `
           attribute vec2 position;
@@ -248,10 +254,20 @@ const { class: className } = Astro.props
         ]), gl.STATIC_DRAW)
 
         let frameId = 0
+        let lastFrameTime = 0
         const startTime = performance.now()
 
-        function render() {
-          if (currentTheme !== 'sun') return
+        function render(currentTime) {
+          if (currentTheme !== 'sun' || document.hidden) {
+            frameId = requestAnimationFrame(render)
+            return
+          }
+
+          if (currentTime - lastFrameTime < 16) {
+            frameId = requestAnimationFrame(render)
+            return
+          }
+          lastFrameTime = currentTime
 
           const now = performance.now() - startTime
           gl.viewport(0, 0, canvas.width, canvas.height)
@@ -263,13 +279,13 @@ const { class: className } = Astro.props
           gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
           gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0)
 
-          const H = Math.min(canvas.height * 0.25, 200)
+          const H = Math.min(canvas.height * 0.25, 200 * scale)
           const radius = (canvas.width * canvas.width) / (8 * H) + H / 2
           const center = [canvas.width / 2, H - radius]
 
           gl.uniform2f(resolutionLocation, canvas.width, canvas.height)
           gl.uniform1f(timeLocation, now)
-          gl.uniform2f(mouseLocation, mx, canvas.height - my) // Invert Y
+          gl.uniform2f(mouseLocation, mx * scale, canvas.height - my * scale) // Invert Y
           gl.uniform2f(sunCenterLocation, center[0], center[1])
           gl.uniform1f(sunRadiusLocation, radius)
 
@@ -283,8 +299,9 @@ const { class: className } = Astro.props
         function handleResize() {
           width = window.innerWidth
           height = window.innerHeight
-          canvas.width = width
-          canvas.height = height
+          scale = getWebGLScale()
+          canvas.width = Math.round(width * scale)
+          canvas.height = Math.round(height * scale)
         }
         window.addEventListener('resize', handleResize)
 
@@ -306,8 +323,9 @@ const { class: className } = Astro.props
 
         let width = window.innerWidth
         let height = window.innerHeight
-        canvas.width = width
-        canvas.height = height
+        let scale = getWebGLScale()
+        canvas.width = Math.round(width * scale)
+        canvas.height = Math.round(height * scale)
 
         const vsSource = `
           attribute vec2 position;
@@ -495,10 +513,20 @@ const { class: className } = Astro.props
         ]), gl.STATIC_DRAW)
 
         let frameId = 0
+        let lastFrameTime = 0
         const startTime = performance.now()
 
-        function render() {
-          if (currentTheme !== 'ocean' || document.hidden) return
+        function render(currentTime) {
+          if (currentTheme !== 'ocean' || document.hidden) {
+            frameId = requestAnimationFrame(render)
+            return
+          }
+
+          if (currentTime - lastFrameTime < 16) {
+            frameId = requestAnimationFrame(render)
+            return
+          }
+          lastFrameTime = currentTime
 
           const now = performance.now() - startTime
           gl.viewport(0, 0, canvas.width, canvas.height)
@@ -512,7 +540,7 @@ const { class: className } = Astro.props
 
           gl.uniform2f(resolutionLocation, canvas.width, canvas.height)
           gl.uniform1f(timeLocation, now)
-          gl.uniform2f(mouseLocation, mx, canvas.height - my)
+          gl.uniform2f(mouseLocation, mx * scale, canvas.height - my * scale)
 
           gl.drawArrays(gl.TRIANGLES, 0, 6)
           frameId = requestAnimationFrame(render)
@@ -523,8 +551,9 @@ const { class: className } = Astro.props
         function handleResize() {
           width = window.innerWidth
           height = window.innerHeight
-          canvas.width = width
-          canvas.height = height
+          scale = getWebGLScale()
+          canvas.width = Math.round(width * scale)
+          canvas.height = Math.round(height * scale)
         }
         window.addEventListener('resize', handleResize)
 
@@ -546,8 +575,9 @@ const { class: className } = Astro.props
 
         let width = window.innerWidth
         let height = window.innerHeight
-        canvas.width = width
-        canvas.height = height
+        let scale = getWebGLScale()
+        canvas.width = Math.round(width * scale)
+        canvas.height = Math.round(height * scale)
 
         const vsSource = `
           attribute vec2 position;
@@ -770,10 +800,20 @@ const { class: className } = Astro.props
         ]), gl.STATIC_DRAW)
 
         let frameId = 0
+        let lastFrameTime = 0
         const startTime = performance.now()
 
-        function render() {
-          if (currentTheme !== 'sky' || document.hidden) return
+        function render(currentTime) {
+          if (currentTheme !== 'sky' || document.hidden) {
+            frameId = requestAnimationFrame(render)
+            return
+          }
+
+          if (currentTime - lastFrameTime < 16) {
+            frameId = requestAnimationFrame(render)
+            return
+          }
+          lastFrameTime = currentTime
 
           const now = performance.now() - startTime
           gl.viewport(0, 0, canvas.width, canvas.height)
@@ -787,7 +827,7 @@ const { class: className } = Astro.props
 
           gl.uniform2f(resolutionLocation, canvas.width, canvas.height)
           gl.uniform1f(timeLocation, now)
-          gl.uniform2f(mouseLocation, mx, canvas.height - my)
+          gl.uniform2f(mouseLocation, mx * scale, canvas.height - my * scale)
 
           gl.drawArrays(gl.TRIANGLES, 0, 6)
           frameId = requestAnimationFrame(render)
@@ -798,8 +838,9 @@ const { class: className } = Astro.props
         function handleResize() {
           width = window.innerWidth
           height = window.innerHeight
-          canvas.width = width
-          canvas.height = height
+          scale = getWebGLScale()
+          canvas.width = Math.round(width * scale)
+          canvas.height = Math.round(height * scale)
         }
         window.addEventListener('resize', handleResize)
 
@@ -821,8 +862,9 @@ const { class: className } = Astro.props
 
         let width = window.innerWidth
         let height = window.innerHeight
-        canvas.width = width
-        canvas.height = height
+        let scale = getWebGLScale()
+        canvas.width = Math.round(width * scale)
+        canvas.height = Math.round(height * scale)
 
         const vsSource = `
           attribute vec2 position;
@@ -1152,10 +1194,20 @@ const { class: className } = Astro.props
         ]), gl.STATIC_DRAW)
 
         let frameId = 0
+        let lastFrameTime = 0
         const startTime = performance.now()
 
-        function render() {
-          if (currentTheme !== 'moon' || document.hidden) return
+        function render(currentTime) {
+          if (currentTheme !== 'moon' || document.hidden) {
+            frameId = requestAnimationFrame(render)
+            return
+          }
+
+          if (currentTime - lastFrameTime < 16) {
+            frameId = requestAnimationFrame(render)
+            return
+          }
+          lastFrameTime = currentTime
 
           const now = performance.now() - startTime
           gl.viewport(0, 0, canvas.width, canvas.height)
@@ -1169,7 +1221,7 @@ const { class: className } = Astro.props
 
           gl.uniform2f(resolutionLocation, canvas.width, canvas.height)
           gl.uniform1f(timeLocation, now)
-          gl.uniform2f(mouseLocation, mx, canvas.height - my)
+          gl.uniform2f(mouseLocation, mx * scale, canvas.height - my * scale)
 
           gl.drawArrays(gl.TRIANGLES, 0, 6)
           frameId = requestAnimationFrame(render)
@@ -1180,8 +1232,9 @@ const { class: className } = Astro.props
         function handleResize() {
           width = window.innerWidth
           height = window.innerHeight
-          canvas.width = width
-          canvas.height = height
+          scale = getWebGLScale()
+          canvas.width = Math.round(width * scale)
+          canvas.height = Math.round(height * scale)
         }
         window.addEventListener('resize', handleResize)
 
@@ -1203,8 +1256,9 @@ const { class: className } = Astro.props
 
         let width = window.innerWidth
         let height = window.innerHeight
-        canvas.width = width
-        canvas.height = height
+        let scale = getWebGLScale()
+        canvas.width = Math.round(width * scale)
+        canvas.height = Math.round(height * scale)
 
         const vsSource = `
           attribute vec2 position;
@@ -1574,10 +1628,20 @@ const { class: className } = Astro.props
         ]), gl.STATIC_DRAW)
 
         let frameId = 0
+        let lastFrameTime = 0
         const startTime = performance.now()
 
-        function render() {
-          if (currentTheme !== 'stars' || document.hidden) return
+        function render(currentTime) {
+          if (currentTheme !== 'stars' || document.hidden) {
+            frameId = requestAnimationFrame(render)
+            return
+          }
+
+          if (currentTime - lastFrameTime < 16) {
+            frameId = requestAnimationFrame(render)
+            return
+          }
+          lastFrameTime = currentTime
 
           const now = performance.now() - startTime
           gl.viewport(0, 0, canvas.width, canvas.height)
@@ -1591,7 +1655,7 @@ const { class: className } = Astro.props
 
           gl.uniform2f(resolutionLocation, canvas.width, canvas.height)
           gl.uniform1f(timeLocation, now)
-          gl.uniform2f(mouseLocation, mx, canvas.height - my)
+          gl.uniform2f(mouseLocation, mx * scale, canvas.height - my * scale)
 
           gl.drawArrays(gl.TRIANGLES, 0, 6)
           frameId = requestAnimationFrame(render)
@@ -1602,8 +1666,9 @@ const { class: className } = Astro.props
         function handleResize() {
           width = window.innerWidth
           height = window.innerHeight
-          canvas.width = width
-          canvas.height = height
+          scale = getWebGLScale()
+          canvas.width = Math.round(width * scale)
+          canvas.height = Math.round(height * scale)
         }
         window.addEventListener('resize', handleResize)
 
@@ -2201,16 +2266,14 @@ const { class: className } = Astro.props
         }
 
         const onMouseMove = (e) => {
-          const rect = canvas.getBoundingClientRect()
-          mx = e.clientX - rect.left
-          my = e.clientY - rect.top
+          mx = e.clientX
+          my = e.clientY
         }
 
         const onClick = (e) => {
           if (e.target.closest('a, button, input, textarea, [role="button"], #poll-form, #poll-vote, #poll-view')) return
-          const rect = canvas.getBoundingClientRect()
-          const mouseX = e.clientX - rect.left
-          const mouseY = e.clientY - rect.top
+          const mouseX = e.clientX
+          const mouseY = e.clientY
           
           if (currentTheme === 'stars') {
             meteors.push({
@@ -3129,7 +3192,20 @@ const { class: className } = Astro.props
           ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'
         }
 
-        function loop(timestamp) { draw(timestamp); frameId = requestAnimationFrame(loop) }
+        let lastFrameTime = 0
+        function loop(timestamp) {
+          if (paused || document.hidden) {
+            frameId = requestAnimationFrame(loop)
+            return
+          }
+          if (timestamp - lastFrameTime < 16) {
+            frameId = requestAnimationFrame(loop)
+            return
+          }
+          lastFrameTime = timestamp
+          draw(timestamp)
+          frameId = requestAnimationFrame(loop)
+        }
         resize(); loop(0)
         window.addEventListener('resize', resize)
         return () => {

@@ -297,13 +297,20 @@ const parentId = isCurrentSubpost ? getParentId(currentPostId) : currentPostId
   }
 
   class TOCController {
-    static handleScroll() {
-      const newActiveIds = HeadingRegions.getVisibleIds()
+    static scrollTicking = false
 
-      if (JSON.stringify(newActiveIds) !== JSON.stringify(state.activeIds)) {
-        state.activeIds = newActiveIds
-        TOCLinks.update(state.activeIds)
-      }
+    static handleScroll() {
+      if (TOCController.scrollTicking) return
+      TOCController.scrollTicking = true
+      requestAnimationFrame(() => {
+        const newActiveIds = HeadingRegions.getVisibleIds()
+
+        if (JSON.stringify(newActiveIds) !== JSON.stringify(state.activeIds)) {
+          state.activeIds = newActiveIds
+          TOCLinks.update(state.activeIds)
+        }
+        TOCController.scrollTicking = false
+      })
     }
 
     static handleTOCScroll = () => TOCScrollMask.update()

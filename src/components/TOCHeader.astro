@@ -330,15 +330,22 @@ const { headings } = Astro.props
   }
 
   class MobileTOCController {
+    static scrollTicking = false
+
     static handleScroll() {
-      const newActiveIds = HeadingRegions.getVisibleIds()
+      if (MobileTOCController.scrollTicking) return
+      MobileTOCController.scrollTicking = true
+      requestAnimationFrame(() => {
+        const newActiveIds = HeadingRegions.getVisibleIds()
 
-      if (JSON.stringify(newActiveIds) !== JSON.stringify(state.activeIds)) {
-        state.activeIds = newActiveIds
-        MobileTOCLinks.update(state.activeIds)
-      }
+        if (JSON.stringify(newActiveIds) !== JSON.stringify(state.activeIds)) {
+          state.activeIds = newActiveIds
+          MobileTOCLinks.update(state.activeIds)
+        }
 
-      ProgressCircle.update()
+        ProgressCircle.update()
+        MobileTOCController.scrollTicking = false
+      })
     }
 
     static handleResize() {
