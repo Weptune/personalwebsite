@@ -1,0 +1,56 @@
+---
+interface Props {
+  class?: string
+}
+
+const { class: className = '' } = Astro.props
+---
+
+<button
+  type="button"
+  data-glow-toggle
+  class:list={[
+    "group inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-background/60 px-2.5 py-0.5 text-xs font-mono tracking-wider text-muted-foreground hover:text-foreground hover:border-primary/50 transition-all cursor-pointer select-none",
+    className
+  ]}
+  title="Toggle text glow"
+  aria-label="Toggle text glow"
+>
+  <span data-glow-dot class="size-1.5 rounded-full bg-primary transition-all group-hover:scale-125"></span>
+  <span class="text-[11px]">glow: <span data-glow-label class="text-foreground font-semibold">on</span></span>
+</button>
+
+<script>
+  function updateGlowUI() {
+    const isOff = document.documentElement.getAttribute('data-text-glow') === 'off'
+    document.querySelectorAll('[data-glow-toggle]').forEach((btn) => {
+      const dot = btn.querySelector('[data-glow-dot]')
+      const label = btn.querySelector('[data-glow-label]')
+      if (isOff) {
+        dot?.classList.remove('bg-primary')
+        dot?.classList.add('bg-muted-foreground/40')
+        if (label) label.textContent = 'off'
+      } else {
+        dot?.classList.remove('bg-muted-foreground/40')
+        dot?.classList.add('bg-primary')
+        if (label) label.textContent = 'on'
+      }
+    })
+  }
+
+  document.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement)?.closest('[data-glow-toggle]')
+    if (!btn) return
+    e.preventDefault()
+
+    const current = document.documentElement.getAttribute('data-text-glow') || 'on'
+    const next = current === 'off' ? 'on' : 'off'
+    document.documentElement.setAttribute('data-text-glow', next)
+    localStorage.setItem('text-glow', next)
+    updateGlowUI()
+  })
+
+  document.addEventListener('astro:page-load', updateGlowUI)
+  document.addEventListener('astro:after-swap', updateGlowUI)
+  updateGlowUI()
+</script>
