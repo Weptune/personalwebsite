@@ -3,6 +3,7 @@ title: 'Attention Is Just Convex Combinations: The Math of Transformers and Why 
 description: 'A mechanical and geometric breakdown of self-attention, the softmax gradient flatline, rank collapse, TC0 circuit limits, and why pretraining scaling met its mathematical match.'
 date: 2026-09-11
 tags: ['linear algebra', 'deep learning', 'complexity theory', 'algorithms', 'maths']
+image: './softmax_saturation_gradient.png'
 pinned: false
 ---
 
@@ -162,6 +163,9 @@ $$\text{Var}\left(\frac{q \cdot k}{\sqrt{d_k}}\right) = \frac{1}{d_k} \text{Var}
 
 This single scalar keeps the logits in a bounded unit-variance regime where the softmax remains "soft," gradients remain healthy, and information can flow across multiple tokens.
 
+![Softmax Saturation and Gradient Flatline](./softmax_saturation_gradient.png)
+*Figure 1: (Left) An unscaled dot product ($\sigma \approx \sqrt{d_k} = 11.3$) collapses the softmax into a discrete, near-one-hot argmax, destroying multi-token mixing. Scaling by $1/\sqrt{d_k}$ preserves an active, differentiable probability distribution. (Right) The softmax Jacobian diagonal $\partial s_i / \partial z_i = s_i(1 - s_i)$ plotted against the logit margin $(z_i - z_j)$. Beyond a margin of $\pm 4$, the gradient flatlines into the dead zone, freezing backpropagation.*
+
 ---
 
 ## 4. Attention as a Dynamic Convex Hull
@@ -192,6 +196,9 @@ This leads to a critical geometric realization:
 Attention is fundamentally a **paint-mixing machine**. 
 
 The value projections $v_j$ put $N$ colors on the palette. The query-key inner products decide how much of each color to squeeze into the mixture. But no matter what values you choose for $Q$ and $K$, the attention mechanism **cannot invent an entirely new pigment outside the convex hull of the inputs**. It can only interpolate, blend, and average existing points in representation space.
+
+![Attention as a Dynamic Convex Combination](./convex_hull_attention.png)
+*Figure 2: Geometric illustration of self-attention in a 2D feature projection. The output representation $\tilde{x}_i$ for any token is strictly confined to lie within the convex hull $\mathrm{Conv}(v_1, \dots, v_5)$ formed by the input value vectors. Attention cannot generate novel features outside this bounded simplex without non-linear MLP projections.*
 
 And this brings us to one of the most fatal, overlooked mathematical properties of pure self-attention: **Rank Collapse**.
 
@@ -254,6 +261,9 @@ This proof reveals why the standard Transformer architecture looks the way it do
 2. **Multi-Layer Perceptrons (MLPs)** provide non-linear feature transformation via activation functions (like GELU or SwiGLU). They pull representations *out* of the convex hull spanned by the values, projecting them into new regions of the ambient space $\mathbb{R}^d$.
 
 Transformers do not reason effortlessly; they fight a constant, precarious war against rank collapse at every single layer.
+
+![Rank Collapse: Doubly Exponential Decay](./rank_collapse_decay.png)
+*Figure 3: Token diversity $\|X^{(l)} - \mathbf{1}v^T\|$ over network depth $l$. Pure self-attention suffers from doubly exponential decay $\mathcal{O}(c^{2^l})$, plunging to machine-epsilon numerical collapse by layer 6 (complete token uniformity). The residual stream ($X + \mathrm{Attn}(X)$) and MLP sub-layers act as topological stabilizers, preserving representation rank indefinitely.*
 
 ---
 
@@ -331,6 +341,9 @@ When an autoregressive model generates $T$ intermediate "thinking" tokens before
 
 Chain-of-thought is not the model "pondering like a human." It is an unrolled temporal clock cycle that grants a shallow circuit the sequential depth it mathematically requires to track state.
 
+![Circuit Complexity Hierarchy and Chain of Thought](./circuit_complexity_hierarchy.png)
+*Figure 4: Computational expressivity hierarchy. A fixed-depth transformer in a single forward pass is strictly bounded within uniform $\mathrm{TC}^0$, rendering it mathematically unable to solve problems with sequential state tracking (parity, reachability). Autoregressive Chain-of-Thought unrolls the circuit into depth $T \times L$, elevating its expressive power into sequential polynomial time ($\mathrm{P}$).*
+
 ---
 
 ## 7. The Three Walls of Scale
@@ -391,6 +404,9 @@ Cutting the reducible error in half requires multiplying your training compute b
 
 Going from a $\$100\text{M}$ training run to a $\$10\text{B}$ training run yields an incremental, razor-thin sliver of cross-entropy improvement. And cross-entropy loss is just next-token predictability—it does not directly translate into reasoning capability.
 
+![Chinchilla Power-Law Asymptote and Marginal Return](./chinchilla_power_law.png)
+*Figure 5: (Left) The Chinchilla cross-entropy loss asymptote $L(C) = E + A \cdot C^{-\gamma}$ flattening out against the irreducible entropy floor $E \approx 1.65$. (Right) The derivative $|\partial L / \partial C|$ on a logarithmic scale, illustrating the brutal exponential collapse of marginal returns per FLOP.*
+
 ---
 
 ### Wall 2: The Finite Token Ceiling
@@ -413,6 +429,9 @@ Read that number again.
 Llama 3 already ingested 15 trillion tokens. Frontier labs have already vacuumed up an estimated 30% to 50% of the readable linguistic output of human civilization. 
 
 You cannot simply "10x the data" for the next generation of pretraining. The data literally does not exist in human hands.
+
+![Training Tokens vs The Planetary Data Wall](./human_data_ceiling.png)
+*Figure 6: Cumulative training tokens ingested by major models compared to Epoch AI's estimated global stock of high-quality human text (~150T tokens). Frontier pretraining runs have already consumed a massive double-digit fraction of all written human history.*
 
 ---
 
@@ -443,6 +462,9 @@ When generation $n+1$ trains on generation $n$'s samples:
 Over successive iterations, the model loses the ability to represent anything outside the most generic, averaged-out central mode of the original distribution. Eventually, the model collapses into a degenerate state where it outputs nonsensical, repetitive gibberish.
 
 The mathematical takeaway is stark: **Unverified synthetic data does not create new information.** It is an entropy pump that slowly boils the distribution down until only noise remains.
+
+![Model Collapse: Distribution Degeneration](./model_collapse_entropy.png)
+*Figure 7: Probability density degeneration across recursive training generations $p_{n+1} = \mathbb{E}_{p_n}[\mathcal{M}]$. Without grounded verifiers, the distribution sheds its tails, contracts in variance, and suffers information entropy collapse ($H(p_n) \to 0$), reducing complex human nuance into a degenerate delta spike.*
 
 ---
 
@@ -487,6 +509,9 @@ Notice what happened here:
 > In 2026, the Transformer is recognized for what it actually is: **a heuristic policy and value network inside an external search engine.**
 
 Just as AlphaGo did not solve Go with a single forward pass of a convolutional net, modern reasoning systems do not solve hard problems with a single forward pass of a transformer. They use the transformer to propose intuitive moves, while external search, verification, and unrolled reasoning loops do the heavy lifting.
+
+![The Paradigm Shift: Pretraining vs Test-Time Search](./paradigm_shift_test_time.png)
+*Figure 8: The architectural pivot of modern AI. Pure pretraining scaling (dashed) hits diminishing returns on complex reasoning tasks, while test-time search and verification (RLVR, Process Reward Models, MCTS) scale performance dramatically with compute allocated at inference.*
 
 ---
 
