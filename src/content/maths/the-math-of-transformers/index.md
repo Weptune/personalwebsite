@@ -19,7 +19,7 @@ When you actually strip away the PR hype, the anthropomorphic analogies, and the
 
 And yet, that very same mathematics reveals something the hype merchants desperately want to ignore: **transformers have hard mathematical boundaries.** Left to their own devices, their attention layers naturally degrade toward rank collapse. In a single forward pass, their computational capacity is mathematically locked inside a shallow circuit complexity class. And the pretraining curve that drove the AI boom for the last decade didn't just hit an economic bottleneck—it slammed headfirst into an information-theoretic wall.
 
-There is a reason why the frontier in 2026 isn't just a 50-trillion-parameter text transformer running next-token prediction, and why the entire industry had to pivot toward real-time multimodal streaming like Project Astra, agentic tool loops, and test-time search. 
+There is a reason why the frontier in 2026 isn't just a 50-trillion-parameter text transformer running next-token prediction, and why frontier architectures like **GPT Astra** and **Claude Fable / Mythos** look so fundamentally different from the monolithic next-token predictors of the past. 
 
 To understand why, we have to look at the math.
 
@@ -468,7 +468,7 @@ The mathematical takeaway is stark: **Unverified synthetic data does not create 
 
 ---
 
-## 8. The 2026 Reality: Why Astra, Agents, and Search Won
+## 8. The 2026 Reality: Why GPT Astra and Claude Fable/Mythos Changed the Game
 
 When you put all of these pieces together, the entire landscape of 2026 makes complete, inevitable sense.
 
@@ -477,28 +477,23 @@ The pretraining scaling curve of standard autoregressive text transformers hit a
 2. **The data ceiling** exhausted the indexable human text corpus.
 3. **Circuit complexity ($\text{TC}^0$)** proved that static text transformers cannot solve multi-step reasoning in a single forward pass anyway.
 
-The industry didn't stop because it ran out of ambition. It pivoted because the mathematics dictated that **pretraining text tokens is no longer where intelligence scales.**
+The industry didn't stop because it ran out of ambition. It pivoted because the mathematics dictated that **pretraining static text tokens is no longer where intelligence scales.**
 
-Look at the two major architectural revolutions that define the frontier today:
+Look at the models that define the frontier today: **GPT Astra** and **Claude Fable / Mythos**. 
 
-### 1. Multimodal Grounding and Continuous Streams (Project Astra)
+If the naive scaling hypothesis had held true, OpenAI and Anthropic would simply be shipping 20-trillion-parameter text completion models trained on more internet scrapes. Instead, both labs underwent profound architectural pivots:
 
-Why did Google, Meta, and others invest so heavily into systems like Project Astra—continuous real-time camera feeds, spatial audio, and environmental interaction?
+### 1. From Passive Autocomplete to Autonomous Agentic Harnesses
+In systems like **Claude Fable** and **Claude Mythos**, the transformer is no longer treated as a lone oracle that spits out answers in one shot. Anthropic engineered these models around **persistent state tracking, multi-step tool scaffolding, and recursive execution feedback**. 
 
-Because when you run out of static text tokens, the only way to escape the data ceiling is to **ground representations in the physical world.**
+Why? Because of the **$\text{TC}^0$ circuit theorem**. When a task requires exploring an unfamiliar codebase, isolating a memory leak, or synthesizing a multi-file refactor, no static forward pass can track that sequential state. The model must interact with a running terminal, observe execution outcomes, and update its state dynamically. The computational complexity is externalized from the weights into the interaction loop.
 
-A single second of 4K video at 60 frames per second contains orders of magnitude more high-entropy, verifiable sensory information about physics, gravity, spatial relationships, and cause-and-effect than a wall of Reddit text. 
+### 2. Test-Time Compute & Grounded Verification (GPT Astra)
+Similarly, **GPT Astra** embodies the shift away from pretraining brute force toward **test-time search and verifiable reinforcement learning (RLVR)**.
 
-By moving from static discrete text to continuous multimodal token streams, models break free of the finite human text archive and tap into the infinite, self-consistent training ground of physical reality.
-
-### 2. The Great Shift: From Pretraining to Test-Time Compute
-
-The second revolution is even more profound: **the shift from training-time compute to inference-time search.**
-
-Instead of spending $\$500\text{M}$ to train a larger transformer that still guesses tokens autoregressively from left to right, models like OpenAI's reasoning series and DeepSeek R1 allocate their compute **at test time**:
-
-* **Reinforcement Learning with Verifiable Rewards (RLVR)**: Instead of training on raw text with cross-entropy loss, models are trained against deterministic environments with ground truth (code execution, formal proof checkers like Lean, mathematical solvers). This completely bypasses the Model Collapse theorem because the reward signal is tied to external reality, not recursive model hallucinations.
-* **Inference-Time Tree Search (MCTS & PRMs)**: Process Reward Models score individual reasoning steps, allowing search algorithms to explore multiple computational paths, backtrack upon reaching dead ends, and verify steps before committing to an answer.
+Instead of burning hundreds of millions of dollars to squeeze another 0.02 off the cross-entropy perplexity on scraped web text:
+* **Verifiable Ground Truth**: Systems like Astra train models against deterministic environments with absolute ground truth (code execution, formal proof checkers like Lean, mathematical solvers). This directly evades the Model Collapse theorem: because the reward signal is anchored to external verification rather than recursive text generation, the entropy of the system does not degrade.
+* **Inference Search Trees**: Rather than committing to tokens from left to right, test-time compute unrolls reasoning branches using Process Reward Models (PRMs), backtracking from dead ends and verifying steps before returning a final answer.
 
 Notice what happened here:
 
@@ -506,9 +501,9 @@ Notice what happened here:
 >
 > In 2020, people believed the Transformer would be the whole brain—an omniscient oracle that would swallow the world's data and output universal truth in one shot.
 >
-> In 2026, the Transformer is recognized for what it actually is: **a heuristic policy and value network inside an external search engine.**
+> In 2026, across both **GPT Astra** and **Claude Fable / Mythos**, the Transformer is recognized for what it actually is: **a heuristic policy and value network inside an external search and execution engine.**
 
-Just as AlphaGo did not solve Go with a single forward pass of a convolutional net, modern reasoning systems do not solve hard problems with a single forward pass of a transformer. They use the transformer to propose intuitive moves, while external search, verification, and unrolled reasoning loops do the heavy lifting.
+Just as AlphaGo did not solve Go with a single forward pass of a neural net, modern frontier systems do not solve hard problems with a single forward pass of a transformer. They use the transformer to propose intuitive moves, while external search, verification, and unrolled reasoning loops do the heavy lifting.
 
 ![The Paradigm Shift: Pretraining vs Test-Time Search](./paradigm_shift_test_time.png)
 *Figure 8: The architectural pivot of modern AI. Pure pretraining scaling (dashed) hits diminishing returns on complex reasoning tasks, while test-time search and verification (RLVR, Process Reward Models, MCTS) scale performance dramatically with compute allocated at inference.*
