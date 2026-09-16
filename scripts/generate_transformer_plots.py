@@ -298,7 +298,7 @@ colors_c = ['#a8dadc', '#e63946', '#457b9d', '#1d3557', '#2a9d8f']
 
 bars_c = ax.barh(classes, depths, color=colors_c, height=0.55, edgecolor='#333333', lw=1.2)
 
-ax.text(2.1, 1, 'TRAPPED: Fixed L layers\nCannot solve parity, reachability', fontsize=9, color='#d62828', fontweight='bold', va='center')
+ax.text(2.1, 1, 'TRAPPED: Fixed L layers (O(1) depth)\nConjecturally cannot solve L / NL reachability', fontsize=8.5, color='#d62828', fontweight='bold', va='center')
 ax.text(5.1, 4, 'UNROLLED: Depth T x L\nSimulates sequential automaton', fontsize=9, color='#2a9d8f', fontweight='bold', va='center')
 
 ax.set_title(r'Circuit Complexity: The $\mathrm{TC}^0$ Wall vs. Chain-of-Thought Unrolling', fontsize=12, fontweight='bold', pad=12)

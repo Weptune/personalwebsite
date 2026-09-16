@@ -277,52 +277,62 @@ This statement is not just empirically dubious. From the standpoint of theoretic
 
 To understand why, we have to look at **circuit complexity**.
 
-In theoretical computer science, we classify problems by the depth and size of the boolean or arithmetic circuits needed to solve them. 
+In theoretical computer science, we classify problems by the depth and size of the boolean or arithmetic circuits needed to solve them:
 
-* **$\text{AC}^0$**: The class of languages recognizable by boolean circuits of constant depth $O(1)$, polynomial size in input length $N$, with unbounded fan-in AND and OR gates.
-* **$\text{TC}^0$**: An extension of $\text{AC}^0$ that allows **majority (threshold) gates**—gates that output 1 if and only if more than half of their inputs are 1.
-
-$\text{TC}^0$ is a surprisingly powerful class. It can compute basic arithmetic: integer addition, subtraction, multiplication, and sorting can all be done in uniform $\text{TC}^0$.
+* **$\text{AC}^0$**: The class of languages recognizable by boolean circuits of constant depth $O(1)$, polynomial size in input length $N$, with unbounded fan-in AND and OR gates. (Famously, Furst-Saxe-Sipser and Håstad proved that $\text{AC}^0$ cannot compute the basic PARITY function).
+* **$\text{TC}^0$**: An extension of $\text{AC}^0$ that equips circuits with **majority (threshold) gates**—gates that output 1 if and only if more than half of their inputs are 1. Because threshold gates can count and tally inputs, $\text{TC}^0$ can easily compute PARITY, integer addition, comparison, sorting, and even integer multiplication (Hesse, Allender, Barrington 2002) in constant depth $O(1)$.
 
 ### The Merrill & Sabharwal Theorem (2023)
 
-In seminal work by William Merrill and Ashish Sabharwal (*["The Expressive Power of Transformers with Chain of Thought"](https://arxiv.org/abs/2310.07923)* and related papers), the researchers proved a rigorous upper bound on what a standard transformer can compute:
+In seminal work by William Merrill and Ashish Sabharwal (*["The Expressive Power of Transformers with Chain of Thought"](https://arxiv.org/abs/2310.07923)* and related papers), the researchers established a rigorous computational ceiling on what a standard transformer can compute:
 
 > **Theorem:** A fixed-depth transformer with $L$ layers running in a single forward pass with log-precision activations is computationally bounded within the circuit complexity class **uniform $\text{TC}^0$**.
 
-Why? Because each layer of a transformer performs linear projections (matrix multiplication), thresholding/softmax (which can simulate soft majority voting), and feed-forward mapping. When the number of layers $L$ is fixed (e.g., 32 layers or 128 layers), the depth of the equivalent circuit is $O(1)$ with respect to the sequence length $N$.
+Why? Because each layer of a transformer performs linear projections (matrix multiplication), continuous thresholding/softmax (which can simulate soft majority voting), and feed-forward MLP mapping. When the number of layers $L$ is fixed (e.g., 32 layers or 128 layers), the depth of the equivalent circuit is $O(1)$ with respect to sequence length $N$.
 
-### What $\text{TC}^0$ Cannot Do
+### The Limits of $\text{TC}^0$ and the Open Frontier
 
-Computational complexity theorists have proven hard lower bounds for $\text{TC}^0$:
+Where does $\text{TC}^0$ sit in the broader computational cosmos? Consider the standard circuit complexity inclusion hierarchy:
 
-$$\text{TC}^0 \subsetneq \text{NC}^1 \subseteq \text{L} \subseteq \text{P}$$
+$$\text{AC}^0 \subsetneq \text{TC}^0 \subseteq \text{NC}^1 \subseteq \text{L} \subseteq \text{NL} \subseteq \text{P}$$
 
-There are basic, fundamental computational problems that **provably cannot be solved in $\text{TC}^0$**:
-1. **Unbounded Parity**: Determining whether the number of 1s in an arbitrary-length bitstring is even or odd cannot be computed by a constant-depth circuit without exponential size.
-2. **Graph Reachability / Connectivity**: Determining if a path exists between two nodes in an arbitrary graph (an L-complete / NL-complete problem).
-3. **Context-Free Grammar Parsing**: Checking the validity of deeply nested structures.
-4. **Permutation Group Membership**: Evaluating sequential algebraic permutations.
+While $\text{AC}^0 \subsetneq \text{TC}^0$ is a proven strict separation, **whether $\text{TC}^0 \subsetneq \text{NC}^1$ (or even $\text{TC}^0 \subsetneq \text{P}$) is one of the deepest open questions in theoretical computer science.** We do not yet possess an unconditioned proof that $\text{TC}^0 \neq \text{NC}^1$.
 
-### The Real-World Consequence
+However, complexity theorists almost universally conjecture that these inclusions are strict. Under these standard, widely accepted complexity conjectures:
 
-Have you ever wondered why a 400-billion-parameter model will confidently fail when asked to multiply two 40-digit numbers together in one shot, or why it hallucinates chess moves when asked to evaluate a board position without showing its work?
+1. **Boolean Formula Evaluation ($\text{NC}^1$)**: Evaluating arbitrary balanced boolean formulas with nested AND/OR gates, or evaluating the word problem over the non-solvable permutation group $S_5$ (Barrington's Theorem), is conjectured to be strictly impossible in constant-depth $\text{TC}^0$.
+2. **Graph Reachability / Connectivity ($\text{L}$ and $\text{NL}$)**: Determining whether a path exists between two nodes in an arbitrary undirected graph (in $\text{L}$ via Reingold 2008) or a general directed graph ($\text{NL}$-complete) requires logarithmic space and sequential depth. It is widely believed that $\text{L} \not\subseteq \text{TC}^0$.
+3. **Sequential State Tracking**: Simulating arbitrary $K$-step finite state machines or traversing dynamic computational paths requires circuit depth proportional to the number of steps $\Omega(K)$, not constant depth $O(1)$.
 
-People call it a "hallucination" or say "the model wasn't trained on enough math."
+### The Softmax Nuance: Why Transformers Fail on Parity Anyway
+
+Here lies a brilliant theoretical nuance. While an idealized $\text{TC}^0$ circuit with hard threshold gates can compute PARITY in constant depth, **real-world transformers consistently fail at unbounded parity.** Why?
+
+Because transformers do not use discrete, hard majority gates; they use **continuous, softmax-normalized attention**.
+
+In 2020, Michael Hahn published a landmark paper, *["Theoretical Limitations of Self-Attention in Model Performance"](https://arxiv.org/abs/2004.13781)* (TACL 2020). Hahn proved that for soft self-attention over sequence length $N$, uniform attention distributes weights as $1/N$. To detect a single bit flip in an $N$-bit string, the attention mechanism must distinguish between sums differing by a single token. As $N \to \infty$, the output representation sensitivity vanishes unless attention logits scale to infinity—which requires either infinite numerical precision or zero softmax temperature.
+
+Under bounded precision and smooth activations, standard transformers are practically even more constrained than idealized $\text{TC}^0$ circuits on tasks sensitive to single-token perturbations across long contexts.
+
+### The Real-World Consequence: Circuit Depth Mismatch
+
+Have you ever wondered why a 400-billion-parameter model will confidently fail when asked to evaluate complex chess board positions or execute arbitrary sequential algorithms in a single forward pass?
+
+People call it a "hallucination" or say "the model wasn't trained on enough data."
 
 **No. It is a circuit depth impossibility.** 
 
-Multi-digit multiplication and state-tracking require a sequential carry chain of depth proportional to the number of digits: $O(N)$ sequential steps. A transformer with 96 layers has $O(1)$ sequential depth. 
+Any algorithm that requires a sequential chain of state dependencies—where step $k$ depends strictly on the outcome of step $k-1$—inherently demands circuit depth proportional to the number of steps: $\Omega(K)$ sequential time. A transformer with 96 layers has $O(1)$ sequential depth. 
 
-Asking a 96-layer transformer to solve a 200-step sequential problem in a single forward pass is mathematically equivalent to asking a human to compute $84729384 \times 91823749$ in their head in 100 milliseconds without scratch paper. It doesn't matter how high their IQ is; the biological circuit depth of their visual cortex cannot execute that many sequential gates in a single cycle.
+Asking a 96-layer transformer to execute a 200-step sequential algorithm in a single forward pass is mathematically equivalent to asking a human to compute $84729384 \times 91823749$ in their head in 100 milliseconds without scratch paper. It doesn't matter how high their IQ is; the biological circuit depth of their visual cortex cannot execute that many sequential gates in a single cycle.
 
 ### Chain-of-Thought is Circuit Unrolling
 
-This explains why **Chain-of-Thought (CoT)** is not a quirky prompting hack. It is a mathematical transformation of the computational model.
+This explains why **Chain-of-Thought (CoT)** is not a quirky prompting hack. It is a fundamental mathematical transformation of the computational model.
 
 ```
 Single Forward Pass (Trapped in TC⁰):
-Input [X] ---> [Fixed Depth L] ---> Output [Y]  (O(1) sequential time)
+Input [X] ---> [Fixed Depth L] ---> Output [Y]  (O(1) sequential depth)
 
 Autoregressive Chain-of-Thought (Unrolled Automaton):
 Input [X] ---> [Layer L] ---> Token t₁
@@ -331,18 +341,18 @@ Input [X] ---> [Layer L] ---> Token t₁
              [Layer L] ---> Token t₂
                      |
                      v
-             [Layer L] ---> Token t₃ ... ---> Output [Y]  (O(T × L) sequential time)
+             [Layer L] ---> Token t₃ ... ---> Output [Y]  (O(T × L) sequential depth)
 ```
 
 When an autoregressive model generates $T$ intermediate "thinking" tokens before answering:
 1. Each generated token is fed back into the context window as input for the next step.
 2. The effective circuit depth is no longer $L$; it is now **$T \times L$**.
-3. The computational power jumps from uniform $\text{TC}^0$ to the class of **polynomial-time Turing machines** (or space-bounded automata, depending on context size).
+3. The computational power jumps from uniform $\text{TC}^0$ to the class of **polynomial-time Turing machines** (or space-bounded automata, bounded by context length).
 
 Chain-of-thought is not the model "pondering like a human." It is an unrolled temporal clock cycle that grants a shallow circuit the sequential depth it mathematically requires to track state.
 
 ![Circuit Complexity Hierarchy and Chain of Thought](./circuit_complexity_hierarchy.png)
-*Figure 4: Computational expressivity hierarchy. A fixed-depth transformer in a single forward pass is strictly bounded within uniform $\mathrm{TC}^0$, rendering it mathematically unable to solve problems with sequential state tracking (parity, reachability). Autoregressive Chain-of-Thought unrolls the circuit into depth $T \times L$, elevating its expressive power into sequential polynomial time ($\mathrm{P}$).*
+*Figure 4: Computational expressivity hierarchy. A fixed-depth transformer in a single forward pass is bounded within uniform $\mathrm{TC}^0$. Under standard complexity conjectures ($\mathrm{TC}^0 \subsetneq \mathrm{NC}^1 \subseteq \mathrm{L}$), constant-depth circuits cannot solve problems requiring sequential state tracking (formula evaluation, graph reachability). Autoregressive Chain-of-Thought unrolls the circuit into depth $T \times L$, elevating its expressive power into sequential polynomial time ($\mathrm{P}$).*
 
 ---
 
@@ -371,15 +381,29 @@ where:
 * $A, B$ are scaling constants.
 * $\alpha \approx 0.34, \beta \approx 0.28$ are empirical power-law exponents.
 
-The total training compute (in FLOPs) is approximately $C \approx 6ND$. Under compute-optimal allocation (setting $\frac{\partial L}{\partial N}$ and $\frac{\partial L}{\partial D}$ equal via Lagrange multipliers), both parameters and tokens should scale in roughly equal proportion:
+The total training compute (in FLOPs) is approximately $C \approx 6ND$. Under compute-optimal allocation (setting the marginal loss reduction per FLOP equal across parameters and tokens via Lagrange multipliers on $C \approx 6ND$):
 
-$$N \propto C^{0.5}, \quad D \propto C^{0.5}$$
+$$N \propto C^a, \quad D \propto C^b \quad \text{where } a = \frac{\beta}{\alpha + \beta}, \; b = \frac{\alpha}{\alpha + \beta}$$
 
-Now look at the marginal return of compute on loss. Taking the derivative of the reducible loss $L_{\text{reducible}} = L - E \propto C^{-\gamma}$ with respect to compute $C$:
+Using the Chinchilla empirical exponents $\alpha \approx 0.34$ and $\beta \approx 0.28$:
 
-$$\frac{\partial L}{\partial C} \propto - \gamma C^{-(\gamma + 1)}$$
+$$a = \frac{0.28}{0.34 + 0.28} \approx 0.45, \quad b = \frac{0.34}{0.34 + 0.28} \approx 0.55$$
 
-where $\gamma \approx 0.15$. 
+(Notice both scale at roughly $C^{0.5}$). When you substitute these optimal allocations back into the reducible loss $L_{\text{reducible}} = \frac{A}{N^\alpha} + \frac{B}{D^\beta}$, both terms scale with compute by the exact same combined exponent:
+
+$$\alpha a = \beta b = \frac{\alpha \beta}{\alpha + \beta} = \gamma$$
+
+Evaluating this directly gives:
+
+$$\gamma = \frac{(0.34)(0.28)}{0.34 + 0.28} \approx 0.154$$
+
+Thus, along the compute-optimal frontier, the reducible loss collapses into a single power law of compute:
+
+$$L_{\text{reducible}}(C) = L(C) - E \propto C^{-\gamma} \approx C^{-0.154}$$
+
+Now look at the marginal return of compute on loss. Taking the derivative with respect to compute $C$:
+
+$$\frac{\partial L}{\partial C} \propto - \gamma C^{-(\gamma + 1)}$$ 
 
 This is a brutal mathematical reality: **diminishing returns are baked directly into the power law.**
 
@@ -486,7 +510,7 @@ If the naive scaling hypothesis had held true, OpenAI and Anthropic would simply
 ### 1. From Passive Autocomplete to Autonomous Agentic Harnesses
 In systems like **Claude Fable** and **Claude Mythos**, the transformer is no longer treated as a lone oracle that spits out answers in one shot. Anthropic engineered these models around **persistent state tracking, multi-step tool scaffolding, and recursive execution feedback**. 
 
-Why? Because of the **$\text{TC}^0$ circuit theorem**. When a task requires exploring an unfamiliar codebase, isolating a memory leak, or synthesizing a multi-file refactor, no static forward pass can track that sequential state. The model must interact with a running terminal, observe execution outcomes, and update its state dynamically. The computational complexity is externalized from the weights into the interaction loop.
+Why? Because empirical engineering collided with the exact computational ceilings predicted by circuit complexity. When a task requires exploring an unfamiliar codebase, isolating a memory leak, or synthesizing a multi-file refactor, no static forward pass can track that sequential state. The model must interact with a running terminal, observe execution outcomes, and update its state dynamically. The computational complexity is externalized from the static weights into the interaction loop.
 
 ### 2. Test-Time Compute & Grounded Verification (GPT Astra)
 Similarly, **GPT Astra** embodies the shift away from pretraining brute force toward **test-time search and verifiable reinforcement learning (RLVR)**.
