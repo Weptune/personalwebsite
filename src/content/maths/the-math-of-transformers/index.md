@@ -1,5 +1,5 @@
 ---
-title: 'Attention Is Just Convex Combinations: The Math of Transformers and Why Scaling Hit a Wall'
+title: 'are transformers a dead end'
 description: 'A mechanical and geometric breakdown of self-attention, the softmax gradient flatline, rank collapse, TC0 circuit limits, and why pretraining scaling met its mathematical match.'
 date: 2026-09-11
 tags: ['linear algebra', 'deep learning', 'complexity theory', 'algorithms', 'maths']
