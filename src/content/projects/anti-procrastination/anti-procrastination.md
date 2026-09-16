@@ -5,4 +5,5 @@ tags: ['electronics', 'fun', 'games']
 image: 'cover.png'
 link: 'https://www.youtube.com/watch?v=uwmSnQyH9xw'
 startDate: '2026-03-25'
+order: 10
 ---

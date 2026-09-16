@@ -5,4 +5,5 @@ tags: ['algorithm', 'music', 'research']
 image: 'cover.png'
 link: 'https://github.com/Weptune/Song-Complexity-vs-Popularity'
 startDate: '2026-03-02'
+order: 5
 ---

@@ -5,4 +5,5 @@ tags: ['educational', 'college', 'website']
 image: 'cover.png'
 link: 'https://synapsegg.vercel.app/'
 startDate: '2026-05-10'
+order: 2
 ---

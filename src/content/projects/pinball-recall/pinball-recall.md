@@ -5,4 +5,5 @@ tags: ['games', 'memory', 'reasoning']
 image: 'cover.png'
 link: 'https://pinball-recall.vercel.app/'
 startDate: '2026-07-22'
+order: 12
 ---

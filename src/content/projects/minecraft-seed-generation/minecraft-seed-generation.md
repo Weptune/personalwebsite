@@ -5,4 +5,5 @@ tags: ['write-up', 'math', 'games']
 image: 'cover.png'
 link: 'https://github.com/Weptune/Minecraft-Seed-Generation'
 startDate: '2025-02-01'
+order: 4
 ---

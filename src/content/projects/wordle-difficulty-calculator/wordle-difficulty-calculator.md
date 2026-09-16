@@ -5,4 +5,5 @@ tags: ['games', 'wordle', 'algorithms']
 image: 'cover.png'
 link: 'https://github.com/Weptune/Wordle-Difficulty-Calculator'
 startDate: '2024-03-01'
+order: 8
 ---
