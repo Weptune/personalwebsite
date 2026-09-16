@@ -1,6 +1,6 @@
-﻿---
+---
 name: "Heaven's Gate"
-description: 'A first-principles chess engine evaluating positions using dynamic piece attack graphs, Laplacian matrices, Fiedler algebraic connectivity, and tropical geometry.'
+description: 'a chess engine i made using spectral tropical graphs, one of the best non neural-network based engines :3'
 tags: ['chess', 'graph-theory', 'algorithms', 'c++']
 image: 'cover.png'
 link: 'https://github.com/Weptune/Heavens-Gate'
