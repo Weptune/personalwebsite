@@ -5,6 +5,7 @@ date: 2026-09-11
 tags: ['linear algebra', 'deep learning', 'complexity theory', 'algorithms', 'maths']
 image: './cover.jpg'
 pinned: false
+draft: true
 ---
 
 Few topics in computing have generated as much intellectual brainrot as Large Language Models. 
