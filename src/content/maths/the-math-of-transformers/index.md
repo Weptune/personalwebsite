@@ -38,19 +38,8 @@ Human language was the evolutionary solution: a **lossy, serialized compression 
 
 Language quantizes the continuous, high-dimensional attractor states of a biological brain into a discrete stream of acoustic phonemes or written symbols, transmitted at an excruciatingly low bandwidth of approximately **30 to 50 bits per second**.
 
-```
-The Biological Reality (Language as Communication Channel):
-
-Brain A (Continuous Dynamics)                   Brain B (Continuous Dynamics)
-+---------------------------+                   +---------------------------+
-|  High-dimensional neural  |                   |  High-dimensional neural  |
-|  attractor relaxation     |                   |  attractor relaxation     |
-+-------------+-------------+                   +-------------^-------------+
-              |                                               |
-              v [Lossy Serialization]                         | [Decoding]
-      "The apple is red" -----------------------------> "The apple is red"
-               Narrow Acoustic / Text Channel (~40 bits/sec)
-```
+![The Communication Protocol Fallacy: Language as an Interface](./language_communication_protocol.png)
+*Figure 1: Language as a low-bandwidth communication protocol (~40 bits/s) between continuous neural dynamical systems. Thoughts in biological brains are continuous attractor relaxations in high-dimensional latent space $\mathbf{z}$; language is merely the lossy acoustic serialization used to transmit results between isolated physical organisms.*
 
 Notice the crucial direction of causality: **a human does not think by emitting a discrete stream of words to their own brain.** 
 
@@ -108,7 +97,7 @@ Because the thoughts must be expressed in natural language tokens, the model is 
 A massive fraction of the model’s parameter capacity and inference FLOPs is spent not on navigating the abstract topology of the problem, but on generating convincing natural language filler to bridge intermediate logical states.
 
 ![Discrete Token Autoregression vs Continuous Latent Planning](./latent_planning_vs_token_serialization.png)
-*Figure 1: (Left) Discrete Token Autoregression. Continuous latent states $\mathbf{h}_t$ are continually quantized into discrete vocabulary tokens $w_t$, destroying gradient information and appending irreversible tokens to an $O(T^2)$ KV cache. (Right) Continuous Latent Planning. Trajectories relax directly in continuous state space $\mathcal{Z}$ via energy minimization without emitting intermediate tokens. Language is decoded only at the terminal communication boundary.*
+*Figure 2: (Left) Discrete Token Autoregression. Continuous latent states $\mathbf{h}_t$ are continually quantized into discrete vocabulary tokens $w_t$, destroying gradient information and appending irreversible tokens to an $O(T^2)$ KV cache. (Right) Continuous Latent Planning. Trajectories relax directly in continuous state space $\mathcal{Z}$ via energy minimization without emitting intermediate tokens. Language is decoded only at the terminal communication boundary.*
 
 When reasoning is carried out directly in a **continuous latent space** (as in energy-based models or latent trajectory planning), exploration is continuous, reversible, and mathematically fluid. Token-based Chain-of-Thought is an extraordinary engineering workaround, but it remains a prisoner of the discrete vocabulary bottleneck.
 
@@ -133,7 +122,7 @@ $$P(\text{Daphne} \mid \text{Mary's daughter is}) \approx 0$$
 Unless the training corpus explicitly contained the inverted sequence of tokens, the model's conditional probability manifold remains un-updated in the reverse direction. 
 
 ![The Reversal Curse: Relational Graphs vs Directional Probabilities](./reversal_curse_graph.png)
-*Figure 2: The Reversal Curse visualized. A causal world model stores symmetric relational facts queryable from any direction. A sequence-based transformer stores directional left-to-right token transition probabilities, failing completely on direct inversions unless explicitly exposed to both directions in training.*
+*Figure 3: The Reversal Curse visualized. A causal world model stores symmetric relational facts queryable from any direction. A sequence-based transformer stores directional left-to-right token transition probabilities, failing completely on direct inversions unless explicitly exposed to both directions in training.*
 
 This is not a trivia bug; it is an architectural signature. The model does not understand the entities `Mary` and `Daphne` as persistent objects situated in a coherent world model. It understands them as high-dimensional coordinates on a directed sequence manifold.
 
@@ -154,15 +143,10 @@ $$P(\text{entire chain sound}) = \prod_{k=1}^K P(\text{step } k \text{ valid} \m
 
 By step 100, the probability of reaching a valid conclusion without external verification is lower than a coin toss. By step 200, it collapses toward zero.
 
-```
-Human Constraint Satisfaction:
-State A <=========> State B <=========> State C
-(Bidirectional relaxation; mistakes in B can be erased and resolved in parallel)
-
-Autoregressive Rollout:
-Token 1 ---> Token 2 ---> [Error at Token 35] ---> Attends to Error ---> Hallucinates Proof
-(Forward-only commitment; Token 35 becomes immutable ground truth for all future tokens)
-```
+| Problem-Solving Mode | Computational Dynamics | Error Recovery Mechanism |
+| :--- | :--- | :--- |
+| **Human Constraint Relaxation** | Bidirectional equilibrium ($\text{State}_A \leftrightarrow \text{State}_B \leftrightarrow \text{State}_C$) | Reversible; contradictions trigger backtracking without context pollution. |
+| **Autoregressive Token Rollout** | Forward-only conditioning ($w_1 \to w_2 \to \dots \to w_K$) | Irreversible; mistakes at step 35 become immutable prompt context that later tokens must rationalize. |
 
 In classical computer science, an algorithm executing a search tree maintains an **execution stack**. If a branch fails an assertion, the program pops the stack, deallocates memory, and backtracks to the previous valid state.
 
@@ -177,7 +161,7 @@ subsequent layers attend to the erroneous token as an established historical fac
 The transformer does not backtrack; it **rationalizes**. It spends the next 500 tokens weaving a brilliant, mathematically sophisticated justification for a premise that was false from the outset.
 
 ![Autoregressive Error Compounding and Manifold Divergence](./autoregressive_error_compounding.png)
-*Figure 3: (Left) The Gambler's Walk of autoregression: compound accuracy $p^K$ collapses exponentially over deduction length, even with near-flawless 99% per-step accuracy. (Right) Manifold divergence: an uncorrected error at step 35 becomes immutable context, pulling the model's self-attention permanently off the ground-truth manifold.*
+*Figure 4: (Left) The Gambler's Walk of autoregression: compound accuracy $p^K$ collapses exponentially over deduction length, even with near-flawless 99% per-step accuracy. (Right) Manifold divergence: an uncorrected error at step 35 becomes immutable context, pulling the model's self-attention permanently off the ground-truth manifold.*
 
 ---
 
@@ -193,15 +177,10 @@ In formal mathematics, the model is connected to an **interactive proof assistan
 
 In these environments, the system does not rely on text generation to evaluate truth. The model can hallucinate a hundred flawed lines of code or ten invalid proof tactics:
 
-```
-Verifiable Domain (Closed-Loop Reality):
-Candidate Solution ---> [ Deterministic Compiler / Lean Kernel ] ---> Absolute Verdict: 0 or 1
-(The external environment enforces ground truth; hallucinations are killed instantly.)
-
-Open-Ended Domain (Open-Loop Vacuum):
-Candidate Argument ---> [ Process Reward Model (Transformer) ]   ---> Soft Heuristic: ~0.82?
-(No external referee; vulnerable to Goodhart's Law and stylistic flattery.)
-```
+| Domain Archetype | Evaluation Mechanism | Ground-Truth Dynamic |
+| :--- | :--- | :--- |
+| **Verifiable (Closed-Loop Reality)** | Deterministic compiler or Lean proof checker | **Absolute (0 or 1)**: The external environment enforces reality; hallucinatory paths fail instantly. |
+| **Open-Ended (Open-Loop Vacuum)** | Process Reward Model (another transformer) | **Soft Heuristic (~0.82)**: No external referee; highly vulnerable to Goodhart's Law and stylistic flattery. |
 
 The compiler is an **unyielding, zero-entropy anchor to reality**. It prunes hallucinations instantly. In closed-loop domains, you can scale test-time compute by orders of magnitude because search is bounded by an objective external arbiter.
 
@@ -228,7 +207,7 @@ And the moment an AI model is optimized against another statistical model, you c
 The reasoning model does not converge toward deeper objective truth; it converges toward the statistical idiosyncrasies, rhetorical tropes, and authoritative styling that maximize the reward model's score. Test-time search without an objective external referee does not produce wisdom; it produces **weaponized sycophancy and articulate pseudo-intellectualism**.
 
 ![The Verification Landscape: Ground Truth vs Goodhart Divergence](./verification_landscape.png)
-*Figure 4: The Verification Landscape. In verifiable domains (coding, formal mathematics), external compilers prune false trajectories, allowing search to scale. In open-ended domains (law, medicine, strategy), reward models lack objective grounding, triggering Goodhart divergence where the system optimizes for stylistic flattery over truth.*
+*Figure 5: The Verification Landscape. In verifiable domains (coding, formal mathematics), external compilers prune false trajectories, allowing search to scale. In open-ended domains (law, medicine, strategy), reward models lack objective grounding, triggering Goodhart divergence where the system optimizes for stylistic flattery over truth.*
 
 ---
 
@@ -249,7 +228,7 @@ $$2^{6.5} \approx \mathbf{90\times \text{ to } 100\times}$$
 Going from a $\$50\text{M}$ cluster to a $\$5\text{B}$ cluster does not purchase a categorical leap in understanding; it buys an incremental, razor-thin reduction in cross-entropy loss.
 
 ![Chinchilla Power-Law Asymptote and Marginal Return](./chinchilla_power_law.png)
-*Figure 5: (Left) The Chinchilla cross-entropy loss flattening against the irreducible entropy floor of language ($E \approx 1.65$). (Right) The derivative $|\partial L / \partial C|$ on a log-log scale, displaying the exponential collapse of marginal returns per FLOP.*
+*Figure 6: (Left) The Chinchilla cross-entropy loss flattening against the irreducible entropy floor of language ($E \approx 1.65$). (Right) The derivative $|\partial L / \partial C|$ on a log-log scale, displaying the exponential collapse of marginal returns per FLOP.*
 
 ### The Planetary Token Wall
 Compounding this mathematical exhaustion is an inescapable physical fact: **human language on Earth is finite.**
@@ -261,7 +240,7 @@ The total global stock of high-quality, publicly accessible written text ever pr
 Frontier training runs have already ingested a double-digit percentage of the entire written record of the human species.
 
 ![Training Tokens vs The Planetary Data Wall](./human_data_ceiling.png)
-*Figure 6: Cumulative training tokens ingested by frontier models compared to the estimated total global stock of high-quality human text (~150T tokens). Pretraining runs have already consumed a massive fraction of all accessible written human history.*
+*Figure 7: Cumulative training tokens ingested by frontier models compared to the estimated total global stock of high-quality human text (~150T tokens). Pretraining runs have already consumed a massive fraction of all accessible written human history.*
 
 ### The Information-Theoretic Trap of Model Collapse
 Why can’t we simply synthesize trillions of tokens of artificial text using our best models to train the next generation?
@@ -281,7 +260,7 @@ With each generation of recursive unverified training, the probability distribut
 It is the mathematical equivalent of **making a photocopy of a photocopy**. Without an active, closed-loop stream of thermodynamic reality pumping new information into the system, the model degenerates into a repetitive, mode-collapsed caricature of human language.
 
 ![Model Collapse: Distribution Degeneration](./model_collapse_entropy.png)
-*Figure 7: Probability density degeneration across recursive training generations without external grounding. The distribution sheds its tails, variance contracts, and information entropy collapses ($H(p_n) \to 0$), reducing human nuance to a degenerate mode.*
+*Figure 8: Probability density degeneration across recursive training generations without external grounding. The distribution sheds its tails, variance contracts, and information entropy collapses ($H(p_n) \to 0$), reducing human nuance to a degenerate mode.*
 
 The data wall is not a shortage of words. **It is the exhaustion of ungrounded human symbols.**
 
@@ -305,15 +284,11 @@ Stripped of its terminology, this is fundamentally **dense General Matrix Multip
 
 The entire global semiconductor ecosystem—from Nvidia’s Tensor Cores and Google's TPUs to high-bandwidth memory (HBM) and Megatron-LM communication primitives—has invested hundreds of billions of dollars over a decade optimizing for a single operation: **multiplying massive 2D matrices of numbers in parallel**.
 
-```
-Silicon Specialization Gap:
-
-Transformer Layer:
-Dense Matrix Multiplication (GEMM) ---> 100% Native Silicon Match ---> 38–43% Cluster MFU
-
-Cognitive Alternatives (Attractor Networks, Continuous ODEs, Dynamic Graphs):
-Asynchronous Spikes / Dynamic Pointers ---> Memory Latency Bottlenecks ---> 8–12% Cluster MFU
-```
+| Architecture Family | Mathematical Core | Silicon Hardware Match | Real-World Cluster MFU |
+| :--- | :--- | :--- | :--- |
+| **Transformer** | Dense Matrix Multiplication (GEMM) | 100% native match for systolic Tensor Cores | **38% – 43%** |
+| **Recurrent SSMs** *(Mamba, RWKV)* | Associative scans, dynamic recurrent state | Less mature distributed tooling, memory bound | **20% – 25%** |
+| **Cognitive Dynamisms** *(Attractors, Graphs)* | Asynchronous spikes, sparse pointer chasing | Severe memory bandwidth and latency stalls | **8% – 12%** |
 
 On massive clusters of 16,000 H100 GPUs (such as those used for Meta's Llama 3 405B), transformers achieve **$38\%$ to $43\%$ Model FLOPs Utilization (MFU)** despite massive network communication bubbles. 
 
@@ -324,7 +299,7 @@ The transformer did not conquer the world because it was the ultimate architectu
 It is the purest possible manifestation of the *Bitter Lesson*: raw, brute-force parallel computation on specialized hardware beats biologically inspired algorithmic elegance every time—until the physical limits of that brute-force paradigm are fully exhausted.
 
 ![The Hardware Lottery: Model FLOPs Utilization (MFU) on Modern GPUs](./hardware_lottery_comparison.png)
-*Figure 8: The Hardware Lottery in silicon. Transformers achieve sustained 38–43% Model FLOPs Utilization (MFU) on massive 16,000-GPU clusters because their core computation is dense Matrix Multiplication (GEMM), perfectly saturating systolic Tensor Cores. Challenger architectures like State Space Models (Mamba) or recurrent networks face memory bandwidth bottlenecks or less mature distributed tooling at frontier scale.*
+*Figure 9: The Hardware Lottery in silicon. Transformers achieve sustained 38–43% Model FLOPs Utilization (MFU) on massive 16,000-GPU clusters because their core computation is dense Matrix Multiplication (GEMM), perfectly saturating systolic Tensor Cores. Challenger architectures like State Space Models (Mamba) or recurrent networks face memory bandwidth bottlenecks or less mature distributed tooling at frontier scale.*
 
 ---
 
@@ -344,26 +319,13 @@ Pretraining maximalism has struck its thermodynamic wall. Static text is an open
 ### 2. The Architectural Frontier Beyond the Token.
 What is emerging to replace this myth is not simply "wrapping Python scripts around an LLM API." It is an architectural transition from **Discrete Autoregression** to **Grounded Continuous State Planning**:
 
-```
-The Paradigm Shift:
-
-Yesterday's Myth (Monolithic Autoregression):
-Prompt ---> [ 1,000-Layer Monolithic Transformer ] ---> Text Output
-(All reasoning, planning, memory, and verification forced through left-to-right discrete tokens)
-
-Tomorrow's Architecture (Grounded Latent Planning):
-Environment / Prompt
-       |
-       v
-[ Continuous Latent World Model (JEPA / Latent Diffusion) ] <---> [ Closed-Loop Verifier / Tool ]
-(Trajectory optimization in continuous latent space Z)            (Compilers, Simulators, Physics)
-       |
-       v
-[ Terminal Sequence Decoder (Transformer as Communication Interface) ]
-       |
-       v
-Human-Facing Natural Language Output
-```
+| Dimension | Monolithic Token Autoregression | Grounded Latent Planning (The Frontier) |
+| :--- | :--- | :--- |
+| **Planning Substrate** | 1D discrete sequence of vocabulary tokens | High-dimensional continuous latent space $\mathcal{Z}$ |
+| **Search Mechanism** | Combinatorial token sampling ($O(T^2)$ KV cache) | Continuous gradient relaxation ($\nabla_z \mathcal{E} \to 0$) |
+| **Error Handling** | Irreversible commitment; must rationalize errors | Reversible trajectory optimization; bad branches pruned without token cost |
+| **Role of Language** | Mistaken for the engine of thought | **Demoted to the sequence interface**: translated to text only at the human boundary |
+| **Verification Loop** | Open-loop soft scoring via Process Reward Models | **Closed-loop grounding**: formal compilers, physics simulators, and reality |
 
 The future of artificial intelligence belongs to systems that dismantle the category error:
 
