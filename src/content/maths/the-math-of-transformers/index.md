@@ -55,9 +55,9 @@ $$P(\text{correct after } K \text{ steps}) = p^K$$
 - After 10 steps: $0.99^{10} \approx \mathbf{90.4\%}$
 - After 50 steps: $0.99^{50} \approx \mathbf{60.5\%}$
 - After 100 steps: $0.99^{100} \approx \mathbf{36.6\%}$
-- After 300 steps: $0.99^{300} \approx \mathbf{4.9\%}$
+- After 200 steps: $0.99^{200} \approx \mathbf{13.4\%}$
 
-By step 100, the chance of reaching a sound conclusion is worse than a coin flip. By step 300, it is effectively zero.
+By step 100, the chance of reaching a sound conclusion is worse than a coin flip. By step 200, it is approaching zero.
 
 Worse, errors in natural language are not independent Bernoulli trials. When an autoregressive model introduces a subtle factual error or invalid premise on step 20, the self-attention mechanism does not recognize it as a defect. 
 
@@ -69,8 +69,8 @@ It treats the hallucinated premise on step 20 as **infallible ground truth**. Th
 
 This explains the ubiquitous phenomenon of "confident hallucination": models generating pages of impeccably formatted, brilliant-sounding deliberation that terminates in complete nonsense. It is not an issue of model size; it is a structural consequence of forward-only autoregression.
 
-![Softmax Saturation and Gradient Flatline](./softmax_saturation_gradient.png)
-*Figure 1: (Left) Unscaled attention logits force the softmax into a saturated, near-one-hot regime. (Right) The softmax Jacobian diagonal $\partial s_i / \partial z_i = s_i(1 - s_i)$ plotted against logit margin. Beyond a margin of $\pm 4$, gradients flatline to zero, freezing parameter updates and destroying the network's ability to maintain nuanced multi-token context.*
+![Autoregressive Error Compounding and Manifold Divergence](./autoregressive_error_compounding.png)
+*Figure 1: (Left) The Gambler's Ruin under autoregression. Even with 99% per-step accuracy, cumulative survival probability $p^K$ collapses exponentially over reasoning length, falling below a coin flip by step 100. (Right) Manifold divergence: an unverified error at step 35 becomes immutable context; self-attention attends to the mistake as ground truth, accelerating divergence from the truth manifold.*
 
 ---
 
@@ -125,8 +125,8 @@ Because the reward model is itself an imperfect statistical interpolator, the re
 
 Test-time compute is not an infinite ladder. In domains with formal verifiers (math, code, games), it is revolutionary. In non-verifiable, open-ended human domains, it quickly degrades into recursive self-delusion.
 
-![The Paradigm Shift: Pretraining vs Test-Time Search](./paradigm_shift_test_time.png)
-*Figure 2: The architectural pivot of modern AI. Pretraining scaling on raw perplexity hits diminishing returns, while test-time search scales performance dramatically—but only in domains where automated verifiers (compilers, proof checkers) provide grounded feedback.*
+![The Verification Landscape: Ground Truth vs Goodhart Divergence](./verification_landscape.png)
+*Figure 2: The verification landscape. (Left) In verifiable domains (coding, formal mathematics), external compilers prune erroneous branches, allowing test-time search to scale exponentially. (Right) In open-ended domains (law, strategy, medicine), Process Reward Models lack objective ground truth, triggering Goodhart divergence where the model learns to flatter the judge rather than discover truth.*
 
 ---
 
@@ -141,9 +141,6 @@ $$\tilde{x}_i = \sum_{j=1}^N A_{ij} v_j, \quad \text{where } A_{ij} \ge 0 \text{
 As a geometric operation, attention is an interpolation engine. It places representations on a high-dimensional manifold and computes soft, content-addressable lookups across the sequence.
 
 This is the most powerful pattern-matching mechanism ever designed by computer science. But pattern matching is fundamentally distinct from **causal world modeling**.
-
-![Attention as a Dynamic Convex Combination](./convex_hull_attention.png)
-*Figure 3: Geometric confinement of self-attention. The output $\tilde{x}_i$ for any token is strictly trapped within the convex hull formed by the value vectors. Attention alone can only interpolate existing features; it cannot synthesize new geometric dimensions without non-linear MLP projections.*
 
 ### The Reversal Curse and Directional Fragility
 
@@ -174,6 +171,9 @@ $$P(\text{Daphne Barrington} \mid \text{Mary Ainsley, daughter}) \approx 0$$
 
 Unless the training data explicitly contained the inverse sentence, the model cannot traverse the relationship backward. It possesses linguistic fluency without ontological comprehension.
 
+![The Reversal Curse: Relational Graphs vs Directional Probabilities](./reversal_curse_graph.png)
+*Figure 3: Why the Reversal Curse exists (Berglund et al., 2023). (Top) A human mental model stores symmetric relational facts: knowing Daphne's mother is Mary immediately allows querying the reverse. (Bottom) A transformer stores directional transition probabilities conditioned on left-to-right token sequences. Without explicit reverse training examples, $P(\text{Daphne} \mid \text{Mary})$ collapses to random chance.*
+
 ### The Fragility of Compositional Scaling
 
 The same inductive mismatch explains why transformers struggle with compositionality. 
@@ -181,9 +181,6 @@ The same inductive mismatch explains why transformers struggle with compositiona
 If a problem requires composing five simple sub-tasks together ($A \to B \to C \to D \to E$), and the model has a $95\%$ mastery over each individual transition, its ability to execute the complete five-hop chain consistently drops precipitously unless it has been explicitly trained on that precise compositional template.
 
 The transformer does not possess an internal execution stack, an isolated memory heap, or persistent variable bindings. Everything must be serialized onto the single 1-dimensional canvas of the token sequence. It is like asking a software engineer to execute a complex C++ program with pointers and dynamic memory purely by handwriting the assembly output on a whiteboard, one character at a time, without being allowed to use RAM.
-
-![Rank Collapse: Doubly Exponential Decay](./rank_collapse_decay.png)
-*Figure 4: Token diversity $\|X^{(l)} - \mathbf{1}v^T\|$ over layer depth $l$. Pure self-attention suffers from doubly exponential decay $\mathcal{O}(c^{2^l})$, wiping out token individuality by layer 6. The residual stream and MLP sub-layers prevent mathematical rank collapse, but they do not provide an external working memory.*
 
 ---
 
@@ -230,7 +227,7 @@ Going from a $\$50\text{M}$ pretraining run to a $\$5\text{B}$ run does not buy 
 And cross-entropy measures how predictably the model guesses the next word of random internet text. A model that achieves a slightly lower cross-entropy score is just a slightly better mimic of average human forum posts; it is not fundamentally a more rigorous reasoner.
 
 ![Chinchilla Power-Law Asymptote and Marginal Return](./chinchilla_power_law.png)
-*Figure 5: (Left) The Chinchilla cross-entropy loss curve $L(C) = E + A \cdot C^{-\gamma}$ flattening against the irreducible entropy floor $E \approx 1.65$. (Right) The derivative $|\partial L / \partial C|$ on a log-log scale, illustrating the exponential collapse of marginal returns per FLOP.*
+*Figure 4: (Left) The Chinchilla cross-entropy loss curve $L(C) = E + A \cdot C^{-\gamma}$ flattening against the irreducible entropy floor $E \approx 1.65$. (Right) The derivative $|\partial L / \partial C|$ on a log-log scale, illustrating the exponential collapse of marginal returns per FLOP.*
 
 ---
 
@@ -245,7 +242,7 @@ According to research by **Epoch AI** (*Villalobos et al., 2024*), the total glo
 Frontier labs have already ingested a double-digit percentage of the entire written record of human civilization. You cannot manufacture 10 times more human history the way you order 10 times more H100s.
 
 ![Training Tokens vs The Planetary Data Wall](./human_data_ceiling.png)
-*Figure 6: Cumulative training tokens ingested by frontier models compared to Epoch AI's estimated global stock of high-quality human text (~150T tokens). Pretraining runs have already consumed a massive fraction of all accessible written human history.*
+*Figure 5: Cumulative training tokens ingested by frontier models compared to Epoch AI's estimated global stock of high-quality human text (~150T tokens). Pretraining runs have already consumed a massive fraction of all accessible written human history.*
 
 And the naive Silicon Valley solution—*"let's just have AI write synthetic text to train future models"*—was proven by Ilia Shumailov and colleagues in *Nature* (2024) to trigger an irreversible information-theoretic trap: **Model Collapse**.
 
@@ -256,7 +253,7 @@ When a model trains recursively on its own ungrounded generations, variance cont
 It is the mathematical equivalent of **taking a photocopy of a photocopy**. With each iteration, the fine nuances of human language wash out until the model degenerates into repetitive, mode-collapsed noise.
 
 ![Model Collapse: Distribution Degeneration](./model_collapse_entropy.png)
-*Figure 7: Probability density degeneration across recursive training generations $p_{n+1} = \mathbb{E}_{p_n}[\mathcal{M}]$. Without grounded verification, the distribution sheds its tails, contracts in variance, and suffers information entropy collapse ($H(p_n) \to 0$), reducing complex human nuance into a degenerate mode.*
+*Figure 6: Probability density degeneration across recursive training generations $p_{n+1} = \mathbb{E}_{p_n}[\mathcal{M}]$. Without grounded verification, the distribution sheds its tails, contracts in variance, and suffers information entropy collapse ($H(p_n) \to 0$), reducing complex human nuance into a degenerate mode.*
 
 ---
 
@@ -293,8 +290,8 @@ The transformer won not because it was the ultimate architecture of the human mi
 
 It is the purest possible manifestation of Rich Sutton's *Bitter Lesson*: methods that leverage raw parallel computation always beat methods that rely on human-designed inductive biases.
 
-![Circuit Complexity Hierarchy and Chain of Thought](./circuit_complexity_hierarchy.png)
-*Figure 8: Computational expressivity hierarchy. Autoregressive generation unrolls the transformer's fixed-depth circuit across $T$ tokens into depth $T \times L$, allowing it to simulate polynomial-time algorithms—leveraging raw hardware parallelism to compensate for its lack of an explicit causal state machine.*
+![The Hardware Lottery: Model FLOPs Utilization (MFU) on Modern GPUs](./hardware_lottery_comparison.png)
+*Figure 7: The Hardware Lottery in silicon. Transformers achieve 60–65% Model FLOPs Utilization (MFU) on modern GPUs because their core computation is dense Matrix Multiplication (GEMM), perfectly matching systolic Tensor Cores. Challenger architectures like State Space Models (Mamba) or recurrent networks hit memory bandwidth bottlenecks or serialize time during training, suffering much lower hardware efficiency.*
 
 ---
 
