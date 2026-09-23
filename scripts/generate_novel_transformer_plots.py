@@ -191,31 +191,31 @@ print("Saved reversal_curse_graph.png")
 fig, ax = plt.subplots(figsize=(8.5, 4.8), dpi=300)
 
 architectures = [
-    'Transformers\n(Dense GEMM)',
-    'State Space Models\n(Mamba / Linear Attn)',
+    'Transformers\n(16k H100 Cluster)',
+    'State Space Models\n(Mamba / Custom Kernels)',
     'Recurrent Networks\n(LSTMs / RWKV)',
-    'Graph Neural Nets\n(Dynamic Topology)',
+    'Graph Neural Nets\n(Dynamic Sparsity)',
     'Energy-Based Models\n(Iterative Sampling)'
 ]
 
-mfu = [62.5, 34.0, 18.5, 9.2, 12.0]
+mfu = [41.0, 24.5, 14.0, 8.5, 10.0]
 colors_hw = ['#1d3557', '#457b9d', '#f4a261', '#e76f51', '#d62828']
 
 bars = ax.bar(architectures, mfu, color=colors_hw, width=0.55, edgecolor='#333333', lw=1.2)
 
 for bar, val in zip(bars, mfu):
     yval = bar.get_height()
-    ax.text(bar.get_x() + bar.get_width()/2.0, yval + 1.5, f'{val:.1f}% MFU', ha='center', va='bottom', fontsize=9, fontweight='bold')
+    ax.text(bar.get_x() + bar.get_width()/2.0, yval + 1.2, f'{val:.1f}% MFU', ha='center', va='bottom', fontsize=9, fontweight='bold')
 
-ax.set_title('The Hardware Lottery: Model FLOPs Utilization (MFU) on Modern GPUs', fontsize=11.5, fontweight='bold', pad=12)
-ax.set_ylabel('Hardware Utilization / MFU (%)', fontsize=10)
-ax.set_ylim(0, 75)
-ax.axhline(60, color='#1d3557', linestyle='--', lw=1.2, label='Ideal Peak Systolic Utilization (>60%)')
+ax.set_title('The Hardware Lottery: Real-World Model FLOPs Utilization (MFU) on GPU Clusters', fontsize=11.5, fontweight='bold', pad=12)
+ax.set_ylabel('Cluster MFU (%)', fontsize=10)
+ax.set_ylim(0, 52)
+ax.axhline(40, color='#1d3557', linestyle='--', lw=1.2, label='Frontier Cluster MFU Baseline (38–43%)')
 ax.grid(True, axis='y')
 ax.legend(loc='upper right', frameon=True, facecolor='#ffffff', edgecolor='#cccccc', fontsize=8.5)
 
-ax.text(0, 12, 'Tensor Core Native:\nMatrix Multiply (GEMM)\nSaturates Silicon', ha='center', fontsize=7.5, color='#ffffff', fontweight='bold')
-ax.text(1, 8, 'Memory Bandwidth\nBottlenecked', ha='center', fontsize=7.5, color='#ffffff', fontweight='bold')
+ax.text(0, 8, 'Dense GEMM +\nMegatron-LM Tooling\nOptimized at Scale', ha='center', fontsize=7.5, color='#ffffff', fontweight='bold')
+ax.text(1, 6, 'Associative Scan\nImmature Tooling', ha='center', fontsize=7.5, color='#ffffff', fontweight='bold')
 
 plt.savefig(os.path.join(out_dir, 'hardware_lottery_comparison.png'))
 plt.close()

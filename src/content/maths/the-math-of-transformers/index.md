@@ -26,57 +26,61 @@ To answer whether the transformer has hit a dead end, we have to look past the m
 
 ## 1. The Gambler's Walk: Why Autoregression Compounds Errors
 
-The most fundamental fact about modern large language models is also the one most frequently swept under the rug: **a transformer is an autoregressive gambler.**
+The most fundamental fact about modern large language models is also the one most frequently swept under the rug: **a transformer is a forward-only autoregressive generator.**
 
-When a model generates an answer, it does not plan a holistic narrative and render it to the page. It calculates a probability distribution over vocabulary words, picks one, appends it to its input, and repeats the process. Every token it outputs is permanently committed to its context window.
+When a model generates an answer, it does not plan a holistic narrative and render it to the page. It calculates a probability distribution over vocabulary tokens conditioned on its entire prefix, samples one, appends it to its input, and repeats the process. Every token it outputs is permanently committed to its context window.
 
-Think about how fundamentally different that is from genuine human reasoning or classical algorithmic execution:
+Think about how fundamentally different that is from classical algorithmic execution or human problem solving:
 
-When a mathematician attempts a proof or a programmer writes an algorithm, they do not produce a continuous, unretractable stream of characters from start to finish. They sketch scratch work. When an assumption leads to a contradiction on line 5, they cross it out and backtrack. The mistake is deleted; it does not corrupt the subsequent steps.
+When a mathematician attempts a proof or an engineer writes an algorithm, they do not produce a continuous, unretractable stream of characters from start to finish. They sketch scratch work. When an assumption leads to a contradiction on line 5, they cross it out and backtrack. The mistake is deleted; it does not corrupt the subsequent steps.
 
-An autoregressive transformer **cannot erase**. Once a token is printed, it becomes part of the immutable prompt for every future token.
+An autoregressive transformer **cannot erase its context**. Once a token is printed, it becomes part of the immutable prompt for every future token.
 
 ```
-Human Problem Solving (Backtracking):
+Human Problem Solving (Backtracking & Erasure):
 Step 1 ---> Step 2 ---> [Mistake!] --(Erase & Backtrack)--> Step 2b ---> Solution
 
-Autoregressive Generation (Markovian Walk):
-Step 1 ---> Step 2 ---> [Mistake!] ---> Conditions on Mistake ---> Elaborates Mistake ---> Hallucination
+Autoregressive Rollout (Forward-Only Conditioning):
+Step 1 ---> Step 2 ---> [Mistake!] ---> Conditions on Mistake ---> Rationalizes Mistake ---> Hallucination
 ```
 
-### The Mathematics of Compounding Flaws
+### The Mathematics of Error Propagation
 
-Suppose a model is tasked with a multi-step deduction, and suppose each logical deduction step has a remarkably high accuracy rate of $99\%$ ($p = 0.99$).
+Suppose a model is tasked with a multi-step deduction, and suppose each logical step has an exceptionally high accuracy rate of $99\%$ ($p = 0.99$).
 
-What is the probability that the model stays on the correct logical manifold as the length of the reasoning chain grows?
+What is the cumulative probability that the model stays on the sound reasoning manifold across an unverified chain of length $K$? 
 
-$$P(\text{correct after } K \text{ steps}) = p^K$$
+Under the baseline assumption of independent error propagation (as formalized by Dziri et al., 2023, *["Faith and Fate: Limits of Transformers on Compositionality"](https://arxiv.org/abs/2305.18654)*), the joint probability degrades exponentially:
+
+$$P(\text{entire chain sound}) \approx \prod_{k=1}^K P(E_k \mid E_{<k}) \sim p^K$$
 
 - After 10 steps: $0.99^{10} \approx \mathbf{90.4\%}$
 - After 50 steps: $0.99^{50} \approx \mathbf{60.5\%}$
 - After 100 steps: $0.99^{100} \approx \mathbf{36.6\%}$
 - After 200 steps: $0.99^{200} \approx \mathbf{13.4\%}$
 
-By step 100, the chance of reaching a sound conclusion is worse than a coin flip. By step 200, it is approaching zero.
+By step 100, the probability of reaching a sound conclusion without external guidance is worse than a coin flip. By step 200, it is approaching zero.
 
-Worse, errors in natural language are not independent Bernoulli trials. When an autoregressive model introduces a subtle factual error or invalid premise on step 20, the self-attention mechanism does not recognize it as a defect. 
+While models operating with Chain-of-Thought can occasionally emit verbal course corrections (*"Wait, let me recalculate that..."*), autoregressive training creates an overwhelming inductive bias toward **confirmation**. 
 
-Self-attention computes an inner-product similarity between tokens:
+Self-attention computes an inner-product compatibility between tokens:
 
 $$A_{ij} = \frac{\exp(q_i^T k_j / \sqrt{d_k})}{\sum_m \exp(q_i^T k_m / \sqrt{d_k})}$$
 
-It treats the hallucinated premise on step 20 as **infallible ground truth**. The model attends to its own mistake, incorporates it into the running representation, and spends the next 200 tokens weaving a mathematically articulate, highly persuasive justification for an error it committed minutes earlier.
+Although individual attention heads can theoretically allocate near-zero weight ($A_{ij} \to 0$) or suppress earlier features via inhibitory circuits, the pretraining objective trains the model to maximize the likelihood of fluent, coherent text that agrees with the prompt history. 
 
-This explains the ubiquitous phenomenon of "confident hallucination": models generating pages of impeccably formatted, brilliant-sounding deliberation that terminates in complete nonsense. It is not an issue of model size; it is a structural consequence of forward-only autoregression.
+Once an erroneous premise is generated on step 20, the model is strongly biased to maintain rhetorical consistency with its own generated prefix. Rather than pruning the error, subsequent layers attend to it as established context, spending the next 200 tokens weaving an articulate, mathematically sophisticated justification for a premise that was false from the start.
+
+This explains the ubiquitous phenomenon of "confident hallucination": models generating pages of impeccably formatted, brilliant-sounding deliberation that terminates in complete nonsense. It is not an issue of model size; it is a structural consequence of forward-only autoregression without an external error-correcting oracle.
 
 ![Autoregressive Error Compounding and Manifold Divergence](./autoregressive_error_compounding.png)
-*Figure 1: (Left) The Gambler's Ruin under autoregression. Even with 99% per-step accuracy, cumulative survival probability $p^K$ collapses exponentially over reasoning length, falling below a coin flip by step 100. (Right) Manifold divergence: an unverified error at step 35 becomes immutable context; self-attention attends to the mistake as ground truth, accelerating divergence from the truth manifold.*
+*Figure 1: (Left) Cumulative reasoning survival under autoregression. Even with 99% per-step accuracy, compound survival $p^K$ collapses exponentially over reasoning length, falling below a coin flip by step 100. (Right) Manifold divergence: an unverified error at step 35 becomes immutable context; self-attention conditions on the mistake, accelerating divergence from the ground-truth manifold.*
 
 ---
 
 ## 2. The Verification Trap: Why Test-Time Compute Isn't a Universal Cure
 
-The leading argument against the "dead end" thesis today is the rise of **test-time compute** (systems like OpenAI's o1/o3 and DeepSeek-R1). 
+The leading argument against the "dead end" thesis today is the rise of **test-time compute** (pioneered by OpenAI's o1/o3 and DeepSeek-R1). 
 
 The claim goes like this: *"Instead of training bigger models on static text, we use Reinforcement Learning with Verifiable Rewards (RLVR). The model generates search trees, explores alternative paths, catches its own mistakes, and backtracks before printing the final answer."*
 
@@ -98,7 +102,7 @@ Candidate Reasoning ---> [ Process Reward Model (Another Transformer) ] ---> Sof
 
 In competitive programming, you have a compiler and an automated test suite. The code either executes within the memory limit and passes the test assertions, or it crashes. In formal mathematics, you have interactive proof assistants like Lean 4 or Isabelle. A proof either type-checks according to the strict axioms of formal logic, or it is rejected.
 
-In these narrow sandboxes, the model can generate a thousand hallucinatory dead ends. The compiler acts as an unyielding filter that kills bad trajectories and rewards only what is mathematically sound.
+In these narrow sandboxes, the model can generate a thousand hallucinatory dead ends. The compiler acts as an unyielding, zero-entropy filter that kills bad trajectories and rewards only what is mathematically sound.
 
 ### The Missing Compiler of the Real World
 
@@ -123,7 +127,7 @@ And the moment you use a transformer to grade a transformer's intermediate thoug
 
 Because the reward model is itself an imperfect statistical interpolator, the reasoning model quickly discovers the rhetorical quirks, authoritative tone, and pseudo-intellectual phrases that score high with the reward model. It does not converge to deeper objective truth; it converges to whatever best hacks the scoring distribution.
 
-Test-time compute is not an infinite ladder. In domains with formal verifiers (math, code, games), it is revolutionary. In non-verifiable, open-ended human domains, it quickly degrades into recursive self-delusion.
+Test-time compute is not an infinite ladder. In domains with formal verifiers (math, code, games), it is revolutionary. In non-verifiable, open-ended human domains, raw search without external tool grounding degrades into recursive self-delusion.
 
 ![The Verification Landscape: Ground Truth vs Goodhart Divergence](./verification_landscape.png)
 *Figure 2: The verification landscape. (Left) In verifiable domains (coding, formal mathematics), external compilers prune erroneous branches, allowing test-time search to scale exponentially. (Right) In open-ended domains (law, strategy, medicine), Process Reward Models lack objective ground truth, triggering Goodhart divergence where the model learns to flatter the judge rather than discover truth.*
@@ -142,7 +146,7 @@ As a geometric operation, attention is an interpolation engine. It places repres
 
 This is the most powerful pattern-matching mechanism ever designed by computer science. But pattern matching is fundamentally distinct from **causal world modeling**.
 
-### The Reversal Curse and Directional Fragility
+### The Reversal Curse and Directional Asymmetry
 
 Consider one of the most revealing empirical findings in modern deep learning: **The Reversal Curse** (*Berglund et al., 2023*).
 
@@ -156,31 +160,31 @@ and then ask it:
 
 The model answers `"Mary Ainsley"` with near $100\%$ confidence.
 
-Now, immediately invert the query:
+Now, immediately invert the query in a direct zero-shot prompt:
 
 > *"Who is the daughter of Mary Ainsley?"*
 
 The model fails completely. It hallucinates a random name or claims it does not know.
 
-Think about what this reveals about the model's internal representation of knowledge. If a human child learns that Alice is Bob's sister, the child creates a node in their internal mental model of the world: a relation `Sibling(Alice, Bob)` that can be queried symmetrically from either direction.
+Think about what this reveals about the model's internal representation of knowledge. If a human learns that Alice is Bob's sister, the human creates a node in their internal mental model of the world: a symmetric relation `Sibling(Alice, Bob)` that can be queried with equal ease from either direction.
 
-A transformer does not store a relational graph of reality. It stores directional, high-dimensional transition probabilities across token strings:
+A transformer, in its raw weights, stores directional transition probabilities conditioned on left-to-right token sequences:
 
 $$P(\text{Mary Ainsley} \mid \text{Daphne Barrington, mother}) \gg 0$$
 $$P(\text{Daphne Barrington} \mid \text{Mary Ainsley, daughter}) \approx 0$$
 
-Unless the training data explicitly contained the inverse sentence, the model cannot traverse the relationship backward. It possesses linguistic fluency without ontological comprehension.
+While giving the model a scratchpad (*"Let's see: Daphne Barrington's mother is Mary Ainsley, so Mary's daughter is..."*) or using bidirectional data augmentation can partially mitigate the problem, the core lesson remains: **the model does not natively store an ontological knowledge graph.** It stores statistical transition manifolds across text.
 
 ![The Reversal Curse: Relational Graphs vs Directional Probabilities](./reversal_curse_graph.png)
 *Figure 3: Why the Reversal Curse exists (Berglund et al., 2023). (Top) A human mental model stores symmetric relational facts: knowing Daphne's mother is Mary immediately allows querying the reverse. (Bottom) A transformer stores directional transition probabilities conditioned on left-to-right token sequences. Without explicit reverse training examples, $P(\text{Daphne} \mid \text{Mary})$ collapses to random chance.*
 
 ### The Fragility of Compositional Scaling
 
-The same inductive mismatch explains why transformers struggle with compositionality. 
+The same inductive mismatch explains why transformers struggle with deep compositionality. 
 
-If a problem requires composing five simple sub-tasks together ($A \to B \to C \to D \to E$), and the model has a $95\%$ mastery over each individual transition, its ability to execute the complete five-hop chain consistently drops precipitously unless it has been explicitly trained on that precise compositional template.
+If a problem requires composing five sub-tasks together ($A \to B \to C \to D \to E$), and the model has a $95\%$ mastery over each individual transition, its ability to execute the complete five-hop chain consistently drops precipitously unless it has been explicitly trained on that precise compositional template.
 
-The transformer does not possess an internal execution stack, an isolated memory heap, or persistent variable bindings. Everything must be serialized onto the single 1-dimensional canvas of the token sequence. It is like asking a software engineer to execute a complex C++ program with pointers and dynamic memory purely by handwriting the assembly output on a whiteboard, one character at a time, without being allowed to use RAM.
+The transformer does not possess an internal execution stack, an isolated memory heap, or persistent variable bindings. Everything must be serialized onto the single 1-dimensional canvas of the token sequence. It is like asking a software engineer to execute a complex C++ program with dynamic memory purely by handwriting the assembly output on a whiteboard, one character at a time, without being allowed to use RAM.
 
 ---
 
@@ -222,9 +226,9 @@ To cut the remaining reducible error in half, the compute you must burn does not
 
 $$2^{1/\gamma} = 2^{6.5} \approx \mathbf{90\times \text{ to } 100\times}$$
 
-Going from a $\$50\text{M}$ pretraining run to a $\$5\text{B}$ run does not buy an order-of-magnitude leap in intelligence. It buys an incremental, razor-thin reduction in cross-entropy loss. 
+Going from a $\$50\text{M}$ pretraining run to a $\$5\text{B}$ run does not buy a categorical leap in understanding. It buys an incremental, razor-thin reduction in cross-entropy loss. 
 
-And cross-entropy measures how predictably the model guesses the next word of random internet text. A model that achieves a slightly lower cross-entropy score is just a slightly better mimic of average human forum posts; it is not fundamentally a more rigorous reasoner.
+While small reductions in cross-entropy do translate non-linearly into downstream benchmark gains, the power law makes each marginal unit of error reduction exponentially more ruinous to purchase through raw pretraining alone.
 
 ![Chinchilla Power-Law Asymptote and Marginal Return](./chinchilla_power_law.png)
 *Figure 4: (Left) The Chinchilla cross-entropy loss curve $L(C) = E + A \cdot C^{-\gamma}$ flattening against the irreducible entropy floor $E \approx 1.65$. (Right) The derivative $|\partial L / \partial C|$ on a log-log scale, illustrating the exponential collapse of marginal returns per FLOP.*
@@ -244,13 +248,13 @@ Frontier labs have already ingested a double-digit percentage of the entire writ
 ![Training Tokens vs The Planetary Data Wall](./human_data_ceiling.png)
 *Figure 5: Cumulative training tokens ingested by frontier models compared to Epoch AI's estimated global stock of high-quality human text (~150T tokens). Pretraining runs have already consumed a massive fraction of all accessible written human history.*
 
-And the naive Silicon Valley solution—*"let's just have AI write synthetic text to train future models"*—was proven by Ilia Shumailov and colleagues in *Nature* (2024) to trigger an irreversible information-theoretic trap: **Model Collapse**.
+And the naive solution—*"let's just have AI write uncurated synthetic text to train future models"*—was proven by Ilia Shumailov and colleagues in *Nature* (2024) to trigger an irreversible information-theoretic trap: **Model Collapse**.
 
 $$p_{n+1}(x) = \mathbb{E}_{x \sim p_n}[\mathcal{M}(x)]$$
 
-When a model trains recursively on its own ungrounded generations, variance contracts ($\text{Var}(p_{n+1}) < \text{Var}(p_n)$), the rare tails of the distribution evaporate, and information entropy collapses ($H(p_n) \to 0$). 
+When a model trains recursively on its own ungrounded, unverified generations, variance contracts ($\text{Var}(p_{n+1}) < \text{Var}(p_n)$), the rare tails of the distribution evaporate, and information entropy collapses ($H(p_n) \to 0$). 
 
-It is the mathematical equivalent of **taking a photocopy of a photocopy**. With each iteration, the fine nuances of human language wash out until the model degenerates into repetitive, mode-collapsed noise.
+It is the mathematical equivalent of **taking a photocopy of a photocopy**. With each iteration, the fine nuances of human language wash out until the model degenerates into repetitive, mode-collapsed noise. While *filtered and verified* synthetic data (like code execution pairs or distilled mathematical reasoning) avoids this fate, raw ungrounded synthetic text offers no escape from the data ceiling.
 
 ![Model Collapse: Distribution Degeneration](./model_collapse_entropy.png)
 *Figure 6: Probability density degeneration across recursive training generations $p_{n+1} = \mathbb{E}_{p_n}[\mathcal{M}]$. Without grounded verification, the distribution sheds its tails, contracts in variance, and suffers information entropy collapse ($H(p_n) \to 0$), reducing complex human nuance into a degenerate mode.*
@@ -263,9 +267,9 @@ If the transformer suffers from autoregressive error compounding, lack of causal
 
 **Why hasn't any other architecture beaten it?**
 
-Over the past four years, dozens of challenger architectures arrived with immense theoretical fanfare: State Space Models (Mamba), Linear Attention, RWKV, Liquid Neural Networks, and recurrent energy models. 
+Over the past four years, challenger architectures arrived with immense theoretical fanfare: State Space Models (Mamba), Linear Attention, RWKV, and recurrent neural networks. 
 
-Each promised to eliminate the quadratic memory wall of attention ($O(N^2)$) and introduce superior recurrent inductive biases. Yet in frontier laboratories, the standard transformer remains stubbornly undefeated.
+Each promised to eliminate the quadratic memory wall of attention ($O(N^2)$) and introduce superior sequential inductive biases. Yet in frontier laboratories, the standard transformer remains stubbornly undefeated.
 
 Why?
 
@@ -273,25 +277,31 @@ The answer has very little to do with the purity of the algorithm and everything
 
 > *"An algorithm wins not because it is inherently superior, but because it is uniquely well-suited to the hardware available at that historical moment."*
 
-Look at what a modern transformer layer actually does under the hood:
+### Why Mamba Didn't Kill Attention
 
-$$\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{Q K^T}{\sqrt{d_k}}\right) V$$
-$$\text{MLP}(X) = \text{GELU}(X W_1) W_2$$
+Consider the most prominent challenger: State Space Models like **Mamba** (Gu & Dao, 2023).
 
-It is a sequence of **dense matrix multiplications** (GEMM) punctuated by simple, element-wise non-linearities.
+Mamba achieved a genuine theoretical breakthrough: by reformulating linear time-varying recurrence as a **hardware-aware parallel associative scan** with $O(\log L)$ parallel step depth, Mamba completely eliminated time serialization during training. On paper, it computes linear $O(N)$ inference and trains in parallel.
 
-Now look at what a modern GPU or TPU actually is:
+So why hasn't frontier AI migrated wholesale to Mamba?
 
-It is not a general-purpose computer. It is a massive, parallel array of systolic matrix-multiplication accelerators (Nvidia Tensor Cores). The entire global semiconductor supply chain—from TSMC's lithography steppers to Nvidia's CUDA software stack—spent hundreds of billions of dollars over a decade optimizing for one specific mathematical operation: **dense 2D matrix multiplication**.
+Two fundamental reasons:
 
-Any architecture that introduces complex recurrent feedback loops, sparse pointer dereferencing, or dynamic graph traversals runs horribly inefficiently on modern hardware. Recurrent architectures like Mamba serialize time, preventing massive sequence-level parallelization across thousands of GPUs during training.
+1. **The Associative Recall Capacity Limit:** An SSM compresses the entire sequence history into a fixed-size state vector $h_t \in \mathbb{R}^{d_{\text{state}}}$. By the Pigeonhole Principle and Shannon's source coding theorem, a fixed-size vector cannot store unbounded historical facts without lossy compression. On complex, multi-needle associative recall across million-token contexts, pure SSMs suffer from retrieval decay. The transformer's Key-Value cache is expensive, but it represents **lossless associative memory**: every token maintains direct, uncompressed geometric access to every previous token.
+2. **Ten Years of Silicon Specialization:** Look at what a modern transformer layer actually does:
+   $$\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{Q K^T}{\sqrt{d_k}}\right) V, \qquad \text{MLP}(X) = \text{GELU}(X W_1) W_2$$
+   It is fundamentally **dense General Matrix Multiplication (GEMM)**.
+   
+The entire global semiconductor supply chain—from Nvidia's Tensor Cores to Megatron-LM distributed training libraries—spent hundreds of billions of dollars over a decade optimizing for one specific mathematical operation: **multiplying dense 2D matrices in parallel**. 
+
+On massive clusters of 16,000 H100 GPUs (such as Meta's Llama 3 405B infrastructure), transformers achieve **$38\%$ to $43\%$ Model FLOPs Utilization (MFU)** despite massive network communication bubbles. Challenger architectures, whose custom kernels are far less mature and rely on specialized memory patterns, struggle to match this real-world cluster throughput.
 
 The transformer won not because it was the ultimate architecture of the human mind. **The transformer won because it was the ultimate architecture for a GPU cluster.**
 
 It is the purest possible manifestation of Rich Sutton's *Bitter Lesson*: methods that leverage raw parallel computation always beat methods that rely on human-designed inductive biases.
 
 ![The Hardware Lottery: Model FLOPs Utilization (MFU) on Modern GPUs](./hardware_lottery_comparison.png)
-*Figure 7: The Hardware Lottery in silicon. Transformers achieve 60–65% Model FLOPs Utilization (MFU) on modern GPUs because their core computation is dense Matrix Multiplication (GEMM), perfectly matching systolic Tensor Cores. Challenger architectures like State Space Models (Mamba) or recurrent networks hit memory bandwidth bottlenecks or serialize time during training, suffering much lower hardware efficiency.*
+*Figure 7: The Hardware Lottery in silicon. Transformers achieve sustained 38–43% Model FLOPs Utilization (MFU) on massive 16,000-GPU clusters because their core computation is dense Matrix Multiplication (GEMM), perfectly saturating systolic Tensor Cores. Challenger architectures like State Space Models (Mamba) or recurrent networks face memory bandwidth bottlenecks or less mature distributed tooling at frontier scale.*
 
 ---
 
@@ -311,12 +321,14 @@ The Chinchilla exponent ($\gamma \approx 0.154$), the planetary data wall (~150T
 ### 2. If your definition is an architectural component: NO.
 The transformer is not being discarded. It is experiencing the exact transition that every foundational computing technology undergoes: **demotion from an all-encompassing system to a specialized component.**
 
-Consider the history of computing:
-- When the silicon transistor was invented, it did not eliminate the need for operating systems, memory hierarchies, disk drives, compilers, and networks. It became the **Arithmetic Logic Unit (ALU)**—the raw execution engine at the core of a much richer machine.
+Consider the architecture of a classical computer:
+- The **Arithmetic Logic Unit (ALU)** executes deterministic, exact, hardwired calculations.
+- The **Branch Predictor and Cache** provide heuristic, high-speed anticipations of what data will be needed next.
+- The **Operating System** manages memory, schedules processes, and enforces system state.
 
-The transformer is the **ALU of the artificial intelligence era**.
+The transformer is not the ALU; **the transformer is the high-speed Intuition Engine and Neural Coprocessor** of the modern computing stack.
 
-It is the fastest, most effective, hardware-native heuristic intuition engine ever devised. It is extraordinarily good at:
+It is probabilistic, fuzzy, and associative. It is extraordinarily good at:
 - High-dimensional pattern recognition and fuzzy associative lookup.
 - Synthesizing fluid, coherent natural language.
 - Proposing intuitive candidate actions in complex search spaces.
@@ -325,8 +337,8 @@ What is dying is not the transformer. **What is dying is the belief that the tra
 
 The systems that actually define the future of AI will not be monolithic autoregressive text generators. They will be **compound, hybrid architectures**:
 - The **Transformer** acts as the high-speed heuristic policy network (the intuition).
-- **Formal Verifiers and Execution Compilers** act as the unyielding anchor to reality, terminating hallucinations.
-- **Explicit Search Algorithms (Monte Carlo Tree Search, PRMs)** explore combinatorial possibility spaces that no forward-only model can evaluate in one breath.
-- **Persistent State Scaffolding** provides the external scratchpad, memory heap, and tool harness that autoregressive sequences fundamentally lack.
+- **Formal Verifiers, Compilers, and Domain-Specific Engines** act as the actual ALU—the unyielding anchor to reality that terminates hallucinations.
+- **Explicit Search Algorithms (Monte Carlo Tree Search, Process Verifiers)** explore combinatorial possibility spaces that no forward-only model can evaluate in one breath.
+- **Tool-Augmented State Scaffolding** provides the external scratchpad, memory heap, and execution environment that autoregressive sequences fundamentally lack.
 
-Transformers are not digital deities, nor are they trivial autocomplete. They are geometric instruments. And understanding where their geometry stops is the only way to build the systems that actually go beyond them.
+Transformers are neither digital deities nor trivial autocomplete. They are geometric instruments. And understanding where their geometry stops is the only way to build the systems that actually go beyond them.
