@@ -12,10 +12,10 @@ tags:
   ]
 image: './cover.jpg'
 pinned: false
-draft: false
+draft: true
 ---
 
-Between 2020 and 2024, the artificial intelligence industry ran on a single intoxicating dogma: **the escalator had no top.**
+between 2020 and 2024, the artificial intelligence industry ran on a single promise: **there is no limit to intelligence, and we will eventually reach AGI.**
 
 The formula was treated as an unassailable law of nature: take the transformer, multiply its parameter count by ten, feed it ten times more text scraped from the internet, and watch general intelligence spontaneously emerge. If a model struggled with common sense, add more layers. If it couldn't write code, buy more GPUs.
 
@@ -96,7 +96,7 @@ $$\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)
 the memory footprint and compute required to evaluate each new thought grows with the sequence length. To keep a single hypothesis active in memory, the model must maintain an ever-expanding historical transcript, consuming gigabytes of high-bandwidth memory for thoughts it may have discarded ten seconds earlier.
 
 ![The KV Cache Memory Wall & Quadratic Context Tax](./kv_cache_memory_wall.png)
-*Figure 1: (Left) KV Cache memory footprint vs. reasoning sequence length across model sizes for batch size $B=4$. At $60\text{k}$ reasoning tokens, the KV cache of a 70B model alone saturates the 80GB VRAM ceiling of an NVIDIA H100. (Right) Quadratic attention compute penalty $O(T^2)$ for autoregressive sequence expansion compared to constant $O(T)$ latent trajectory steps.*
+_Figure 1: (Left) KV Cache memory footprint vs. reasoning sequence length across model sizes for batch size $B=4$. At $60\text{k}$ reasoning tokens, the KV cache of a 70B model alone saturates the 80GB VRAM ceiling of an NVIDIA H100. (Right) Quadratic attention compute penalty $O(T^2)$ for autoregressive sequence expansion compared to constant $O(T)$ latent trajectory steps._
 
 ### 3. The Rhetorical Overhead
 
@@ -166,7 +166,7 @@ subsequent layers attend to the erroneous token as an established historical fac
 The transformer does not backtrack; it **rationalizes**. It spends the next 500 tokens weaving a brilliant, mathematically sophisticated justification for a premise that was false from the outset.
 
 ![Autoregressive Error Compounding and Manifold Divergence](./autoregressive_error_compounding.png)
-*Figure 2: (Left) The Gambler's Walk of autoregression: compound accuracy $p^K$ collapses exponentially over deduction length, even with near-flawless 99% per-step accuracy. (Right) Manifold divergence: an uncorrected error at step 35 becomes immutable context, pulling the model's self-attention permanently off the ground-truth manifold.*
+_Figure 2: (Left) The Gambler's Walk of autoregression: compound accuracy $p^K$ collapses exponentially over deduction length, even with near-flawless 99% per-step accuracy. (Right) Manifold divergence: an uncorrected error at step 35 becomes immutable context, pulling the model's self-attention permanently off the ground-truth manifold._
 
 ---
 
@@ -214,7 +214,7 @@ And the moment an AI model is optimized against another statistical model, you c
 The reasoning model does not converge toward deeper objective truth; it converges toward the statistical idiosyncrasies, rhetorical tropes, and authoritative styling that maximize the reward model's score. Test-time search without an objective external referee does not produce wisdom; it produces **weaponized sycophancy and articulate pseudo-intellectualism**.
 
 ![The Verification Landscape: Ground Truth vs Goodhart Divergence](./verification_landscape.png)
-*Figure 3: The Verification Landscape. In verifiable domains (coding, formal mathematics), external compilers prune false trajectories, allowing search to scale. In open-ended domains (law, medicine, strategy), reward models lack objective grounding, triggering Goodhart divergence where the system optimizes for stylistic flattery over truth.*
+_Figure 3: The Verification Landscape. In verifiable domains (coding, formal mathematics), external compilers prune false trajectories, allowing search to scale. In open-ended domains (law, medicine, strategy), reward models lack objective grounding, triggering Goodhart divergence where the system optimizes for stylistic flattery over truth._
 
 ---
 
@@ -235,7 +235,7 @@ $$2^{6.5} \approx \mathbf{90\times \text{ to } 100\times}$$
 Going from a $\$50\text{M}$ cluster to a $\$5\text{B}$ cluster does not purchase a categorical leap in understanding; it buys an incremental, razor-thin reduction in cross-entropy loss.
 
 ![Chinchilla Power-Law Asymptote and Marginal Return](./chinchilla_power_law.png)
-*Figure 4: (Left) The Chinchilla cross-entropy loss flattening against the irreducible entropy floor of language ($E \approx 1.65$). (Right) The derivative $|\partial L / \partial C|$ on a log-log scale, displaying the exponential collapse of marginal returns per FLOP.*
+_Figure 4: (Left) The Chinchilla cross-entropy loss flattening against the irreducible entropy floor of language ($E \approx 1.65$). (Right) The derivative $|\partial L / \partial C|$ on a log-log scale, displaying the exponential collapse of marginal returns per FLOP._
 
 ### The Planetary Token Wall
 
@@ -266,7 +266,7 @@ With each generation of recursive unverified training, the probability distribut
 It is the mathematical equivalent of **making a photocopy of a photocopy**. Without an active, closed-loop stream of thermodynamic reality pumping new information into the system, the model degenerates into a repetitive, mode-collapsed caricature of human language.
 
 ![Model Collapse: Distribution Degeneration](./model_collapse_entropy.png)
-*Figure 5: Probability density degeneration across recursive training generations without external grounding. The distribution sheds its tails, variance contracts, and information entropy collapses ($H(p_n) \to 0$), reducing human nuance to a degenerate mode.*
+_Figure 5: Probability density degeneration across recursive training generations without external grounding. The distribution sheds its tails, variance contracts, and information entropy collapses ($H(p_n) \to 0$), reducing human nuance to a degenerate mode._
 
 The data wall is not a shortage of words. **It is the exhaustion of ungrounded human symbols.**
 
@@ -301,7 +301,7 @@ On massive clusters of 16,000 H100 GPUs (such as those used for Meta's Llama 3 4
 Alternative paradigms that actually reflect the continuous, asynchronous, dynamic nature of biological thought—such as Continuous-Time Recurrent Networks, Energy-Based Attractor Models, Spiking Neuromorphic Systems, and Dynamic Sparse Graph Networks—struggle to achieve even $10\%$ MFU on modern GPU clusters. They are throttled by memory bandwidth latency and irregular memory access patterns.
 
 ![The Hardware Roofline Model: Dense GEMMs vs Memory Bandwidth Wall](./hardware_roofline_model.png)
-*Figure 6: The Hardware Lottery on NVIDIA H100 silicon. Dense GEMM operations during pretraining sit deep in the compute-bound plateau ($>600\text{ FLOPs/byte}$), achieving 65–70% of peak device throughput. In contrast, autoregressive generation and recurrent scans are memory-bound ($\approx 1\text{ FLOP/byte}$), bottlenecked by HBM memory bandwidth and underutilizing systolic Tensor Cores by orders of magnitude.*
+_Figure 6: The Hardware Lottery on NVIDIA H100 silicon. Dense GEMM operations during pretraining sit deep in the compute-bound plateau ($>600\text{ FLOPs/byte}$), achieving 65–70% of peak device throughput. In contrast, autoregressive generation and recurrent scans are memory-bound ($\approx 1\text{ FLOP/byte}$), bottlenecked by HBM memory bandwidth and underutilizing systolic Tensor Cores by orders of magnitude._
 
 The transformer did not conquer the world because it was the ultimate architecture of the mind. **The transformer conquered the world because it was the ultimate architecture for a systolic array of Tensor Cores.**
 
