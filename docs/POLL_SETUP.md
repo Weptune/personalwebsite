@@ -65,6 +65,22 @@ create policy "Allow anonymous insert post_likes" on post_likes for insert with 
 create policy "Allow anonymous select post_likes" on post_likes for select using (true);
 create policy "Allow anonymous delete post_likes" on post_likes for delete using (true);
 
+-- Comment Likes (Synchronize comment likes across devices)
+create table if not exists post_comment_likes (
+  id uuid default gen_random_uuid() primary key,
+  comment_id uuid not null references post_comments(id) on delete cascade,
+  post_id text not null,
+  created_at timestamptz default now()
+);
+
+alter table post_comment_likes enable row level security;
+drop policy if exists "Allow anonymous insert post_comment_likes" on post_comment_likes;
+drop policy if exists "Allow anonymous select post_comment_likes" on post_comment_likes;
+drop policy if exists "Allow anonymous delete post_comment_likes" on post_comment_likes;
+create policy "Allow anonymous insert post_comment_likes" on post_comment_likes for insert with check (true);
+create policy "Allow anonymous select post_comment_likes" on post_comment_likes for select using (true);
+create policy "Allow anonymous delete post_comment_likes" on post_comment_likes for delete using (true);
+
 -- Email Subscribers
 create table if not exists subscribers (
   id uuid default gen_random_uuid() primary key,
