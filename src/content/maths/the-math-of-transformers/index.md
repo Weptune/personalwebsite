@@ -38,9 +38,6 @@ Human language was the evolutionary solution: a **lossy, serialized compression 
 
 Language quantizes the continuous, high-dimensional attractor states of a biological brain into a discrete stream of acoustic phonemes or written symbols, transmitted at an excruciatingly low bandwidth of approximately **30 to 50 bits per second**.
 
-![The Communication Protocol Fallacy: Language as an Interface](./language_communication_protocol.png)
-*Figure 1: Language as a low-bandwidth communication protocol (~40 bits/s) between continuous neural dynamical systems. Thoughts in biological brains are continuous attractor relaxations in high-dimensional latent space $\mathbf{z}$; language is merely the lossy acoustic serialization used to transmit results between isolated physical organisms.*
-
 Notice the crucial direction of causality: **a human does not think by emitting a discrete stream of words to their own brain.** 
 
 When a mathematician searches for a proof, when a chess grandmaster evaluates a board, or when an engineer diagnoses a structural failure, the cognitive work occurs as a **continuous, parallel dynamical relaxation in latent space**. The brain evaluates geometric constraints, simulates counterfactuals, and settles into an energy minimum. Only *after* the internal dynamical system has reached that equilibrium does the human serialize the result into English sentences to explain it to someone else.
@@ -96,9 +93,6 @@ Because the thoughts must be expressed in natural language tokens, the model is 
 
 A massive fraction of the model’s parameter capacity and inference FLOPs is spent not on navigating the abstract topology of the problem, but on generating convincing natural language filler to bridge intermediate logical states.
 
-![Discrete Token Autoregression vs Continuous Latent Planning](./latent_planning_vs_token_serialization.png)
-*Figure 2: (Left) Discrete Token Autoregression. Continuous latent states $\mathbf{h}_t$ are continually quantized into discrete vocabulary tokens $w_t$, destroying gradient information and appending irreversible tokens to an $O(T^2)$ KV cache. (Right) Continuous Latent Planning. Trajectories relax directly in continuous state space $\mathcal{Z}$ via energy minimization without emitting intermediate tokens. Language is decoded only at the terminal communication boundary.*
-
 When reasoning is carried out directly in a **continuous latent space** (as in energy-based models or latent trajectory planning), exploration is continuous, reversible, and mathematically fluid. Token-based Chain-of-Thought is an extraordinary engineering workaround, but it remains a prisoner of the discrete vocabulary bottleneck.
 
 ---
@@ -120,9 +114,6 @@ $$P(\text{Mary} \mid \text{Daphne's mother is}) \gg 0$$
 $$P(\text{Daphne} \mid \text{Mary's daughter is}) \approx 0$$
 
 Unless the training corpus explicitly contained the inverted sequence of tokens, the model's conditional probability manifold remains un-updated in the reverse direction. 
-
-![The Reversal Curse: Relational Graphs vs Directional Probabilities](./reversal_curse_graph.png)
-*Figure 3: The Reversal Curse visualized. A causal world model stores symmetric relational facts queryable from any direction. A sequence-based transformer stores directional left-to-right token transition probabilities, failing completely on direct inversions unless explicitly exposed to both directions in training.*
 
 This is not a trivia bug; it is an architectural signature. The model does not understand the entities `Mary` and `Daphne` as persistent objects situated in a coherent world model. It understands them as high-dimensional coordinates on a directed sequence manifold.
 
@@ -161,7 +152,7 @@ subsequent layers attend to the erroneous token as an established historical fac
 The transformer does not backtrack; it **rationalizes**. It spends the next 500 tokens weaving a brilliant, mathematically sophisticated justification for a premise that was false from the outset.
 
 ![Autoregressive Error Compounding and Manifold Divergence](./autoregressive_error_compounding.png)
-*Figure 4: (Left) The Gambler's Walk of autoregression: compound accuracy $p^K$ collapses exponentially over deduction length, even with near-flawless 99% per-step accuracy. (Right) Manifold divergence: an uncorrected error at step 35 becomes immutable context, pulling the model's self-attention permanently off the ground-truth manifold.*
+*Figure 1: (Left) The Gambler's Walk of autoregression: compound accuracy $p^K$ collapses exponentially over deduction length, even with near-flawless 99% per-step accuracy. (Right) Manifold divergence: an uncorrected error at step 35 becomes immutable context, pulling the model's self-attention permanently off the ground-truth manifold.*
 
 ---
 
@@ -207,7 +198,7 @@ And the moment an AI model is optimized against another statistical model, you c
 The reasoning model does not converge toward deeper objective truth; it converges toward the statistical idiosyncrasies, rhetorical tropes, and authoritative styling that maximize the reward model's score. Test-time search without an objective external referee does not produce wisdom; it produces **weaponized sycophancy and articulate pseudo-intellectualism**.
 
 ![The Verification Landscape: Ground Truth vs Goodhart Divergence](./verification_landscape.png)
-*Figure 5: The Verification Landscape. In verifiable domains (coding, formal mathematics), external compilers prune false trajectories, allowing search to scale. In open-ended domains (law, medicine, strategy), reward models lack objective grounding, triggering Goodhart divergence where the system optimizes for stylistic flattery over truth.*
+*Figure 2: The Verification Landscape. In verifiable domains (coding, formal mathematics), external compilers prune false trajectories, allowing search to scale. In open-ended domains (law, medicine, strategy), reward models lack objective grounding, triggering Goodhart divergence where the system optimizes for stylistic flattery over truth.*
 
 ---
 
@@ -228,7 +219,7 @@ $$2^{6.5} \approx \mathbf{90\times \text{ to } 100\times}$$
 Going from a $\$50\text{M}$ cluster to a $\$5\text{B}$ cluster does not purchase a categorical leap in understanding; it buys an incremental, razor-thin reduction in cross-entropy loss.
 
 ![Chinchilla Power-Law Asymptote and Marginal Return](./chinchilla_power_law.png)
-*Figure 6: (Left) The Chinchilla cross-entropy loss flattening against the irreducible entropy floor of language ($E \approx 1.65$). (Right) The derivative $|\partial L / \partial C|$ on a log-log scale, displaying the exponential collapse of marginal returns per FLOP.*
+*Figure 3: (Left) The Chinchilla cross-entropy loss flattening against the irreducible entropy floor of language ($E \approx 1.65$). (Right) The derivative $|\partial L / \partial C|$ on a log-log scale, displaying the exponential collapse of marginal returns per FLOP.*
 
 ### The Planetary Token Wall
 Compounding this mathematical exhaustion is an inescapable physical fact: **human language on Earth is finite.**
@@ -238,9 +229,6 @@ Under compute-optimal pretraining, you require approximately 20 tokens for every
 The total global stock of high-quality, publicly accessible written text ever produced in human civilization—every academic paper, book, encyclopedia, news archive, and open-source code repository across all of recorded human history—is estimated at **150 to 300 trillion tokens**.
 
 Frontier training runs have already ingested a double-digit percentage of the entire written record of the human species.
-
-![Training Tokens vs The Planetary Data Wall](./human_data_ceiling.png)
-*Figure 7: Cumulative training tokens ingested by frontier models compared to the estimated total global stock of high-quality human text (~150T tokens). Pretraining runs have already consumed a massive fraction of all accessible written human history.*
 
 ### The Information-Theoretic Trap of Model Collapse
 Why can’t we simply synthesize trillions of tokens of artificial text using our best models to train the next generation?
@@ -260,7 +248,7 @@ With each generation of recursive unverified training, the probability distribut
 It is the mathematical equivalent of **making a photocopy of a photocopy**. Without an active, closed-loop stream of thermodynamic reality pumping new information into the system, the model degenerates into a repetitive, mode-collapsed caricature of human language.
 
 ![Model Collapse: Distribution Degeneration](./model_collapse_entropy.png)
-*Figure 8: Probability density degeneration across recursive training generations without external grounding. The distribution sheds its tails, variance contracts, and information entropy collapses ($H(p_n) \to 0$), reducing human nuance to a degenerate mode.*
+*Figure 4: Probability density degeneration across recursive training generations without external grounding. The distribution sheds its tails, variance contracts, and information entropy collapses ($H(p_n) \to 0$), reducing human nuance to a degenerate mode.*
 
 The data wall is not a shortage of words. **It is the exhaustion of ungrounded human symbols.**
 
@@ -297,9 +285,6 @@ Alternative paradigms that actually reflect the continuous, asynchronous, dynami
 The transformer did not conquer the world because it was the ultimate architecture of the mind. **The transformer conquered the world because it was the ultimate architecture for a systolic array of Tensor Cores.**
 
 It is the purest possible manifestation of the *Bitter Lesson*: raw, brute-force parallel computation on specialized hardware beats biologically inspired algorithmic elegance every time—until the physical limits of that brute-force paradigm are fully exhausted.
-
-![The Hardware Lottery: Model FLOPs Utilization (MFU) on Modern GPUs](./hardware_lottery_comparison.png)
-*Figure 9: The Hardware Lottery in silicon. Transformers achieve sustained 38–43% Model FLOPs Utilization (MFU) on massive 16,000-GPU clusters because their core computation is dense Matrix Multiplication (GEMM), perfectly saturating systolic Tensor Cores. Challenger architectures like State Space Models (Mamba) or recurrent networks face memory bandwidth bottlenecks or less mature distributed tooling at frontier scale.*
 
 ---
 
