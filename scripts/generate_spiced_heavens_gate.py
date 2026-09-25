@@ -190,4 +190,5 @@ for cx_c, cy_c in [(inset, inset), (W - inset, inset), (inset, H - inset), (W - 
 
 out_rgb = base_img.convert('RGB')
 out_rgb.save('src/content/projects/heavens-gate/cover.png', quality=95)
+out_rgb.save('src/content/projects/heavens-gate/cover_spiced.png', quality=95)
 print('Cover generated successfully!')
