@@ -15,7 +15,7 @@ pinned: false
 draft: false
 ---
 
-*The gorgeous cover image is from https://x.com/0waxwing/status/2094483103796322797 :)*
+_The gorgeous cover image is from https://x.com/0waxwing/status/2094483103796322797 ^-^_
 
 Between 2020 and 2024, progress in artificial intelligence was driven by a single dominant paradigm: the empirical scaling hypothesis. The premise was that increasing model parameter counts and training compute over web-scale text distributions would reliably yield higher-order reasoning capabilities. If an architecture struggled with formal logic, common sense, or multi-step synthesis, the standard engineering response was straightforward: expand the parameter count, gather broader pretraining corpora, and scale GPU cluster capacity.
 
@@ -89,7 +89,7 @@ _Figure 1: (Left) KV Cache memory footprint vs. reasoning sequence length across
 
 Because the intermediate reasoning trace is serialized as human-readable language, the model must expend a non-trivial fraction of its parameter capacity and compute on linguistic mechanics.
 
-To maintain coherence across thousands of tokens, the model continually generates grammatical scaffolding, rhetorical transitions, and conversational self-prompting (such as verbalizing phrases like *"Let me verify this assumption..."* or *"Alternatively, consider the case where..."*). While these patterns help the model navigate learned statistical associations from pretraining, they introduce substantial overhead: compute is allocated not only to verifying logical transitions, but also to generating the stylistic appearance of deliberation.
+To maintain coherence across thousands of tokens, the model continually generates grammatical scaffolding, rhetorical transitions, and conversational self-prompting (such as verbalizing phrases like _"Let me verify this assumption..."_ or _"Alternatively, consider the case where..."_). While these patterns help the model navigate learned statistical associations from pretraining, they introduce substantial overhead: compute is allocated not only to verifying logical transitions, but also to generating the stylistic appearance of deliberation.
 
 By contrast, architectures that conduct planning directly in continuous representation spaces can explore, backtrack, and evaluate hypotheses without translating every intermediate state into vocabulary tokens. Chain-of-Thought remains an impressive engineering achievement, but its reliance on discrete token serialization imposes steep memory and compute costs that compound with problem complexity.
 
@@ -134,10 +134,10 @@ Even under an optimistic scenario where each individual deduction achieves an ac
 
 At 100 consecutive deductive steps, the probability of reaching an unverified correct conclusion falls well below even odds, and by 200 steps, it drops below $15\%$.
 
-| Reasoning Framework | Operational Dynamics | Error Handling Mechanism |
-| :--- | :--- | :--- |
-| **Constraint Satisfaction Networks** | Bidirectional equilibrium ($\text{State}_A \leftrightarrow \text{State}_B \leftrightarrow \text{State}_C$) | Reversible; contradictions trigger state updates without polluting historical memory. |
-| **Autoregressive Token Rollout** | Unidirectional conditioning ($w_1 \to w_2 \to \dots \to w_K$) | Irreversible; an invalid token becomes fixed prefix context that subsequent steps condition upon. |
+| Reasoning Framework                  | Operational Dynamics                                                                                       | Error Handling Mechanism                                                                          |
+| :----------------------------------- | :--------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------ |
+| **Constraint Satisfaction Networks** | Bidirectional equilibrium ($\text{State}_A \leftrightarrow \text{State}_B \leftrightarrow \text{State}_C$) | Reversible; contradictions trigger state updates without polluting historical memory.             |
+| **Autoregressive Token Rollout**     | Unidirectional conditioning ($w_1 \to w_2 \to \dots \to w_K$)                                              | Irreversible; an invalid token becomes fixed prefix context that subsequent steps condition upon. |
 
 ### Context Pollution and the Absence of Backtracking
 
@@ -170,10 +170,10 @@ In competitive programming, the model's candidate solutions are evaluated direct
 
 In these environments, verification is decoupled from the language model itself. The model can propose speculative code snippets or flawed proof tactics during search; the external environment acts as an objective referee that accepts or rejects each candidate based on strict execution rules.
 
-| Domain Type | Evaluation Mechanism | Ground-Truth Characteristics |
-| :--- | :--- | :--- |
+| Domain Type                  | Evaluation Mechanism                                            | Ground-Truth Characteristics                                                                                                        |
+| :--------------------------- | :-------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------- |
 | **Verifiable (Closed-Loop)** | Deterministic compiler, test harness, or formal proof assistant | **Binary Feedback (0 or 1)**: Evaluation is objective and independent of language modeling; invalid paths are filtered immediately. |
-| **Open-Ended (Open-Loop)** | Process Reward Model (learned neural verifier) | **Heuristic Scalar Score**: Evaluation relies on learned approximations; susceptible to reward hacking and stylistic bias. |
+| **Open-Ended (Open-Loop)**   | Process Reward Model (learned neural verifier)                  | **Heuristic Scalar Score**: Evaluation relies on learned approximations; susceptible to reward hacking and stylistic bias.          |
 
 Because verification in these closed-loop environments is exact, teams can scale inference-time search, unrolling thousands of candidate branches and filtering failures with high confidence.
 
@@ -271,11 +271,11 @@ Both operations map directly to large, dense **General Matrix Multiplications (G
 
 Modern accelerator architectures, from NVIDIA Tensor Cores to Google TPUs, are engineered specifically as systolic arrays optimized for dense matrix multiply-accumulate operations. Over the past decade, semiconductor design, high-bandwidth memory hierarchies, and distributed frameworks (such as Megatron-LM and FlashAttention) have co-evolved around maximizing GEMM throughput.
 
-| Architecture Family | Mathematical Core | Silicon Hardware Match | Real-World Cluster MFU |
-| :--- | :--- | :--- | :--- |
-| **Transformer** | Dense Matrix Multiplication (GEMM) | Native match for systolic Tensor Cores | **38% to 43%** |
-| **Recurrent SSMs** *(Mamba, RWKV)* | Associative scans, dynamic recurrent state | Less mature distributed tooling, memory bound | **20% to 25%** |
-| **Dynamical Networks** *(Attractors, Graphs)* | Asynchronous updates, sparse pointer chasing | Memory bandwidth and latency stalls | **8% to 12%** |
+| Architecture Family                           | Mathematical Core                            | Silicon Hardware Match                        | Real-World Cluster MFU |
+| :-------------------------------------------- | :------------------------------------------- | :-------------------------------------------- | :--------------------- |
+| **Transformer**                               | Dense Matrix Multiplication (GEMM)           | Native match for systolic Tensor Cores        | **38% to 43%**         |
+| **Recurrent SSMs** _(Mamba, RWKV)_            | Associative scans, dynamic recurrent state   | Less mature distributed tooling, memory bound | **20% to 25%**         |
+| **Dynamical Networks** _(Attractors, Graphs)_ | Asynchronous updates, sparse pointer chasing | Memory bandwidth and latency stalls           | **8% to 12%**          |
 
 On large clusters of 16,000 H100 GPUs (such as those used for Meta's Llama 3 405B), dense transformers maintain **$38\%$ to $43\%$ Model FLOPs Utilization (MFU)** across distributed training runs, with individual compute kernels reaching up to 65% to 70% of theoretical peak compute.
 
@@ -296,13 +296,13 @@ As a universal architecture for autonomous reasoning, monolithic autoregression 
 
 What is changing is the architectural role the transformer occupies within broader cognitive systems: moving from a single end-to-end model toward systems that separate internal planning from natural language communication.
 
-| Dimension | Monolithic Token Autoregression | Grounded Latent Planning |
-| :--- | :--- | :--- |
-| **Planning Substrate** | One-dimensional sequence of vocabulary tokens | High-dimensional continuous latent space $\mathcal{Z}$ |
-| **Search Mechanism** | Combinatorial token sampling with $O(T^2)$ KV cache cost | Continuous trajectory optimization or latent relaxation |
-| **Error Handling** | Irreversible commitment conditioning future prefix | Reversible latent search; unpromising trajectories pruned without token overhead |
-| **Role of Language** | Primary computational substrate for reasoning | External communication interface; serialized to text at the human boundary |
-| **Verification Loop** | Open-loop heuristic scoring via reward models | Closed-loop grounding with formal compilers, simulators, and environment execution |
+| Dimension              | Monolithic Token Autoregression                          | Grounded Latent Planning                                                           |
+| :--------------------- | :------------------------------------------------------- | :--------------------------------------------------------------------------------- |
+| **Planning Substrate** | One-dimensional sequence of vocabulary tokens            | High-dimensional continuous latent space $\mathcal{Z}$                             |
+| **Search Mechanism**   | Combinatorial token sampling with $O(T^2)$ KV cache cost | Continuous trajectory optimization or latent relaxation                            |
+| **Error Handling**     | Irreversible commitment conditioning future prefix       | Reversible latent search; unpromising trajectories pruned without token overhead   |
+| **Role of Language**   | Primary computational substrate for reasoning            | External communication interface; serialized to text at the human boundary         |
+| **Verification Loop**  | Open-loop heuristic scoring via reward models            | Closed-loop grounding with formal compilers, simulators, and environment execution |
 
 This architectural transition highlights several complementary research directions:
 
