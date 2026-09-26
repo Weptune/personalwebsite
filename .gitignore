@@ -20,4 +20,6 @@ spotify-auth.js
 verify_delete.py
 verify_patch.py
 *.astro.backup
+*.bak
+backups/
 scratch/
