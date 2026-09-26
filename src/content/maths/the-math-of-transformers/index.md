@@ -101,7 +101,7 @@ This append-only architecture imposes severe computational and memory penalties:
 2. **Quadratic Attention Compute ($O(T^2)$)**: Generating an extended reasoning chain of length $T$ incurs a cumulative computational cost that scales quadratically with context length, as every new token must attend across all historical positions.
 
 ![The KV Cache Memory Wall & Quadratic Context Tax](./kv_cache_memory_wall.png)
-_Figure 1: (Left) KV Cache memory footprint vs. reasoning sequence length across model sizes for batch size $B=4$. At $60\text{k}$ reasoning tokens, the KV cache of a 70B model alone saturates the 80GB VRAM ceiling of an NVIDIA H100. (Right) Quadratic attention compute penalty $O(T^2)$ for autoregressive sequence expansion compared to constant $O(T)$ latent trajectory steps._
+_Figure 1: (Left) KV Cache memory footprint vs. reasoning sequence length across model sizes for batch size $B=4$. At $64.0\text{k}$ reasoning tokens for 70B (and $40.6\text{k}$ for 405B), the KV cache alone saturates the 80GB VRAM ceiling of an NVIDIA H100. (Right) Quadratic attention compute penalty $O(T^2)$ for autoregressive sequence expansion compared to constant $O(T)$ latent trajectory steps._
 
 ### Attention Entropy Dilution
 
@@ -115,8 +115,8 @@ When a reasoning chain grows to 20,000 tokens, with 15,000 of those tokens repre
 
 To prevent this dilution from corrupting downstream deductions, the transformer must allocate a significant fraction of its attention heads and parameter capacity to *inhibition* (learning to attend away from and suppress dead branches). Rather than executing a clean memory reclamation, the model is forced to constantly spend active compute managing the clutter of its own past mistakes. In software engineering terms, this is equivalent to running an algorithm that refuses to garbage-collect failed heap allocations, requiring the CPU to spend more and more cycles searching around dead memory blocks.
 
-![Autoregressive Error Compounding and Manifold Divergence](./autoregressive_error_compounding.png)
-_Figure 2: (Left) Compound accuracy $p^K$ collapses exponentially over deduction length, even with near-flawless 99% per-step accuracy. (Right) Manifold divergence: an uncorrected error at an early step becomes immutable context, pulling the model's self-attention off the ground-truth reasoning trajectory._
+![Autoregressive Error Compounding and Attention Mass Dilution](./autoregressive_error_compounding.png)
+_Figure 2: (Left) Compound accuracy $p^K$ collapses exponentially over deduction length, even with near-flawless 99% per-step accuracy. (Right) Attention probability mass dilution: as reasoning sequences extend, attention mass on discarded branches and exploratory tokens accumulates, diluting focus away from valid problem invariants past the entropy inversion point._
 
 ---
 
@@ -271,8 +271,8 @@ Across successive generations of recursive training without external grounding, 
 
 Without an external source of objective verification or novel information, recursive training on synthetic text causes the model to lose representation of rare but critical edge cases, converging toward a narrowed, mode-collapsed distribution.
 
-![Model Collapse: Distribution Degeneration](./model_collapse_entropy.png)
-_Figure 5: Probability density degeneration across recursive training generations without external grounding. The distribution sheds its tails, variance contracts, and information entropy collapses ($H(p_n) \to 0$), reducing distributional diversity._
+![Model Collapse: Distribution Degeneration and Entropy Decay](./model_collapse_entropy.png)
+_Figure 5: (Left) Probability density degeneration across recursive training generations without external grounding. The distribution sheds its tails, variance contracts, and information entropy collapses ($H(p_n) \to 0$). (Right) Information entropy collapse across recursive generations, displaying the monotonic degradation of representational diversity toward a point mass._
 
 Consequently, the pretraining data bottleneck cannot be resolved merely by generating higher volumes of ungrounded natural language text.
 
