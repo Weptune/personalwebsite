@@ -15,6 +15,8 @@ pinned: false
 draft: false
 ---
 
+*The gorgeous cover image is from https://x.com/0waxwing/status/2094483103796322797 :)*
+
 Between 2020 and 2024, progress in artificial intelligence was driven by a single dominant paradigm: the empirical scaling hypothesis. The premise was that increasing model parameter counts and training compute over web-scale text distributions would reliably yield higher-order reasoning capabilities. If an architecture struggled with formal logic, common sense, or multi-step synthesis, the standard engineering response was straightforward: expand the parameter count, gather broader pretraining corpora, and scale GPU cluster capacity.
 
 Over the past two years, however, this trajectory has encountered noticeable empirical friction. Frontier pretraining runs now require tens to hundreds of millions of dollars in compute, yet the marginal reductions in cross-entropy loss are translating into increasingly incremental improvements on standard reasoning benchmarks.
@@ -325,7 +327,3 @@ The transformer transformed machine learning by demonstrating that attention mec
 Language is an expressive communication channel, but internal reasoning requires continuous representation, bidirectional constraint evaluation, and objective environmental feedback.
 
 As artificial intelligence systems advance, the transformer will likely remain a foundational component of modern computing, not as an all-encompassing reasoning engine, but as a specialized sequence compiler at the interface between human communication and continuous computation.
-
----
-
-*The gorgeous cover image is from https://x.com/0waxwing/status/2094483103796322797 :)*
