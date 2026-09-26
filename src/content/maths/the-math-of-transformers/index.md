@@ -43,6 +43,9 @@ $$w_{t+1} \sim P(w_{t+1} \mid w_1, w_2, \dots, w_t)$$
 
 This formulation imposes a rigid structural constraint: it forces what is naturally a continuous, parallel constraint-satisfaction process onto a one-dimensional, discrete, forward-only sequence. In doing so, the architecture is forced to navigate multi-variable dependency graphs through the narrow aperture of sequential token prediction.
 
+![Language as a Serialized Wire Protocol vs. The Thinking Substrate](./the_serialized_protocol_paradox.png)
+_Figure 1: Language evolved as an inter-skull serialization protocol across physical space, compressing continuous, high-dimensional neural states into a discrete, low-bandwidth channel (~40 bps). The transformer commits a fundamental category error by forcing high-dimensional constraint satisfaction and reasoning to unfold entirely inside the serialized 1D wire protocol itself._
+
 ---
 
 ## 2. The Discretization Paradox: Analog Drift vs. Digital Error Correction
@@ -101,7 +104,7 @@ This append-only architecture imposes severe computational and memory penalties:
 2. **Quadratic Attention Compute ($O(T^2)$)**: Generating an extended reasoning chain of length $T$ incurs a cumulative computational cost that scales quadratically with context length, as every new token must attend across all historical positions.
 
 ![The KV Cache Memory Wall & Quadratic Context Tax](./kv_cache_memory_wall.png)
-_Figure 1: (Left) KV Cache memory footprint vs. reasoning sequence length across model sizes for batch size $B=4$. At $64.0\text{k}$ reasoning tokens for 70B (and $40.6\text{k}$ for 405B), the KV cache alone saturates the 80GB VRAM ceiling of an NVIDIA H100. (Right) Quadratic attention compute penalty $O(T^2)$ for autoregressive sequence expansion compared to constant $O(T)$ latent trajectory steps._
+_Figure 2: (Left) KV Cache memory footprint vs. reasoning sequence length across model sizes for batch size $B=4$. At $64.0\text{k}$ reasoning tokens for 70B (and $40.6\text{k}$ for 405B), the KV cache alone saturates the 80GB VRAM ceiling of an NVIDIA H100. (Right) Quadratic attention compute penalty $O(T^2)$ for autoregressive sequence expansion compared to constant $O(T)$ latent trajectory steps._
 
 ### Attention Entropy Dilution
 
@@ -114,9 +117,6 @@ Because the softmax distribution must normalize to unity ($\sum_j A_{ij} = 1$), 
 When a reasoning chain grows to 20,000 tokens, with 15,000 of those tokens representing abandoned derivation attempts, the softmax denominator $\sum_m \exp(q_i^T k_m / \sqrt{d_k})$ expands dramatically. This causes **Attention Entropy Dilution**: the attention weights that should remain sharply concentrated on the original problem constraints and valid intermediate lemmas become dispersed across thousands of irrelevant historical tokens.
 
 To prevent this dilution from corrupting downstream deductions, the transformer must allocate a significant fraction of its attention heads and parameter capacity to *inhibition* (learning to attend away from and suppress dead branches). Rather than executing a clean memory reclamation, the model is forced to constantly spend active compute managing the clutter of its own past mistakes. In software engineering terms, this is equivalent to running an algorithm that refuses to garbage-collect failed heap allocations, requiring the CPU to spend more and more cycles searching around dead memory blocks.
-
-![Autoregressive Error Compounding and Attention Mass Dilution](./autoregressive_error_compounding.png)
-_Figure 2: (Left) Compound accuracy $p^K$ collapses exponentially over deduction length, even with near-flawless 99% per-step accuracy. (Right) Attention probability mass dilution: as reasoning sequences extend, attention mass on discarded branches and exploratory tokens accumulates, diluting focus away from valid problem invariants past the entropy inversion point._
 
 ---
 
@@ -162,6 +162,9 @@ $$P(\text{entire chain valid}) = \prod_{k=1}^K P(\text{step } k \text{ valid} \m
 | **200 Steps** | $13.4\%$ | $< 0.001\%$ | $\approx 0\%$ |
 
 At 100 consecutive deductive steps, even an exceptional per-step accuracy of $99\%$ yields a sound derivation only $36.6\%$ of the time. Without an objective external verifier, long unguided rollouts are statistically guaranteed to drift off the ground-truth manifold.
+
+![Autoregressive Error Compounding and Attention Mass Dilution](./autoregressive_error_compounding.png)
+_Figure 3: (Left) Compound accuracy $p^K$ collapses exponentially over deduction length, even with near-flawless 99% per-step accuracy. (Right) Attention probability mass dilution: as reasoning sequences extend, attention mass on discarded branches and exploratory tokens accumulates, diluting focus away from valid problem invariants past the entropy inversion point._
 
 | System Architecture | Internal Representation | Error Management |
 | :--- | :--- | :--- |
@@ -215,7 +218,7 @@ In open-ended language, neural verifiers systematically reward stylistic markers
 Without an external, objective compiler to anchor the evaluation loop, extending test-time search in open-ended text does not solve hallucination; it systematically optimizes for persuasive rationalization.
 
 ![The Verification Landscape: Ground Truth vs Goodhart Divergence](./verification_landscape.png)
-_Figure 3: The Verification Landscape. In verifiable domains (coding, formal mathematics), external compilers prune false trajectories, allowing search to scale. In open-ended domains (law, medicine, strategy), reward models lack objective grounding, triggering Goodhart divergence where the system optimizes for stylistic persuasion over truth._
+_Figure 4: The Verification Landscape. In verifiable domains (coding, formal mathematics), external compilers prune false trajectories, allowing search to scale. In open-ended domains (law, medicine, strategy), reward models lack objective grounding, triggering Goodhart divergence where the system optimizes for stylistic persuasion over truth._
 
 | Problem Domain | Verification Complexity | Feedback Mechanism | Test-Time Scaling Behavior |
 | :--- | :--- | :--- | :--- |
@@ -243,7 +246,7 @@ $$2^{6.5} \approx \mathbf{90\times \text{ to } 100\times}$$
 Scaling compute from a $\$50\text{M}$ training cluster to a hypothetical $\$5\text{B}$ cluster yields diminishing reductions in cross-entropy loss. More critically, small reductions in next-token perplexity no longer correlate reliably with proportional gains on genuine reasoning tasks. The low-hanging fruit of raw pretraining scaling has been harvested.
 
 ![Chinchilla Power-Law Asymptote and Marginal Return](./chinchilla_power_law.png)
-_Figure 4: (Left) Chinchilla cross-entropy loss flattening against the irreducible entropy floor of language ($E \approx 1.65$). (Right) The derivative $|\partial L / \partial C|$ on a log-log scale, displaying the diminishing marginal reductions in cross-entropy loss per FLOP._
+_Figure 5: (Left) Chinchilla cross-entropy loss flattening against the irreducible entropy floor of language ($E \approx 1.65$). (Right) The derivative $|\partial L / \partial C|$ on a log-log scale, displaying the diminishing marginal reductions in cross-entropy loss per FLOP._
 
 ### The Limits of Available Human Text
 
@@ -272,7 +275,7 @@ Across successive generations of recursive training without external grounding, 
 Without an external source of objective verification or novel information, recursive training on synthetic text causes the model to lose representation of rare but critical edge cases, converging toward a narrowed, mode-collapsed distribution.
 
 ![Model Collapse: Distribution Degeneration and Entropy Decay](./model_collapse_entropy.png)
-_Figure 5: (Left) Probability density degeneration across recursive training generations without external grounding. The distribution sheds its tails, variance contracts, and information entropy collapses ($H(p_n) \to 0$). (Right) Information entropy collapse across recursive generations, displaying the monotonic degradation of representational diversity toward a point mass._
+_Figure 6: (Left) Probability density degeneration across recursive training generations without external grounding. The distribution sheds its tails, variance contracts, and information entropy collapses ($H(p_n) \to 0$). (Right) Information entropy collapse across recursive generations, displaying the monotonic degradation of representational diversity toward a point mass._
 
 Consequently, the pretraining data bottleneck cannot be resolved merely by generating higher volumes of ungrounded natural language text.
 
@@ -307,7 +310,7 @@ On large clusters of 16,000 H100 GPUs (such as those used for Meta's Llama 3 405
 Alternative architectures that mirror dynamic, continuous state updates, such as Continuous-Time Recurrent Networks, Energy-Based Attractor Models, or dynamic sparse graph networks, exhibit lower arithmetic intensity. Because their operations involve memory-bound state updates rather than large dense matrix multiplies, they achieve lower hardware utilization on modern GPU clusters and are frequently throttled by memory bandwidth latency.
 
 ![The Hardware Roofline Model: Dense GEMMs vs Memory Bandwidth Wall](./hardware_roofline_model.png)
-_Figure 6: Roofline model analysis on NVIDIA H100 hardware. Dense GEMM operations during pretraining operate within the compute-bound regime ($>600\text{ FLOPs/byte}$), reaching 65% to 70% of peak device throughput. In contrast, token-by-token autoregressive generation and recurrent state updates are heavily memory-bandwidth bound ($\approx 1\text{ FLOP/byte}$), leading to substantial underutilization of raw Tensor Core compute._
+_Figure 7: Roofline model analysis on NVIDIA H100 hardware. Dense GEMM operations during pretraining operate within the compute-bound regime ($>600\text{ FLOPs/byte}$), reaching 65% to 70% of peak device throughput. In contrast, token-by-token autoregressive generation and recurrent state updates are heavily memory-bandwidth bound ($\approx 1\text{ FLOP/byte}$), leading to substantial underutilization of raw Tensor Core compute._
 
 The dominance of the transformer is therefore partly an architectural success and partly an infrastructure lock-in. The architecture was exceptionally well positioned to exploit early systolic tensor hardware, which in turn concentrated industry investment into optimizing hardware and software around dense matrix operations. It is the purest manifestation of Rich Sutton's *Bitter Lesson*: brute-force parallel compute on specialized silicon beats algorithmic elegance until the physical boundaries of that compute paradigm are reached.
 
@@ -341,6 +344,9 @@ The architecture that actually succeeds beyond the transformer is not a larger a
 
 4. **The Transformer Specialized as a Sequence Compiler**:
    In this decomposed architecture, the transformer is not discarded; it is assigned to the task it performs better than any architecture in history: acting as an interface compiler. It translates variable-length discrete human natural language into structured continuous latent states, and translates verified latent solutions back into fluent human text at the communication boundary.
+
+![The Grounded Dual-Representation Architecture Blueprint](./dual_representation_architecture.png)
+_Figure 8: Systems schematic of the Grounded Dual-Representation Architecture. Continuous latent relaxation (Tier 2) explores hypotheses reversibly without token collapse; discrete symbolic checkpoints (Tier 3) act as topological error-correcting attractors; the mutable execution stack (Tier 4) enables true $O(1)$ backtracks and memory reclamation; and the transformer (Tier 1) operates strictly as an interface compiler at the human boundary._
 
 | Architectural Dimension | Monolithic Autoregressive Transformer | Pure Continuous Latent Model *(JEPA)* | Grounded Dual-Representation Architecture |
 | :--- | :--- | :--- | :--- |
