@@ -246,7 +246,7 @@ The exponent looks small until you invert the equation to see what it costs to a
 
 $$\frac{C_{\text{new}}}{C} = 2^{1/\gamma} = 2^{1/0.154} \approx 2^{6.5} \approx \mathbf{90\times \text{ to } 100\times}$$
 
-Every subsequent halving of reducible loss does not demand double the compute. It demands an order of magnitude squared. Scaling a cluster from a $50M pretraining budget buys you one halving for roughly $5B. The next halving would require a $500B cluster that no utility grid on Earth can power.
+Every subsequent halving of reducible loss does not demand double the compute. It demands an order of magnitude squared. Scaling a cluster from a \$50M pretraining budget buys you one halving for roughly \$5B. The next halving would require a \$500B cluster that no utility grid on Earth can power.
 
 More fundamentally, marginal reductions in cross-entropy loss stop translating into tangible reasoning gains. Early loss reductions (dropping perplexity from 3.0 to 1.8) correspond to mastering syntax, basic grammar, and core factual associations. Late-stage loss reductions (grinding from 1.5 down to 1.4) mostly burn billions of FLOPs fitting obscure web formatting artifacts, punctuation quirks, and boilerplate internet noise. You pay a 100x compute premium to memorize the long tail of the crawl, not to acquire deeper causal deduction.
 
