@@ -355,10 +355,14 @@ The architecture that actually succeeds beyond the transformer is not a larger a
 
 ## Conclusion
 
-The transformer is one of the landmark achievements in the history of computer science. It definitively solved the problem of mapping the unstructured, high-dimensional nuances of human language into structured geometric representations.
+The transformer is one of the monumental achievements in computational history. It definitively conquered the problem of mapping the chaotic, high-dimensional contours of human language into structured geometric representations.
 
-Its only limitation was the arrogance of our expectations. We mistook an exceptional sequence-to-sequence translation engine for an all-purpose substrate for thought. We assumed that because an architecture could generate fluent, human-like sentences, it must therefore be capable of autonomous reasoning, multi-step planning, and objective verification.
+Its failure to deliver autonomous general reasoning is not a flaw in its engineering, but an inevitable consequence of our category error. For hundreds of thousands of years, fluent natural language was the exclusive signature of human intelligence. When we built an architecture capable of generating exquisite, human-grade prose, we succumbed to the natural illusion that fluency was synonymous with thought. We mistook an extraordinary sequence-to-sequence compiler for an internal cognitive engine.
 
-Language is how minds communicate their conclusions to other minds across physical space. It is not the substrate in which thought occurs.
+General autonomous intelligence will not emerge from running an un-garbage-collected, forward-only next-token predictor across an append-only sequence log. The pretraining curve has hit the data horizon, test-time search is suffocating against the limits of verification, and our silicon monoculture has optimized for brute-force matrix multiplication at the expense of dynamic state.
 
-General artificial intelligence will not be achieved by running an un-garbage-collected, forward-only sequence generator across an append-only token log. The monolithic transformer has reached the limits of what next-token prediction over static human text can deliver. The future of the field belongs to systems that solve the dual-representation problem: marrying the smooth, differentiable flexibility of continuous latent exploration with the rigorous, error-correcting power of discrete symbolic verification.
+The path forward belongs to architectures that reconcile the continuous with the discrete: systems that navigate fluid, reversible hypothesis spaces in continuous latent manifolds, ground themselves against unyielding symbolic checkpoints, and reclaim working memory with explicit execution stacks.
+
+We must let the transformer do what it was always meant to do: stand at the boundary of our machines, translating between human expression and internal computation.
+
+Because language is how minds communicate their conclusions to other minds across physical space. It is not the substrate in which thought occurs.
