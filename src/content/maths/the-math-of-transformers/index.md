@@ -1,7 +1,7 @@
 ---
 title: 'are transformers a dead end'
 description: 'A first-principles critique of autoregressive sequence modeling: why treating language as the substrate of thought is a category error, why test-time search is not an infinite ladder, and what actually lies beyond the token.'
-date: 2026-09-23
+date: 2026-09-26
 tags:
   [
     'deep learning',
@@ -12,7 +12,7 @@ tags:
   ]
 image: './cover.jpg'
 pinned: false
-draft: true
+draft: false
 ---
 
 between 2020 and 2024, the artificial intelligence industry ran on a single promise: **there is no limit to intelligence, and we will eventually reach AGI.**
