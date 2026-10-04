@@ -12,7 +12,7 @@ tags:
   ]
 image: './cover.jpg'
 pinned: false
-draft: false
+draft: true
 ---
 
 *The gorgeous cover image is from https://x.com/0waxwing/status/2094483103796322797 :)*
