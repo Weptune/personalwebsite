@@ -12,99 +12,100 @@ tags:
   ]
 image: './cover.jpg'
 pinned: false
-draft: true
+draft: false
 ---
 
 *The gorgeous cover image is from https://x.com/0waxwing/status/2094483103796322797 :)*
 
-For years, progress in artificial intelligence followed a clear empirical rule: scale the parameters, expand the training text, and wait for general capabilities to emerge. It was an extraordinarily productive paradigm. But recently, that trajectory has begun to flatten. Frontier pretraining runs now cost hundreds of millions of dollars, yet incremental reductions in cross-entropy loss yield diminishing returns on genuine reasoning tasks.
+For several years, progress in large language models followed a consistent empirical formula: scale parameter counts, expand training datasets, and increase pretraining compute. Under the scaling laws formalized by Kaplan et al. (2020) and Hoffmann et al. (2022), reducing training cross-entropy loss reliably produced downstream performance gains across broad evaluations.
 
-The industry response has been to trade latency for depth. Instead of expecting an answer in a single forward pass, frontier systems like GPT Astra and Fable 5.5 unroll thousands of intermediate scratchpad tokens, exploring candidate derivations and checking intermediate steps before committing to a final output. In closed-loop domains with automated verification, such as competitive programming and Olympiad mathematics, this test-time search produces striking gains.
+Recently, however, standard pretraining has encountered clear diminishing returns. Training runs now cost hundreds of millions of dollars, yet marginal reductions in cross-entropy loss yield progressively smaller improvements on complex reasoning benchmarks.
 
-Yet generating long chains of intermediate tokens does not change the underlying mechanics of autoregression. It stretches them.
+In response, frontier AI research has shifted focus toward inference-time compute. Rather than generating an answer in a single forward pass, modern reasoning architectures like GPT Astra and Fable 5.5 generate thousands of intermediate scratchpad tokens, exploring candidate derivations and checking intermediate steps before producing a final output. On closed-loop tasks with automated verification, such as competitive programming and mathematics competitions, this test-time search delivers measurable accuracy gains.
 
-The difficulties facing sequence models on long-horizon reasoning are not an engineering oversight, nor are they a temporary data shortage. They reflect a fundamental mismatch between the medium of transmission and the medium of thought. Human language is a serialized wire protocol, evolved to transfer conclusions between isolated minds across physical space. It was never the substrate in which computation actually occurs.
+Yet generating long chains of intermediate tokens does not change the underlying mechanics of autoregression; it expands their context window.
+
+To evaluate whether test-time search resolves the fundamental limits of transformers, we must examine how these models compute from first principles. When analyzed across information theory, computational complexity, and hardware rooflines, the challenges facing sequence models are structural. They stem from a foundational design choice: using autoregressive sequence prediction over discrete human language tokens as an internal reasoning engine.
 
 ---
 
-## 1. Language as a Wire Protocol, Not an Execution Engine
+## 1. The Mechanics of Autoregressive Token Prediction
 
-The structural difficulty sequence models face during multi-step reasoning begins with the nature of language itself.
+To understand why sequence models encounter difficulties with complex deduction, we need to examine what next-token prediction actually computes.
 
-Language did not evolve as an internal medium for thought. It evolved as an external communication protocol between separate individuals. Because two brains cannot directly share continuous mental states, ideas must be compressed into a low-bandwidth, serialized stream of discrete symbols.
-
-Most complex human cognition is fundamentally non-verbal. When an engineer debugs a subtle concurrency issue or a mathematician develops a proof, the core work is not an internal monologue of complete sentences. It is an exploration across continuous, high-dimensional spaces: holding competing constraints in working memory, evaluating geometric or causal relationships, and testing structural trade-offs in parallel. Words typically appear only at the interface boundary. Once a solution is reached, it is serialized into linear sentences so another person can reconstruct it. Language is an exchange format, not the computational engine that produced the result.
-
-The transformer architecture inherits this exchange format as its native reasoning substrate. Because modern foundation models trace their lineage to machine translation, they are built to map input sequences to output sequences. That heritage forces all problem-solving into a single mathematical formulation: autoregressive next-token prediction:
+Large language models are autoregressive sequence models. Given an input context of tokens $w_{1:t} = (w_1, w_2, \dots, w_t)$, the model computes a conditional probability distribution over the vocabulary $\mathcal{V}$ for the next token:
 
 $$w_{t+1} \sim P(w_{t+1} \mid w_1, w_2, \dots, w_t)$$
 
-This introduces a severe structural bottleneck. A problem that naturally exists as an interconnected web of simultaneous constraints is forced onto a strictly linear, forward-only sequence. To arrive at a correct deduction, the architecture must resolve complex multi-variable dependency graphs through the rigid constraint of serial token generation, committing to intermediate choices before the full logical graph can be evaluated.
+To solve any task, whether drafting an essay, translating languages, or proving a mathematical theorem, the transformer must formulate the problem as a sequence of discrete token predictions.
+
+This formulation introduces a structural constraint.
+
+In human problem-solving, complex reasoning is largely non-linear and parallel. When designing a distributed system or working out a geometric proof, you hold multiple interacting constraints in memory simultaneously, evaluate dependencies in parallel, and resolve contradictions before articulating the solution. Language is used at the end of the process to serialize and communicate the verified result.
+
+An autoregressive model, by contrast, must emit its reasoning sequentially, one token at a time. Every intermediate step must be generated as a discrete symbol in the sequence, forcing a multi-variable constraint satisfaction process onto a strictly linear, forward-only token stream.
 
 ---
 
-## 2. The Discretization Paradox: Analog Drift vs. Digital Error Correction
+## 2. Continuous Latents vs. Discrete Token Sampling
 
-Machine learning built its reasoning systems on discrete tokens for a concrete historical reason: continuous computation struggles with noise.
+Why do transformers operate on discrete tokens rather than continuous vectors? To answer this, we can look at the trade-off between continuous and digital computation.
 
-Early analog computers offered continuous voltages, theoretically infinite dynamic resolution, and native simulation of differential equations in continuous time. Yet general-purpose computing abandoned analog architectures because physical noise compounds over time ($O(t)$ drift). Across dozens of consecutive operations, small fluctuations accumulate until they overwhelm the signal, making deep calculations impossible.
+In early computing history, analog machines computed with continuous voltages, offering infinite dynamic resolution and native simulation of continuous systems. However, analog computing was abandoned for general-purpose calculation because continuous physical systems accumulate noise over time ($O(t)$ drift). Across multiple sequential operations, small errors compound until they overwhelm the signal.
 
-Digital computing succeeded because discrete states act as non-linear restoration barriers. In a digital circuit, any voltage within an allowable tolerance band is snapped back to a nominal reference level at every gate. When a 3.3V logic signal degrades to 3.0V across a trace, the next CMOS gate restores it to 3.3V. Noise does not compound across execution cycles; it is purged on every clock step. That non-linear reset allows digital machines to chain trillions of operations without degradation.
+Digital computing solved this through non-linear restoration. At every logic gate, drifting voltages within a valid threshold are restored to clean reference levels (such as ground or supply voltage). Noise is purged at each step, allowing digital circuits to execute billions of consecutive operations without signal degradation.
 
-Discrete symbols serve a comparable role in formal thought. Logic, lambda calculus, and programming languages use discrete syntax because rigorous deduction requires unambiguous boundaries. A deduction is either sound or invalid; a program either compiles or fails. Discrete symbols act as an error-correcting structure that prevents logical representations from drifting into ambiguity.
+Discrete symbols serve an identical purpose in formal logic, mathematics, and programming. A proof step is either valid or invalid; a line of code either compiles or throws a syntax error. Discrete representations provide clear boundaries that prevent logical deductions from drifting over long execution chains.
 
 ### Micro-Discretization Without Macro-Correction
 
-The architectural tension in an autoregressive transformer is that discretization happens at the level of individual subword tokens, while offering no error-correcting restoration for high-level propositions.
+The structural limitation of an autoregressive transformer is that it enforces discretization at the level of individual subword tokens, while offering no restorative error correction for high-level propositions.
 
 At each forward step $t$, the transformer computes a continuous hidden vector:
 
 $$\mathbf{h}_t \in \mathbb{R}^d$$
 
-In continuous dynamical systems, such a state can maintain continuous trade-offs, preserve calibrated uncertainty, and adjust smoothly as new constraints emerge.
+In continuous optimization or latent dynamical models, this hidden vector can represent uncertainty and adjust smoothly as new constraints appear.
 
-In an autoregressive transformer, that vector is projected through an unembedding matrix $W_u$, normalized with softmax, and sampled:
+In an autoregressive transformer, that vector is projected through an unembedding matrix $W_u \in \mathbb{R}^{|\mathcal{V}| \times d}$ and normalized with softmax:
 
 $$P(w_t) = \text{softmax}(W_u \mathbf{h}_t)$$
 
-Sampling a discrete token $w_t$ collapses that distribution. The continuous state $\mathbf{h}_t$ and its uncertainty geometry are discarded from the computation graph. The only information transmitted to step $t+1$ is the single categorical token index.
+The model then samples a single discrete token index $w_t \in \{1, \dots, |\mathcal{V}|\}$.
 
-Because token sampling is non-differentiable at test time, the model cannot perform continuous trajectory adjustment or backpropagate through intermediate choices to fix an invalid derivation. The architecture commits to an irreversible categorical choice at every subword token before downstream logical viability can be evaluated.
+Once a token is sampled, the continuous representation $\mathbf{h}_t$ is discarded from the computation graph. The only information passed forward to step $t+1$ is the categorical token ID. Because token sampling is non-differentiable at inference time, the model cannot backpropagate through intermediate choices or smoothly correct a faulty derivation. The architecture commits to an irreversible discrete choice at every subword token before downstream logical viability can be evaluated.
 
-At the same time, the model gains none of the structural error-correcting properties of digital systems. In a digital circuit, a drifting voltage is snapped back to a rail; in a compiler, an invalid token is rejected by the parser. An autoregressive transformer has no restorative mechanism. If it generates a false premise or an inaccurate intermediate calculation, that token becomes an immutable part of the sequence history. Subsequent generation must condition on the flawed prefix, compounding the error forward.
+At the same time, the model lacks the restorative error-correcting properties of digital systems. In a digital circuit, a drifting voltage is snapped back to a rail; in a compiler, an invalid token is rejected by the syntax checker. An autoregressive transformer has no such restorative mechanism. If it generates an incorrect number or invalid premise, that token becomes an immutable part of the sequence history. Subsequent generation must condition on the flawed prefix, compounding the error forward.
 
 ---
 
-## 3. Append-Only Memory and Attention Dilution
+## 3. The KV Cache and Attention Entropy Dilution
 
-Inference-time models such as GPT Astra and Fable 5.5 frequently generate phrases that resemble human self-correction: *"Wait, let me rethink this assumption..."* or *"Alternatively, consider another case..."* This behavior creates the impression of an algorithm backtracking through a search tree.
+Inference-time models such as GPT Astra and Fable 5.5 frequently generate phrases that resemble human self-correction: *"Wait, let me rethink this assumption..."* or *"Alternatively, consider another case..."* This behavior creates the appearance of an algorithm backtracking through a search tree.
 
 Mechanically, however, the model cannot backtrack.
 
-In classic search algorithms, state exploration relies on an execution stack. When an algorithm encounters a dead end or a violated constraint, it pops the current stack frame in $O(1)$ time, discards invalid state, and resumes from the previous valid branch. The working memory remains uncluttered.
+In traditional search algorithms, exploration relies on an execution stack. When an algorithm encounters a dead end or a violated constraint, it pops the current stack frame in $O(1)$ time, discards invalid state, and resumes from the previous valid branch. The working memory remains clean.
 
-An autoregressive transformer lacks an execution stack. It cannot revoke previously generated tokens or restore earlier hidden states.
-
-Every flawed derivation, speculative branch, and verbal correction is permanently appended to the sequence and retained in the Key-Value (KV) cache. Rather than pruning a failed branch, the architecture generates additional tokens explaining that an error occurred.
+An autoregressive transformer lacks an execution stack. It cannot revoke previously generated tokens or restore earlier hidden states. Every flawed calculation, speculative tangent, and verbal correction is permanently appended to the sequence and stored in the Key-Value (KV) cache. Rather than pruning a failed branch, the architecture generates additional tokens explaining that an error occurred.
 
 This append-only structure incurs two direct systems costs:
 
-First, linear memory saturation ($O(T)$). Retaining key and value projections for every layer and attention head scales linearly with sequence length. Across extended reasoning traces reaching tens of thousands of tokens, the KV cache footprint alone can exhaust GPU High Bandwidth Memory (HBM), restricting batch size and serving throughput.
-
-Second, quadratic attention compute ($O(T^2)$). Generating a reasoning sequence of length $T$ incurs cumulative compute that scales quadratically with context length, as each newly generated token must attend across all preceding positions.
+1. **Linear memory footprint ($O(T)$)**: Storing key and value projections for every layer and attention head scales linearly with sequence length. Across extended reasoning traces reaching tens of thousands of tokens, the KV cache footprint alone can exhaust GPU High Bandwidth Memory (HBM), restricting batch size and serving throughput.
+2. **Quadratic cumulative attention compute ($O(T^2)$)**: Generating a reasoning sequence of length $T$ incurs cumulative compute that scales quadratically with context length, as each newly generated token must attend across all preceding positions.
 
 ![The KV Cache Memory Wall & Quadratic Context Tax](./kv_cache_memory_wall.png)
 _Figure 1: (Left) KV Cache memory footprint vs. reasoning sequence length across model sizes for batch size $B=4$. At $64.0\text{k}$ reasoning tokens for 70B (and $40.6\text{k}$ for 405B), the KV cache alone saturates the 80GB VRAM ceiling of an NVIDIA H100. (Right) Quadratic attention compute penalty $O(T^2)$ for autoregressive sequence expansion compared to constant $O(T)$ latent trajectory steps._
 
 ### Softmax Normalization and Attention Entropy Dilution
 
-The deeper algorithmic consequence of verbal backtracking lies in how self-attention allocates probability mass:
+The deeper algorithmic challenge of verbal backtracking lies in how self-attention allocates probability mass:
 
 $$A_{ij} = \frac{\exp(q_i^T k_j / \sqrt{d_k})}{\sum_{m=1}^T \exp(q_i^T k_m / \sqrt{d_k})}$$
 
-Because attention rows normalize via softmax ($\sum_j A_{ij} = 1$), attention is a zero-sum resource across the sequence.
+Because attention rows normalize via softmax ($\sum_j A_{ij} = 1$), attention weight is a strictly conserved resource across the sequence.
 
-When a reasoning trace reaches 20,000 tokens, and the majority represent discarded exploratory work, the denominator $\sum_m \exp(q_i^T k_m / \sqrt{d_k})$ aggregates substantial mass across those irrelevant positions. This produces **Attention Entropy Dilution**: probability mass that should concentrate on core problem constraints and verified intermediate steps is dispersed across thousands of discarded tokens.
+When a reasoning trace reaches 20,000 tokens, and a large portion represents discarded exploratory work, the denominator $\sum_m \exp(q_i^T k_m / \sqrt{d_k})$ aggregates substantial mass across those irrelevant positions. This produces **Attention Entropy Dilution**: probability mass that should concentrate on core problem constraints and verified intermediate steps is dispersed across thousands of discarded tokens.
 
 To prevent this dispersed weight from degrading subsequent steps, the model must dedicate attention heads and parameter capacity to inhibition, learning to attend away from its own obsolete context. Instead of reclaiming memory through an explicit stack pop, the model spends active compute suppressing past mistakes that remain permanently embedded in its context window.
 
@@ -112,11 +113,11 @@ To prevent this dispersed weight from degrading subsequent steps, the model must
 
 ## 4. Directional Asymmetry and Error Compounding
 
-Because transformers model sequences unidirectionally across token positions, their internal representations exhibit pronounced directional asymmetry.
+Because transformers process sequences unidirectionally across token positions, their internal representations exhibit directional asymmetry.
 
 ### The Reversal Curse
 
-In relational databases and knowledge graphs, factual assertions are symmetric. Storing the relation:
+In a relational database or knowledge graph, factual assertions are symmetric. Storing the relation:
 
 $$\text{MotherOf}(\text{Mary}, \text{Daphne}) = \text{True}$$
 
@@ -130,13 +131,13 @@ Without explicit bidirectional exposure or synthetic reverse pairs in training, 
 
 $$P(\text{Daphne} \mid \text{Mary's daughter is}) \approx 0$$
 
-This Reversal Curse highlights a core limitation of sequence modeling: knowledge is stored as directional statistical trajectories rather than grounded, bidirectional entity relationships.
+This Reversal Curse highlights a core characteristic of sequence modeling: knowledge is stored as directional statistical transitions between tokens rather than grounded, bidirectional entity relationships.
 
 ### Systematic Bias and Majority Voting
 
-A standard strategy to mitigate per-step reasoning errors is test-time sampling: generating multiple independent candidate traces and selecting the consensus output through majority voting or self-consistency.
+A standard strategy to mitigate per-step reasoning errors is test-time sampling: generating multiple independent candidate traces and selecting the consensus output through majority voting or self-consistency (Wang et al., 2022).
 
-This approach assumes that model errors are independent and identically distributed with zero mean. When errors consist of uncorrelated arithmetic slips, consensus filtering averages out variance and uncovers the underlying signal.
+This approach assumes that model errors are independent and identically distributed with zero mean. When errors consist of uncorrelated arithmetic slips, consensus filtering averages out variance and uncovers the correct solution.
 
 In foundation models, however, errors frequently stem from systematic biases in pretraining data distributions. When an architecture encounters an entrained statistical misconception or a directional blind spot, independent rollouts are conditioned on the same skewed prior. Sampling 100 paths from a biased distribution does not cancel the error; it concentrates probability mass on the shared failure mode.
 
@@ -156,7 +157,7 @@ At 100 deductive steps, even a 99% per-step accuracy yields a sound derivation o
 ![Autoregressive Error Compounding and Attention Mass Dilution](./autoregressive_error_compounding.png)
 _Figure 2: (Left) Compound accuracy $p^K$ collapses exponentially over reasoning depth, even with near-flawless 99% per-step accuracy. (Right) Attention probability mass dilution: as reasoning sequences grow, attention mass on discarded branches and exploratory tokens accumulates, diluting focus away from the original problem constraints._
 
-The root of this fragility lies in how state is managed:
+The structural difference comes down to how internal state is maintained:
 
 | Architecture Style | Internal State | Error Management |
 | :--- | :--- | :--- |
@@ -167,26 +168,26 @@ The root of this fragility lies in how state is managed:
 
 ## 5. The Verification Horizon: When Test-Time Search Breaks Down
 
-The effectiveness of Reinforcement Learning with Verifiable Rewards (RLVR) in competitive programming and Olympiad mathematics highlights a fundamental boundary in search: the asymmetry between generation cost and verification cost.
+The effectiveness of Reinforcement Learning with Verifiable Rewards (RLVR) in competitive programming and Olympiad mathematics highlights an important boundary in test-time search: the asymmetry between generation cost and verification cost.
 
-### Computational Complexity and Verification Asymmetry
+### Verification Asymmetry: $C_v \ll C_g$
 
 Search scales effectively when verifying a proposed solution is asymptotically cheaper than discovering it ($C_v \ll C_g$, the defining property of $\text{NP}$).
 
 In competitive programming, finding an optimal dynamic programming algorithm may require exploring thousands of candidate approaches ($C_g$ is large), but an external compiler and test suite can evaluate correctness in milliseconds ($C_v$ is negligible). In formal mathematics, discovering a proof tactic requires extensive branching, but an interactive theorem prover such as Lean or Isabelle verifies each deductive step deterministically.
 
 Under these conditions, test-time search functions reliably because:
-- Ground truth is binary and decoupled from natural language.
-- The verification engine is objective, automated, and impossible for the model to persuade.
-- Candidate rollouts that fail verification are pruned without polluting the final output.
+1. Ground truth is binary and decoupled from natural language.
+2. The verification engine is objective, automated, and impossible for the model to deceive.
+3. Candidate rollouts that fail verification are pruned without polluting the final output.
 
 ### Open-Ended Domains and Goodhart Divergence
 
-This paradigm breaks down when applied to open-ended intellectual tasks, such as legal analysis, clinical diagnosis, or strategic decision-making. In these settings, verification is at least as computationally demanding as generation ($C_v \ge C_g$). Determining whether a complex legal brief is legally sound or whether an ambiguous clinical diagnosis is accurate requires the same depth of contextual understanding, domain expertise, and reasoning as drafting the initial proposal. There is no automated compiler or deterministic test harness to referee intermediate steps.
+This paradigm changes when applied to open-ended intellectual tasks, such as legal analysis, clinical diagnosis, or strategic decision-making. In these settings, verification is at least as computationally demanding as generation ($C_v \ge C_g$). Determining whether a complex legal brief is sound or whether an ambiguous clinical diagnosis is accurate requires the same depth of contextual understanding, domain expertise, and reasoning as drafting the initial proposal. There is no automated compiler or deterministic test harness to referee intermediate steps.
 
 Without an external execution sandbox, test-time search in open-ended domains relies on learned neural verifiers, such as Process Reward Models (PRMs) trained on human feedback or synthetic scoring rubrics.
 
-This shift triggers Goodhart's Law: when an optimization process targets an imperfect proxy metric, it optimizes for the proxy rather than the underlying objective. 
+This shift triggers Goodhart's Law: when an optimization process targets an imperfect proxy metric, it optimizes for the proxy rather than the underlying objective.
 
 When search algorithms optimize aggressively against a learned reward model, the generator does not discover deeper logical truths; it discovers the reward model's structural blind spots. In natural language, neural verifiers systematically reward stylistic proxies of competence: authoritative tone, structured lists, technical vocabulary, and persuasive rhetorical transitions. The policy learns to produce reasoning traces that maximize these surface features, often while drifting further from factual accuracy.
 
@@ -250,7 +251,7 @@ _Figure 5: (Left) Distribution decay across recursive training generations witho
 
 ---
 
-## 7. The Hardware Lottery: Dense GEMMs vs. Dynamic State
+## 7. The Hardware Monopoly: Dense GEMMs vs. Dynamic State
 
 Given the quadratic scaling of attention, the memory footprint of the KV cache, and the approaching human data ceiling, alternative architectures (State Space Models like Mamba, linear attention variants, and continuous recurrent networks) have attracted intense research interest. Yet none have replaced the transformer in flagship frontier training runs.
 
