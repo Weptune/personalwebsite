@@ -29,19 +29,17 @@ The difficulties facing sequence models on long-horizon reasoning are not an eng
 
 ## 1. Language as a Wire Protocol, Not an Execution Engine
 
-Why does sequence modeling struggle so visibly with deep, multi-step deduction? The answer starts with what language actually is.
+The structural difficulty sequence models face during multi-step reasoning begins with the nature of language itself.
 
-Language did not evolve as an internal execution engine for cognition. It evolved as an inter-agent communication protocol. Human brains are physically isolated inside separate skulls. We cannot run a high-speed bus directly between two neocortices to share neural activation states. To coordinate, we have to take a high-dimensional, continuous internal state and compress it into a narrow serial pipe: vibrating air molecules or written squiggles, operating at roughly 40 to 60 bits per second.
+Language did not evolve as an internal medium for thought. It evolved as an external communication protocol between separate individuals. Because two brains cannot directly share continuous mental states, ideas must be compressed into a low-bandwidth, serialized stream of discrete symbols.
 
-Real thinking does not happen by streaming discrete words to yourself. When you design a distributed database, debug a subtle race condition, or work out a geometric proof, the actual computation is almost entirely non-verbal. You hold dozens of constraints in memory simultaneously, simulate continuous state dynamics, and balance trade-offs in parallel. Words only enter the picture at the very boundary of the process. Once you reach a solution state, you serialize that state into linear sentences so someone else can unpack it. Language is an export format, like JSON or Protobuf. It is not the compute engine.
+Most complex human cognition is fundamentally non-verbal. When an engineer debugs a subtle concurrency issue or a mathematician develops a proof, the core work is not an internal monologue of complete sentences. It is an exploration across continuous, high-dimensional spaces: holding competing constraints in working memory, evaluating geometric or causal relationships, and testing structural trade-offs in parallel. Words typically appear only at the interface boundary. Once a solution is reached, it is serialized into linear sentences so another person can reconstruct it. Language is an exchange format, not the computational engine that produced the result.
 
-The transformer takes this export format and treats it as the computational substrate.
-
-Because large language models grew directly out of machine translation, their architecture was designed to map one sequence of symbols into another. They formalize every task, whether it is casual chit-chat or formal deduction, as autoregressive next-token prediction:
+The transformer architecture inherits this exchange format as its native reasoning substrate. Because modern foundation models trace their lineage to machine translation, they are built to map input sequences to output sequences. That heritage forces all problem-solving into a single mathematical formulation: autoregressive next-token prediction:
 
 $$w_{t+1} \sim P(w_{t+1} \mid w_1, w_2, \dots, w_t)$$
 
-This forces what is naturally a parallel constraint-satisfaction process onto a one-dimensional, forward-only conveyor belt. The model has to resolve multi-variable dependency graphs by squirting them out through the narrow aperture of sequential token prediction, one word at a time.
+This introduces a severe structural bottleneck. A problem that naturally exists as an interconnected web of simultaneous constraints is forced onto a strictly linear, forward-only sequence. To arrive at a correct deduction, the architecture must resolve complex multi-variable dependency graphs through the rigid constraint of serial token generation, committing to intermediate choices before the full logical graph can be evaluated.
 
 ---
 
