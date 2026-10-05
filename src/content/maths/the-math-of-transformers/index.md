@@ -19,7 +19,7 @@ draft: true
 
 For years, progress in artificial intelligence followed a clear empirical rule: scale the parameters, expand the training text, and wait for general capabilities to emerge. It was an extraordinarily productive paradigm. But recently, that trajectory has begun to flatten. Frontier pretraining runs now cost hundreds of millions of dollars, yet incremental reductions in cross-entropy loss yield diminishing returns on genuine reasoning tasks.
 
-The industry response has been to trade latency for depth. Instead of expecting an answer in a single forward pass, models like o1 and DeepSeek-R1 unroll thousands of intermediate scratchpad tokens, exploring candidate derivations and checking intermediate steps before committing to a final output. In closed-loop domains with automated verification, such as competitive programming and Olympiad mathematics, this test-time search produces striking gains.
+The industry response has been to trade latency for depth. Instead of expecting an answer in a single forward pass, frontier systems like GPT Astra and Fable 5.5 unroll thousands of intermediate scratchpad tokens, exploring candidate derivations and checking intermediate steps before committing to a final output. In closed-loop domains with automated verification, such as competitive programming and Olympiad mathematics, this test-time search produces striking gains.
 
 Yet generating long chains of intermediate tokens does not change the underlying mechanics of autoregression. It stretches them.
 
@@ -77,7 +77,7 @@ At the same time, the model gains none of the structural error-correcting proper
 
 ## 3. Append-Only Memory and Attention Dilution
 
-Inference-time models such as o1 and DeepSeek-R1 frequently generate phrases that resemble human self-correction: *"Wait, let me rethink this assumption..."* or *"Alternatively, consider another case..."* This behavior creates the impression of an algorithm backtracking through a search tree.
+Inference-time models such as GPT Astra and Fable 5.5 frequently generate phrases that resemble human self-correction: *"Wait, let me rethink this assumption..."* or *"Alternatively, consider another case..."* This behavior creates the impression of an algorithm backtracking through a search tree.
 
 Mechanically, however, the model cannot backtrack.
 
