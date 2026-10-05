@@ -17,13 +17,13 @@ draft: true
 
 *The gorgeous cover image is from https://x.com/0waxwing/status/2094483103796322797 :)*
 
-For four years, the playbook in AI was straightforward: pump more compute into pretraining, buy bigger GPU clusters, and wait for reasoning to fall out of scale. It worked remarkably well, right up until it hit a wall. Frontier pretraining runs now cost hundreds of millions of dollars, and squeezing out another fraction of a bit in cross-entropy loss barely moves the needle on complex problem-solving.
+For years, progress in artificial intelligence followed a clear empirical rule: scale the parameters, expand the training text, and wait for general capabilities to emerge. It was an extraordinarily productive paradigm. But recently, that trajectory has begun to flatten. Frontier pretraining runs now cost hundreds of millions of dollars, yet incremental reductions in cross-entropy loss yield diminishing returns on genuine reasoning tasks.
 
-So the frontier labs pivoted. If a model cannot solve a problem in a single forward pass, let it burn compute at inference time. Give it thousands of tokens to talk to itself, unroll intermediate steps, test branches, and check its work before printing the answer. That pivot gave us systems like OpenAI's o1 and DeepSeek-R1, along with real jumps on competitive programming and math benchmarks.
+The industry response has been to trade latency for depth. Instead of expecting an answer in a single forward pass, models like o1 and DeepSeek-R1 unroll thousands of intermediate scratchpad tokens, exploring candidate derivations and checking intermediate steps before committing to a final output. In closed-loop domains with automated verification, such as competitive programming and Olympiad mathematics, this test-time search produces striking gains.
 
-The question is whether spending thousands of tokens on verbal reasoning actually solves the transformer's architectural limits, or if it just spreads the same failure modes across a longer context window.
+Yet generating long chains of intermediate tokens does not change the underlying mechanics of autoregression. It stretches them.
 
-To answer that, you have to look past the benchmark charts and inspect how these models compute from first principles. The wall facing modern AI is not a matter of missing compute or data curation. It comes from a foundational category error: treating human language, which is just a low-bandwidth communication protocol between separate physical organisms, as if it were the native engine of thought itself.
+The difficulties facing sequence models on long-horizon reasoning are not an engineering oversight, nor are they a temporary data shortage. They reflect a fundamental mismatch between the medium of transmission and the medium of thought. Human language is a serialized wire protocol, evolved to transfer conclusions between isolated minds across physical space. It was never the substrate in which computation actually occurs.
 
 ---
 
