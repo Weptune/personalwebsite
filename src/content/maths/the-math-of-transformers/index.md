@@ -226,7 +226,12 @@ $$\frac{C_{\text{new}}}{C} = 2^{1/\gamma} = 2^{1/0.154} \approx 2^{6.5} \approx 
 
 Each subsequent halving of reducible loss requires nearly two orders of magnitude more compute. Scaling a pretraining run from \$50M in compute buys one halving for roughly \$5B; the subsequent step would demand \$500B in hardware and power infrastructure.
 
-Furthermore, marginal reductions in cross-entropy loss decouple from proportional gains in high-level reasoning. Initial loss reductions (moving perplexity from 3.0 down toward 1.8) correspond to acquiring syntax, grammar, and primary factual relations. Late-stage reductions (grinding from 1.5 to 1.4) increasingly expend compute fitting rare web formatting quirks, idiosyncratic punctuation, and boilerplate crawling noise rather than developing deeper causal representations.
+Beyond raw compute costs, lower cross-entropy loss stops translating into proportional gains in reasoning:
+
+- **Early training** (bringing perplexity from 3.0 down toward 1.8): the model acquires foundational structure, such as grammar, syntax, and core facts.
+- **Late training** (grinding perplexity from 1.5 down toward 1.4): compute is increasingly spent fitting web formatting quirks, obscure punctuation, and crawling noise rather than developing deeper reasoning.
+
+Because next-token prediction treats every token equally, late-stage optimization often rewards memorizing dataset boilerplate just as much as learning valid deduction.
 
 ![Chinchilla Power-Law Asymptote and Marginal Return](./chinchilla_power_law.png)
 _Figure 4: (Left) Chinchilla cross-entropy loss flattening against the irreducible entropy floor of human language ($E \approx 1.65$). (Right) The derivative $|\partial L / \partial C|$ on a log-log scale, illustrating the collapse in marginal loss reduction per training FLOP._
