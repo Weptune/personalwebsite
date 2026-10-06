@@ -312,7 +312,7 @@ This arithmetic disparity explains why transformers retain their pretraining mon
 
 As an end-to-end architecture for general autonomous cognition, the monolithic autoregressive transformer has encountered its structural boundary.
 
-The scaling trajectory has reached the convergence of several independent limits: pretraining has consumed the accessible human text corpus, ungrounded synthetic data triggers distributional collapse, an append-only KV cache turns verbal exploration into an irreversible memory leak, and test-time search without objective verification degenerates into Goodhart exploitation.
+Several independent constraints now meet at once. Frontier pretraining has absorbed most accessible high-quality human text. Training recursively on synthetic data risks narrowing model distributions. Reasoning through long token chains fills the KV cache with dead ends the model cannot delete. And scaling inference search without an external verifier eventually rewards persuasive style over factual accuracy.
 
 Yet recognizing these boundaries does not mean purely continuous architectures, such as Yann LeCun's JEPA, are sufficient on their own. Pure continuous models face the same physical challenge that historically displaced analog computing: without discrete thresholds to act as restorative attractors, long-horizon continuous trajectories compound representational noise until logical coherence degrades.
 
@@ -340,8 +340,8 @@ Its limitations on autonomous general reasoning reflect a category error rather 
 
 For all of human history, fluent natural language was the exclusive signature of mind. When an architecture proved capable of generating human-grade prose, it was natural to assume that fluency implied thought, mistaking an extraordinary sequence compiler for an internal cognitive engine.
 
-Autonomous reasoning will not emerge from running an irreversible, un-garbage-collected next-token predictor across an append-only sequence history. Progress requires architectures that reconcile fluid, reversible search in continuous latent spaces with rigorous error correction against discrete symbolic invariants.
+Autonomous reasoning will not come from running next-token prediction across an append-only sequence window. True problem-solving requires architectures that can explore candidate solutions reversibly in continuous space, prune failed branches without penalty, and verify their steps against concrete symbolic rules.
 
-The transformer does not need to be the mind. It is already the interface: standing at the perimeter of the machine, translating between human expression and internal computation.
+The transformer does not need to serve as the entire reasoning engine. Its enduring value is acting as the interface: translating human prompts into internal representations, and turning verified solutions back into clear, structured language.
 
 Because language is how minds communicate their conclusions to other minds across physical space. It is not the substrate in which thought occurs.
