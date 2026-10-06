@@ -75,7 +75,12 @@ The model then samples a single discrete token index $w_t \in \{1, \dots, |\math
 
 Once a token is sampled, the continuous representation $\mathbf{h}_t$ is discarded from the computation graph. The only information passed forward to step $t+1$ is the categorical token ID. Because token sampling is non-differentiable at inference time, the model cannot backpropagate through intermediate choices or smoothly correct a faulty derivation. The architecture commits to an irreversible discrete choice at every subword token before downstream logical viability can be evaluated.
 
-At the same time, the model lacks the restorative error-correcting properties of digital systems. In a digital circuit, a drifting voltage is snapped back to a rail; in a compiler, an invalid token is rejected by the syntax checker. An autoregressive transformer has no such restorative mechanism. If it generates an incorrect number or invalid premise, that token becomes an immutable part of the sequence history. Subsequent generation must condition on the flawed prefix, compounding the error forward.
+Unlike traditional digital systems, transformers have no mechanism to correct mistakes once they occur:
+
+- In digital circuits, a drifting voltage snaps back to a clean 0 or 1.
+- In a compiler, an invalid token triggers a syntax error and stops execution.
+
+In an autoregressive transformer, there is no such check. If the model outputs a wrong number or an unsound premise, that token is immediately locked into the sequence. Every future step must condition on it, compounding the error through the rest of the generation.
 
 ---
 
