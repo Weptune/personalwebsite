@@ -252,7 +252,7 @@ In formal domains with deterministic verification (such as code compilation or s
 
 When an autoregressive architecture trains recursively on ungrounded synthetic outputs, it encounters **Model Collapse** (Shumailov et al., Nature 2024).
 
-Standard decoding procedures (such as temperature scaling and nucleus sampling) sample primarily from the high-probability central mass of the distribution, truncating or under-sampling low-probability tails where rare vocabulary, subtle edge cases, and domain-specific nuances reside.
+When models generate synthetic text, standard sampling methods (such as nucleus sampling or temperature scaling) naturally favor the most probable tokens. This continuously clips the tails of the distribution, filtering out rare vocabulary, unusual edge cases, and domain-specific nuances.
 
 When a subsequent model fits its parameters to that sampled output, the new distribution reflects only the high-probability core of the parent. Variance contracts ($\text{Var}(p_{n+1}) < \text{Var}(p_n)$), and across successive recursive generations without fresh empirical grounding, information entropy decays toward zero ($H(p_n) \to 0$). Rather than resolving the data shortage, ungrounded synthetic text accelerates distribution collapse.
 
