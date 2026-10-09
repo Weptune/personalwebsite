@@ -2,7 +2,7 @@
 title: the unending bureaucracy present in indian systems
 description: Site inauguration note.
 date: 2026-06-02
-tags: ['rant', 'politics']
+tags: ['politics']
 ---
 
 This is mostly a vent post

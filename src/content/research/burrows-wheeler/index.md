@@ -2,7 +2,7 @@
 title: 'The Burrows Wheeler Transform: Shuffling a String So It Compresses Itself'
 description: 'How rotating and sorting a string produces a rearrangement that clusters its letters together, reverses perfectly, and quietly underpins bzip2 and genome aligners like bowtie and bwa.'
 date: 2026-07-29
-tags: ['algorithms', 'combinatorics', 'bioinformatics', 'compression']
+tags: ['algorithms', 'combinatorics']
 image: './bwt_matrix.png'
 pinned: false
 ---

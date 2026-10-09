@@ -2,7 +2,7 @@
 title: 'Minecraft World Generation as an Invertible Algebraic System'
 description: 'A mathematically rigorous model of Minecraft world generation, showing that all generated features are affine, pseudo-random, and ultimately invertible functions of the seed.'
 date: 2026-05-30
-tags: ['maths', 'cryptography', 'lattices', 'minecraft']
+tags: ['maths', 'cryptography', 'algorithms']
 image: './cover.png'
 pinned: false
 ---

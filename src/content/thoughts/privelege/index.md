@@ -2,7 +2,7 @@
 title: privilege
 description: Site inauguration note.
 date: 2026-04-27
-tags: ['musings', 'politics', 'society']
+tags: ['politics']
 ---
 
 the majority of the time the word "privilege" is brought up, its in a political context. i think that throws people off, and leads them to associate it with a certain narrative or "agenda" at hand, giving the impression that its a tool used to bring down the achievements of those who truly deserve it. i dont disagree that these are real grievances you can have with the term, but allow me to challenge this notion that you might or might not be possessing

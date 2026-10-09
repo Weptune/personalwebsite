@@ -2,14 +2,7 @@
 title: 'are llms a dead end'
 description: 'A first-principles critique of autoregressive sequence modeling: why treating language as the substrate of thought is a category error, why test-time search is not an infinite ladder, and what actually lies beyond the token.'
 date: 2026-09-26
-tags:
-  [
-    'deep-learning',
-    'complexity-theory',
-    'scaling-laws',
-    'linear-algebra',
-    'algorithms',
-  ]
+tags: ['ai', 'algorithms']
 image: './cover.jpg'
 pinned: false
 draft: false

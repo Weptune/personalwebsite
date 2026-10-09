@@ -2,7 +2,7 @@
 title: "let's talk about ai"
 description: "a reflection on ai discourse, scientific breakthroughs, and the corporatization of intelligence"
 date: 2026-09-10
-tags: ['musings', 'ai', 'technology']
+tags: ['ai', 'philosophy']
 ---
 
 this is a topic ive been itching to write about for months now, and finally have the motivation to get to in light of recent events 

@@ -2,7 +2,7 @@
 title: Vanity in Fashion Culture
 description: vanity in fashion culture.
 date: 2026-05-30
-tags: ['musings', 'fashion', 'culture']
+tags: ['culture']
 ---
 
 I have somewhat of a love/hate relationship with fashion

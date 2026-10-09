@@ -2,7 +2,7 @@
 title: DevBlog v1
 description: DevBlog v1
 date: 2026-02-27
-tags: ['meta', 'webdev']
+tags: ['meta']
 ---
 
 Made a ton of changes/additions since I first opened the website, thought I should document them. Hopefully this DevBlog will become a regular series in the future

@@ -2,7 +2,7 @@
 title: 'Visual Cryptography: Encryption You Can Decrypt With Your Bare Eyes'
 description: "A from-first-principles, fully worked breakdown of Naor and Shamir's visual cryptography, how to split a picture into two sheets of pure noise that reveal the original the instant you overlay them, with a real security proof and a real generated example."
 date: 2026-07-05
-tags: ['cryptography', 'information-theory', 'combinatorics', 'maths']
+tags: ['cryptography', 'combinatorics', 'maths']
 image: './demo_composite.png'
 pinned: false
 ---
