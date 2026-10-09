@@ -2,7 +2,7 @@
 title: "Awesome Problems I've Solved"
 description: 'A curated collection of interesting mathematical challenges, step-by-step solutions, and elegant proofs.'
 date: 2026-05-30
-tags: ['maths', 'combinatorics']
+tags: ['combinatorics']
 image: './cover.png'
 pinned: true
 ---

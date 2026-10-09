@@ -2,7 +2,7 @@
 title: 'Building Lattice Reduction (LLL) Intuition'
 description: 'An intuitive, mechanical breakdown of the Lenstra–Lenstra–Lovász (LLL) lattice basis reduction algorithm.'
 date: 2026-05-30
-tags: ['cryptography', 'algorithms', 'maths']
+tags: ['cryptography', 'algorithms']
 image: './gs_compare.png'
 pinned: false
 ---
