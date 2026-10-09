@@ -30,8 +30,24 @@ export async function getAllProjects(): Promise<CollectionEntry<'projects'>[]> {
   })
 }
 
+export type AllWritingEntry =
+  | CollectionEntry<'thoughts'>
+  | CollectionEntry<'maths'>
+  | CollectionEntry<'research'>
+
+export async function getAllWritingPosts(): Promise<AllWritingEntry[]> {
+  const [thoughts, maths, research] = await Promise.all([
+    getAllPosts(),
+    getAllMathsPosts(),
+    getAllResearchPosts(),
+  ])
+  return [...thoughts, ...maths, ...research].sort(
+    (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
+  )
+}
+
 export async function getAllTags(): Promise<Map<string, number>> {
-  const posts = await getAllPosts()
+  const posts = await getAllWritingPosts()
   return posts.reduce((acc, post) => {
     post.data.tags?.forEach((tag) => {
       acc.set(tag, (acc.get(tag) || 0) + 1)
@@ -101,8 +117,8 @@ export async function getAdjacentPosts(currentId: string): Promise<{
 
 export async function getPostsByTag(
   tag: string,
-): Promise<CollectionEntry<'thoughts'>[]> {
-  const posts = await getAllPosts()
+): Promise<AllWritingEntry[]> {
+  const posts = await getAllWritingPosts()
   return posts.filter((post) => post.data.tags?.includes(tag))
 }
 
