@@ -44,7 +44,7 @@ const NAV_CARDS = [
               class:list={[
                 'header-link transition-colors',
                 active
-                  ? 'text-foreground font-medium underline underline-offset-4 decoration-accent/60'
+                  ? 'text-foreground font-medium underline underline-offset-4 decoration-primary/60'
                   : 'text-foreground/60 hover:text-foreground',
               ]}
             >
@@ -70,7 +70,14 @@ const NAV_CARDS = [
     </button>
   </div>
 
-  <!-- Mobile drawer panel (completely covers screen below header with solid background) -->
+  <!-- Mobile backdrop (covers entire screen behind drawer) -->
+  <div
+    id="mobile-menu-backdrop"
+    class="mobile-menu-backdrop min-[840px]:hidden hidden"
+    aria-hidden="true"
+  ></div>
+
+  <!-- Mobile drawer panel (fits content naturally without empty trailing void) -->
   <div
     id="mobile-menu-drawer"
     class="mobile-menu-drawer"
@@ -79,7 +86,7 @@ const NAV_CARDS = [
     aria-modal="true"
   >
     <div class="mobile-menu-content">
-      <div class="flex items-center justify-between mb-3 px-1">
+      <div class="flex items-center justify-between mb-2.5 px-1">
         <span class="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/70">
           navigation
         </span>
@@ -98,7 +105,7 @@ const NAV_CARDS = [
                 class:list={[
                   'mobile-nav-card group relative flex flex-col justify-between p-3 rounded-xl border transition-all duration-200',
                   active
-                    ? 'border-accent/60 bg-accent/15 text-foreground ring-1 ring-accent/40 shadow-sm'
+                    ? 'border-primary/60 bg-primary/15 text-foreground ring-1 ring-primary/40 shadow-sm'
                     : 'border-white/10 bg-white/[0.03] hover:bg-white/[0.08] hover:border-white/20 text-foreground/80 hover:text-foreground',
                 ]}
               >
@@ -107,15 +114,15 @@ const NAV_CARDS = [
                     class:list={[
                       'flex size-7 items-center justify-center rounded-lg border transition-colors',
                       active
-                        ? 'border-accent/40 bg-accent/20 text-accent'
-                        : 'border-white/10 bg-white/[0.04] text-muted-foreground group-hover:text-accent group-hover:border-accent/30',
+                        ? 'border-primary/40 bg-primary/20 text-primary'
+                        : 'border-white/10 bg-white/[0.04] text-muted-foreground group-hover:text-primary group-hover:border-primary/30',
                     ]}
                   >
                     <Icon name={item.icon} class="size-3.5" />
                   </div>
                   {active ? (
-                    <span class="inline-flex items-center gap-1 text-[9px] font-mono text-accent uppercase tracking-wider font-semibold">
-                      <span class="size-1.5 rounded-full bg-accent animate-pulse" />
+                    <span class="inline-flex items-center gap-1 text-[9px] font-mono text-primary uppercase tracking-wider font-semibold">
+                      <span class="size-1.5 rounded-full bg-primary animate-pulse" />
                       here
                     </span>
                   ) : (
@@ -126,7 +133,7 @@ const NAV_CARDS = [
                   )}
                 </div>
                 <div>
-                  <div class="font-medium text-xs tracking-wide lowercase group-hover:text-accent transition-colors">
+                  <div class="font-medium text-xs tracking-wide lowercase group-hover:text-primary transition-colors">
                     {item.label}
                   </div>
                   <div class="text-[10px] text-muted-foreground font-mono mt-0.5">
@@ -140,7 +147,7 @@ const NAV_CARDS = [
       </nav>
 
       <!-- Social links bar -->
-      <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between px-1">
+      <div class="mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between px-1">
         <span class="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/70">
           connect
         </span>
@@ -152,7 +159,7 @@ const NAV_CARDS = [
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={social.label}
-                class="flex size-7 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] text-muted-foreground hover:text-foreground hover:border-accent/40 hover:bg-white/[0.08] transition-all"
+                class="flex size-7 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-white/[0.08] transition-all"
               >
                 <Icon name={ICON_MAP[social.label]} class="size-3.5" />
               </a>
@@ -173,7 +180,7 @@ const NAV_CARDS = [
 
   /* When mobile menu is open, make the top bar solidly opaque */
   .header-wrapper.is-open {
-    background-color: #07080c !important;
+    background-color: var(--background, #08090e) !important;
   }
 
   .header-container {
@@ -228,24 +235,48 @@ const NAV_CARDS = [
     border-color: var(--color-border);
   }
 
+  /* Dynamic theme accent styling for the active close button */
   .mobile-menu-btn.is-active {
-    border-color: var(--accent, #a78bfa);
-    background-color: color-mix(in oklab, var(--accent, #a78bfa) 20%, transparent);
-    color: var(--foreground);
-    box-shadow: 0 0 12px -2px rgba(167, 139, 250, 0.3);
+    border-color: var(--primary);
+    background-color: color-mix(in oklab, var(--primary) 15%, transparent);
+    color: var(--primary);
+    box-shadow: 0 0 14px -2px color-mix(in oklab, var(--primary) 35%, transparent);
   }
 
-  /* Mobile drawer: Solid, completely opaque, full-viewport height below header */
+  /* Mobile backdrop (dimmed overlay over page) */
+  .mobile-menu-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 40;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .mobile-menu-backdrop.is-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Mobile drawer: Natural height wrapping content cleanly */
   .mobile-menu-drawer {
     position: absolute;
     top: 100%;
     left: 0;
     right: 0;
     width: 100%;
-    height: calc(100dvh - 100%);
-    background-color: #07080c;
+    height: auto;
+    max-height: calc(100dvh - 54px);
+    background-color: var(--background, #08090e);
     border-top: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.9);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 25px 50px -10px rgba(0, 0, 0, 0.85);
     transform: translateY(-8px);
     opacity: 0;
     pointer-events: none;
@@ -265,7 +296,7 @@ const NAV_CARDS = [
     max-width: 480px;
     margin-left: auto;
     margin-right: auto;
-    padding: 1rem 1rem 2.5rem;
+    padding: 0.75rem 1rem 1rem;
   }
 
   /* Desktop breakpoint (>= 840px): show desktop nav, hide mobile elements */
@@ -288,6 +319,7 @@ const NAV_CARDS = [
     }
 
     .mobile-menu-btn,
+    .mobile-menu-backdrop,
     .mobile-menu-drawer {
       display: none !important;
     }
@@ -311,6 +343,7 @@ const NAV_CARDS = [
     const headerWrapper = document.getElementById('header-wrapper')
     const toggleBtn = document.getElementById('mobile-menu-toggle')
     const drawer = document.getElementById('mobile-menu-drawer')
+    const backdrop = document.getElementById('mobile-menu-backdrop')
     const openIcon = toggleBtn?.querySelector('.menu-icon-open')
     const closeIcon = toggleBtn?.querySelector('.menu-icon-close')
     const btnText = toggleBtn?.querySelector('.mobile-menu-btn-text')
@@ -323,11 +356,18 @@ const NAV_CARDS = [
       isOpen = true
       headerWrapper?.classList.add('is-open')
       drawer?.classList.add('is-open')
+      if (backdrop) {
+        backdrop.classList.remove('hidden')
+        requestAnimationFrame(() => {
+          backdrop.classList.add('is-open')
+        })
+      }
       toggleBtn?.classList.add('is-active')
       toggleBtn?.setAttribute('aria-expanded', 'true')
       openIcon?.classList.add('hidden')
       closeIcon?.classList.remove('hidden')
       if (btnText) btnText.textContent = 'close'
+      document.documentElement.style.overflow = 'hidden'
       document.body.style.overflow = 'hidden'
     }
 
@@ -335,11 +375,18 @@ const NAV_CARDS = [
       isOpen = false
       headerWrapper?.classList.remove('is-open')
       drawer?.classList.remove('is-open')
+      if (backdrop) {
+        backdrop.classList.remove('is-open')
+        setTimeout(() => {
+          if (!isOpen) backdrop.classList.add('hidden')
+        }, 200)
+      }
       toggleBtn?.classList.remove('is-active')
       toggleBtn?.setAttribute('aria-expanded', 'false')
       openIcon?.classList.remove('hidden')
       closeIcon?.classList.add('hidden')
       if (btnText) btnText.textContent = 'menu'
+      document.documentElement.style.overflow = ''
       document.body.style.overflow = ''
     }
 
@@ -357,12 +404,29 @@ const NAV_CARDS = [
       toggleMenu()
     }
 
+    // Backdrop click closes
+    if (backdrop) {
+      backdrop.onclick = () => {
+        if (isOpen) closeMenu()
+      }
+    }
+
     // Close on any mobile nav link click
     drawer.querySelectorAll('a').forEach((link) => {
       link.onclick = () => {
         closeMenu()
       }
     })
+
+    // Close on outside click
+    const handleDocumentClick = (e: MouseEvent) => {
+      if (!isOpen) return
+      const target = e.target as HTMLElement
+      if (!drawer.contains(target) && !toggleBtn.contains(target)) {
+        closeMenu()
+      }
+    }
+    document.addEventListener('click', handleDocumentClick)
 
     // Close on Escape key
     const handleKeydown = (e: KeyboardEvent) => {
@@ -385,6 +449,7 @@ const NAV_CARDS = [
       'astro:before-swap',
       () => {
         closeMenu()
+        document.removeEventListener('click', handleDocumentClick)
         document.removeEventListener('keydown', handleKeydown)
         window.removeEventListener('resize', handleResize)
       },
