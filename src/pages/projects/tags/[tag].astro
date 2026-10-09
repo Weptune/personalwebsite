@@ -5,10 +5,18 @@ import PageHead from '@/components/PageHead.astro'
 import ProjectCard from '@/components/ProjectCard.astro'
 import Search from '@/components/Search'
 import Layout from '@/layouts/Layout.astro'
-import { getAllProjects, getProjectsTags } from '@/lib/data-utils'
+import { getProjectsByTag, getProjectsTags } from '@/lib/data-utils'
 import { Icon } from 'astro-icon/components'
 
-const projects = await getAllProjects()
+export async function getStaticPaths() {
+  const projectsTags = await getProjectsTags()
+  return projectsTags.map(({ tag }) => ({
+    params: { tag },
+  }))
+}
+
+const { tag } = Astro.params as { tag: string }
+const projects = await getProjectsByTag(tag)
 const projectsTags = await getProjectsTags()
 
 const projectsSearchData = projects.map((project) => ({
@@ -22,16 +30,21 @@ const projectsSearchData = projects.map((project) => ({
 <Layout class="max-w-3xl">
   <PageHead
     slot="head"
-    title="Projects"
-    description="Things I’ve built, broken, and slowly put back together."
+    title={`Projects tagged with #${tag}`}
+    description={`Projects tagged with #${tag}.`}
   />
-  <Breadcrumbs items={[{ label: 'Projects', icon: 'lucide:folder-kanban' }]} />
+  <Breadcrumbs
+    items={[
+      { label: 'Projects', href: '/projects', icon: 'lucide:folder-kanban' },
+      { label: `#${tag}`, icon: 'lucide:tag' },
+    ]}
+  />
 
   <div class="mb-8 flex flex-col gap-3">
     <Search
       client:load
       items={projectsSearchData}
-      placeholder="Search projects..."
+      placeholder={`Search #${tag} projects...`}
     />
     {
       projectsTags.length > 0 && (
@@ -40,13 +53,17 @@ const projectsSearchData = projects.map((project) => ({
             <Icon name="lucide:tags" class="size-3" />
             tags:
           </span>
-          {projectsTags.map(({ tag, count }) => (
+          {projectsTags.map(({ tag: t, count }) => (
             <Link
-              href={`/projects/tags/${tag}`}
-              class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full border border-border/40 bg-secondary/30 text-muted-foreground hover:text-foreground hover:border-accent/50 hover:bg-secondary/60 transition-all font-mono text-[11px]"
+              href={t === tag ? '/projects' : `/projects/tags/${t}`}
+              class={
+                t === tag
+                  ? 'inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full border border-primary/60 bg-primary/20 text-foreground font-semibold ring-1 ring-primary/40 transition-all font-mono text-[11px]'
+                  : 'inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full border border-border/40 bg-secondary/30 text-muted-foreground hover:text-foreground hover:border-accent/50 hover:bg-secondary/60 transition-all font-mono text-[11px]'
+              }
             >
               <span class="text-accent/80 font-mono">#</span>
-              <span>{tag}</span>
+              <span>{t}</span>
               <span class="text-[10px] text-muted-foreground/60 ml-0.5">({count})</span>
             </Link>
           ))}
@@ -59,8 +76,7 @@ const projectsSearchData = projects.map((project) => ({
     {
       projects.length === 0 ? (
         <p class="text-muted-foreground text-sm">
-          No projects published yet. Add entries under <code>src/content/projects</code> to
-          have them appear here.
+          No projects found tagged with #{tag}.
         </p>
       ) : (
         projects.map((project) => <ProjectCard project={project} />)

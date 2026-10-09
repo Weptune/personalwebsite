@@ -47,18 +47,10 @@ export async function getAllWritingPosts(): Promise<AllWritingEntry[]> {
 }
 
 export async function getAllTags(): Promise<Map<string, number>> {
-  const [posts, projects] = await Promise.all([
-    getAllWritingPosts(),
-    getAllProjects(),
-  ])
+  const posts = await getAllWritingPosts()
   const tagCounts = new Map<string, number>()
   posts.forEach((post) => {
     post.data.tags?.forEach((tag) => {
-      tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1)
-    })
-  })
-  projects.forEach((project) => {
-    project.data.tags?.forEach((tag) => {
       tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1)
     })
   })
