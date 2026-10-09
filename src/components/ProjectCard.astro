@@ -1,6 +1,5 @@
 ---
 import Link from '@/components/Link.astro'
-import { Badge } from '@/components/ui/badge'
 import { formatDate } from '@/lib/utils'
 import { Icon } from 'astro-icon/components'
 import { Image } from 'astro:assets'
@@ -64,13 +63,14 @@ const { project } = Astro.props
       <div class="flex flex-wrap items-center gap-1.5 pt-2 border-t border-border/25">
         <Icon name="lucide:tags" class="size-3 text-muted-foreground/60 mr-0.5 shrink-0" />
         {project.data.tags.map((tag: string) => (
-          <Link
-            href={`/tags/${tag}`}
-            class="inline-flex items-center gap-0.5 text-[11px] font-mono px-2 py-0.5 rounded-full border border-border/40 bg-secondary/30 text-muted-foreground hover:text-foreground hover:border-accent/50 hover:bg-secondary/60 transition-all duration-200"
+          <a
+            href={`/projects?tag=${tag}`}
+            data-card-tag={tag}
+            class="inline-flex items-center gap-0.5 text-[11px] font-mono px-2 py-0.5 rounded-full border border-border/40 bg-secondary/30 text-muted-foreground hover:text-foreground hover:border-accent/50 hover:bg-secondary/60 transition-all duration-200 cursor-pointer"
           >
             <span class="text-accent/80 font-mono">#</span>
             {tag}
-          </Link>
+          </a>
         ))}
       </div>
     )

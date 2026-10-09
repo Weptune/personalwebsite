@@ -1,6 +1,5 @@
 ---
 import Breadcrumbs from '@/components/Breadcrumbs.astro'
-import Link from '@/components/Link.astro'
 import PageHead from '@/components/PageHead.astro'
 import ProjectCard from '@/components/ProjectCard.astro'
 import Search from '@/components/Search'
@@ -27,7 +26,7 @@ const projectsSearchData = projects.map((project) => ({
   />
   <Breadcrumbs items={[{ label: 'Projects', icon: 'lucide:folder-kanban' }]} />
 
-  <div class="mb-8 flex flex-col gap-3">
+  <div class="mb-6 flex flex-col gap-3">
     <Search
       client:load
       items={projectsSearchData}
@@ -35,27 +34,51 @@ const projectsSearchData = projects.map((project) => ({
     />
     {
       projectsTags.length > 0 && (
-        <div class="flex flex-wrap items-center gap-1.5 text-xs">
+        <div class="flex flex-wrap items-center gap-1.5 text-xs" id="projects-tag-bar">
           <span class="text-muted-foreground font-mono flex items-center gap-1 mr-1 text-[11px]">
             <Icon name="lucide:tags" class="size-3" />
             tags:
           </span>
+          <button
+            type="button"
+            data-tag="all"
+            class="project-tag-filter is-active inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full border border-primary/60 bg-primary/20 text-foreground font-semibold ring-1 ring-primary/40 transition-all font-mono text-[11px] cursor-pointer"
+          >
+            <span>all</span>
+            <span class="text-[10px] text-muted-foreground/80 ml-0.5">({projects.length})</span>
+          </button>
           {projectsTags.map(({ tag, count }) => (
-            <Link
-              href={`/tags/${tag}`}
-              class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full border border-border/40 bg-secondary/30 text-muted-foreground hover:text-foreground hover:border-accent/50 hover:bg-secondary/60 transition-all font-mono text-[11px]"
+            <button
+              type="button"
+              data-tag={tag}
+              class="project-tag-filter inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full border border-border/40 bg-secondary/30 text-muted-foreground hover:text-foreground hover:border-accent/50 hover:bg-secondary/60 transition-all font-mono text-[11px] cursor-pointer"
             >
               <span class="text-accent/80 font-mono">#</span>
               <span>{tag}</span>
               <span class="text-[10px] text-muted-foreground/60 ml-0.5">({count})</span>
-            </Link>
+            </button>
           ))}
         </div>
       )
     }
   </div>
 
-  <section class="flex flex-col gap-4 fade-in-up-soft">
+  <!-- Filter status bar (shown when a specific tag is active) -->
+  <div
+    id="projects-filter-status"
+    class="hidden mb-4 items-center justify-between text-xs font-mono text-muted-foreground bg-secondary/20 border border-border/30 rounded-lg px-3 py-1.5"
+  >
+    <span id="projects-filter-label"></span>
+    <button
+      type="button"
+      id="projects-filter-reset"
+      class="hover:text-foreground text-accent/90 underline underline-offset-4 cursor-pointer transition-colors"
+    >
+      clear filter
+    </button>
+  </div>
+
+  <section class="flex flex-col gap-4 fade-in-up-soft" id="projects-list">
     {
       projects.length === 0 ? (
         <p class="text-muted-foreground text-sm">
@@ -63,9 +86,169 @@ const projectsSearchData = projects.map((project) => ({
           have them appear here.
         </p>
       ) : (
-        projects.map((project) => <ProjectCard project={project} />)
+        projects.map((project) => (
+          <div
+            data-project-item
+            data-tags={JSON.stringify(project.data.tags || [])}
+          >
+            <ProjectCard project={project} />
+          </div>
+        ))
       )
     }
   </section>
+
+  <!-- Empty state if filter has no results -->
+  <div
+    id="projects-empty-state"
+    class="hidden py-12 text-center text-muted-foreground text-sm font-mono"
+  >
+    No projects found matching the selected tag.
+  </div>
 </Layout>
+
+<script>
+  function setupProjectTagFilter() {
+    const tagButtons = document.querySelectorAll<HTMLButtonElement>('.project-tag-filter')
+    const projectItems = document.querySelectorAll<HTMLElement>('[data-project-item]')
+    const filterStatus = document.getElementById('projects-filter-status')
+    const filterLabel = document.getElementById('projects-filter-label')
+    const filterReset = document.getElementById('projects-filter-reset')
+    const emptyState = document.getElementById('projects-empty-state')
+
+    if (!tagButtons.length || !projectItems.length) return
+
+    function applyFilter(selectedTag: string, updateUrl = true) {
+      const isAll = !selectedTag || selectedTag === 'all'
+
+      // Update button active states
+      tagButtons.forEach((btn) => {
+        const btnTag = btn.dataset.tag
+        if ((isAll && btnTag === 'all') || (!isAll && btnTag === selectedTag)) {
+          btn.classList.add(
+            'is-active',
+            'border-primary/60',
+            'bg-primary/20',
+            'text-foreground',
+            'font-semibold',
+            'ring-1',
+            'ring-primary/40'
+          )
+          btn.classList.remove(
+            'border-border/40',
+            'bg-secondary/30',
+            'text-muted-foreground'
+          )
+        } else {
+          btn.classList.remove(
+            'is-active',
+            'border-primary/60',
+            'bg-primary/20',
+            'text-foreground',
+            'font-semibold',
+            'ring-1',
+            'ring-primary/40'
+          )
+          btn.classList.add(
+            'border-border/40',
+            'bg-secondary/30',
+            'text-muted-foreground'
+          )
+        }
+      })
+
+      // Filter cards
+      let visibleCount = 0
+      projectItems.forEach((item) => {
+        if (isAll) {
+          item.style.display = ''
+          visibleCount++
+        } else {
+          try {
+            const itemTags: string[] = JSON.parse(item.dataset.tags || '[]')
+            if (itemTags.includes(selectedTag)) {
+              item.style.display = ''
+              visibleCount++
+            } else {
+              item.style.display = 'none'
+            }
+          } catch {
+            item.style.display = ''
+            visibleCount++
+          }
+        }
+      })
+
+      // Update status banner
+      if (filterStatus && filterLabel) {
+        if (isAll) {
+          filterStatus.classList.add('hidden')
+          filterStatus.classList.remove('flex')
+        } else {
+          filterLabel.textContent = `showing projects tagged with #${selectedTag} (${visibleCount})`
+          filterStatus.classList.remove('hidden')
+          filterStatus.classList.add('flex')
+        }
+      }
+
+      // Empty state
+      if (emptyState) {
+        if (visibleCount === 0) {
+          emptyState.classList.remove('hidden')
+        } else {
+          emptyState.classList.add('hidden')
+        }
+      }
+
+      // Sync URL
+      if (updateUrl) {
+        const url = new URL(window.location.href)
+        if (isAll) {
+          url.searchParams.delete('tag')
+        } else {
+          url.searchParams.set('tag', selectedTag)
+        }
+        window.history.replaceState({}, '', url.toString())
+      }
+    }
+
+    // Attach click handlers to tag filter buttons
+    tagButtons.forEach((btn) => {
+      btn.onclick = () => {
+        const tag = btn.dataset.tag || 'all'
+        // Clicking active tag toggles off to 'all'
+        if (btn.classList.contains('is-active') && tag !== 'all') {
+          applyFilter('all')
+        } else {
+          applyFilter(tag)
+        }
+      }
+    })
+
+    // Reset button
+    if (filterReset) {
+      filterReset.onclick = () => applyFilter('all')
+    }
+
+    // Also support clicking tag pills inside ProjectCard
+    document.querySelectorAll<HTMLElement>('[data-card-tag]').forEach((el) => {
+      el.onclick = (e) => {
+        e.preventDefault()
+        const tag = el.dataset.cardTag
+        if (tag) applyFilter(tag)
+      }
+    })
+
+    // Initialize from URL search params if present
+    const params = new URLSearchParams(window.location.search)
+    const initialTag = params.get('tag')
+    if (initialTag) {
+      applyFilter(initialTag, false)
+    }
+  }
+
+  // Setup on page load and on Astro view transition navigation
+  setupProjectTagFilter()
+  document.addEventListener('astro:page-load', setupProjectTagFilter)
+</script>
 
