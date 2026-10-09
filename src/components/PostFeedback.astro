@@ -24,9 +24,16 @@ const INITIAL_LIKES_MAP: Record<string, number> = {
   'maths/spectral-graph-theory': 15,
   'maths/visual-cryptography': 19,
   'maths/the-math-of-transformers': 12,
+  'research/are-llms-a-dead-end': 12,
+  'research/the-math-of-transformers': 12,
+  'research/visual-cryptography': 19,
+  'research/minecraft-seed-generation': 15,
+  'research/burrows-wheeler': 18,
 }
 
-const initialCount = INITIAL_LIKES_MAP[postId] ?? (postId.startsWith('maths/') ? 12 : 5)
+const initialCount =
+  INITIAL_LIKES_MAP[postId] ??
+  (postId.startsWith('maths/') || postId.startsWith('research/') ? 12 : 5)
 ---
 
 <div
@@ -247,9 +254,16 @@ const initialCount = INITIAL_LIKES_MAP[postId] ?? (postId.startsWith('maths/') ?
       'maths/minecraft-seed-generation': 15,
       'maths/spectral-graph-theory': 15,
       'maths/visual-cryptography': 19,
+      'research/are-llms-a-dead-end': 12,
+      'research/the-math-of-transformers': 12,
+      'research/visual-cryptography': 19,
+      'research/minecraft-seed-generation': 15,
+      'research/burrows-wheeler': 18,
     }
 
-    const baseLikes = INITIAL_LIKES[postId] ?? (postId.startsWith('maths/') ? 12 : 5)
+    const baseLikes =
+      INITIAL_LIKES[postId] ??
+      (postId.startsWith('maths/') || postId.startsWith('research/') ? 12 : 5)
     let currentLikes = baseLikes
     let isLiked = false
     let savedLikeId: string | null = null

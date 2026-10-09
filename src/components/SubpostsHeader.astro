@@ -6,7 +6,7 @@ import { Icon } from 'astro-icon/components'
 
 interface Props {
   parentId?: string
-  collection?: 'thoughts' | 'maths'
+  collection?: 'thoughts' | 'maths' | 'research'
 }
 
 const { parentId, collection = 'thoughts' } = Astro.props
@@ -14,11 +14,36 @@ const currentPostId = Astro.params.id as string
 const isCurrentSubpost = isSubpost(currentPostId)
 const rootParentId = (isCurrentSubpost ? getParentId(currentPostId) : parentId) || ''
 
-const getPostById = collection === 'thoughts' ? dataUtils.getPostById : dataUtils.getMathsPostById
-const getSubpostsForParent = collection === 'thoughts' ? dataUtils.getSubpostsForParent : dataUtils.getSubpostsForMathsParent
-const getParentPost = collection === 'thoughts' ? dataUtils.getParentPost : dataUtils.getParentMathsPost
-const getPostReadingTime = collection === 'thoughts' ? dataUtils.getPostReadingTime : dataUtils.getMathsPostReadingTime
-const getCombinedReadingTime = collection === 'thoughts' ? dataUtils.getCombinedReadingTime : dataUtils.getMathsCombinedReadingTime
+const getPostById =
+  collection === 'thoughts'
+    ? dataUtils.getPostById
+    : collection === 'maths'
+      ? dataUtils.getMathsPostById
+      : dataUtils.getResearchPostById
+const getSubpostsForParent =
+  collection === 'thoughts'
+    ? dataUtils.getSubpostsForParent
+    : collection === 'maths'
+      ? dataUtils.getSubpostsForMathsParent
+      : dataUtils.getSubpostsForResearchParent
+const getParentPost =
+  collection === 'thoughts'
+    ? dataUtils.getParentPost
+    : collection === 'maths'
+      ? dataUtils.getParentMathsPost
+      : dataUtils.getParentResearchPost
+const getPostReadingTime =
+  collection === 'thoughts'
+    ? dataUtils.getPostReadingTime
+    : collection === 'maths'
+      ? dataUtils.getMathsPostReadingTime
+      : dataUtils.getResearchPostReadingTime
+const getCombinedReadingTime =
+  collection === 'thoughts'
+    ? dataUtils.getCombinedReadingTime
+    : collection === 'maths'
+      ? dataUtils.getMathsCombinedReadingTime
+      : dataUtils.getResearchCombinedReadingTime
 
 const currentPost = !isCurrentSubpost ? await getPostById(currentPostId) : null
 const subposts = await getSubpostsForParent(rootParentId)

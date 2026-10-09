@@ -80,4 +80,21 @@ const maths = defineCollection({
     }),
 })
 
-export const collections = { thoughts, projects, albums, movies, maths }
+const research = defineCollection({
+  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/research' }),
+  schema: ({ image }) =>
+    z.object({
+      title: z.string(),
+      description: z.string(),
+      date: z.coerce.date(),
+      order: z.number().optional(),
+      image: image().optional(),
+      tags: z.array(z.string()).optional(),
+      authors: z.array(z.string()).optional(),
+      draft: z.boolean().optional(),
+      pinned: z.boolean().optional(),
+      readingTimeOverride: z.string().optional(),
+    }),
+})
+
+export const collections = { thoughts, projects, albums, movies, maths, research }

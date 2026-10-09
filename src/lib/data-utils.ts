@@ -616,3 +616,241 @@ export async function getMathsTOCSections(postId: string): Promise<TOCSection[]>
 
   return sections
 }
+
+/* Research Collection Helpers */
+
+export async function getAllResearchPosts(): Promise<CollectionEntry<'research'>[]> {
+  const posts = await getCollection('research')
+  return posts
+    .filter((post) => !post.data.draft && !isSubpost(post.id))
+    .sort((a, b) => {
+      const pinA = a.data.pinned ? 1 : 0
+      const pinB = b.data.pinned ? 1 : 0
+      if (pinA !== pinB) return pinB - pinA
+      return b.data.date.valueOf() - a.data.date.valueOf()
+    })
+}
+
+export async function getAllResearchPostsAndSubposts(): Promise<
+  CollectionEntry<'research'>[]
+> {
+  const posts = await getCollection('research')
+  return posts
+    .filter((post) => !post.data.draft)
+    .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
+}
+
+export async function getAdjacentResearchPosts(currentId: string): Promise<{
+  newer: CollectionEntry<'research'> | null
+  older: CollectionEntry<'research'> | null
+  parent: CollectionEntry<'research'> | null
+}> {
+  const allPosts = await getAllResearchPosts()
+
+  if (isSubpost(currentId)) {
+    const parentId = getParentId(currentId)
+    const allPosts = await getAllResearchPosts()
+    const parent = allPosts.find((post) => post.id === parentId) || null
+
+    const posts = await getCollection('research')
+    const subposts = posts
+      .filter(
+        (post) =>
+          isSubpost(post.id) &&
+          getParentId(post.id) === parentId &&
+          !post.data.draft,
+      )
+      .sort((a, b) => {
+        const dateDiff = a.data.date.valueOf() - b.data.date.valueOf()
+        if (dateDiff !== 0) return dateDiff
+
+        const orderA = a.data.order ?? 0
+        const orderB = b.data.order ?? 0
+        return orderA - orderB
+      })
+
+    const currentIndex = subposts.findIndex((post) => post.id === currentId)
+    if (currentIndex === -1) {
+      return { newer: null, older: null, parent }
+    }
+
+    return {
+      newer:
+        currentIndex < subposts.length - 1 ? subposts[currentIndex + 1] : null,
+      older: currentIndex > 0 ? subposts[currentIndex - 1] : null,
+      parent,
+    }
+  }
+
+  const parentPosts = allPosts.filter((post) => !isSubpost(post.id))
+  const currentIndex = parentPosts.findIndex((post) => post.id === currentId)
+
+  if (currentIndex === -1) {
+    return { newer: null, older: null, parent: null }
+  }
+
+  return {
+    newer: currentIndex > 0 ? parentPosts[currentIndex - 1] : null,
+    older:
+      currentIndex < parentPosts.length - 1
+        ? parentPosts[currentIndex + 1]
+        : null,
+    parent: null,
+  }
+}
+
+export async function getResearchPostsByTag(
+  tag: string,
+): Promise<CollectionEntry<'research'>[]> {
+  const posts = await getAllResearchPosts()
+  return posts.filter((post) => post.data.tags?.includes(tag))
+}
+
+export async function getRecentResearchPosts(
+  count: number,
+): Promise<CollectionEntry<'research'>[]> {
+  const posts = await getAllResearchPosts()
+  return posts.slice(0, count)
+}
+
+export async function getSubpostsForResearchParent(
+  parentId: string,
+): Promise<CollectionEntry<'research'>[]> {
+  const posts = await getCollection('research')
+  return posts
+    .filter(
+      (post) =>
+        !post.data.draft &&
+        isSubpost(post.id) &&
+        getParentId(post.id) === parentId,
+    )
+    .sort((a, b) => {
+      const dateDiff = a.data.date.valueOf() - b.data.date.valueOf()
+      if (dateDiff !== 0) return dateDiff
+
+      const orderA = a.data.order ?? 0
+      const orderB = b.data.order ?? 0
+      return orderA - orderB
+    })
+}
+
+export function groupResearchPostsByYear(
+  posts: CollectionEntry<'research'>[],
+): Record<string, CollectionEntry<'research'>[]> {
+  return posts.reduce(
+    (acc: Record<string, CollectionEntry<'research'>[]>, post) => {
+      const year = post.data.date.getFullYear().toString()
+      ;(acc[year] ??= []).push(post)
+      return acc
+    },
+    {},
+  )
+}
+
+export async function hasResearchSubposts(postId: string): Promise<boolean> {
+  const subposts = await getSubpostsForResearchParent(postId)
+  return subposts.length > 0
+}
+
+export async function getParentResearchPost(
+  subpostId: string,
+): Promise<CollectionEntry<'research'> | null> {
+  if (!isSubpost(subpostId)) {
+    return null
+  }
+
+  const parentId = getParentId(subpostId)
+  const allPosts = await getAllResearchPosts()
+  return allPosts.find((post) => post.id === parentId) || null
+}
+
+export async function getResearchPostById(
+  postId: string,
+): Promise<CollectionEntry<'research'> | null> {
+  const allPosts = await getAllResearchPostsAndSubposts()
+  return allPosts.find((post) => post.id === postId) || null
+}
+
+export async function getResearchSubpostCount(parentId: string): Promise<number> {
+  const subposts = await getSubpostsForResearchParent(parentId)
+  return subposts.length
+}
+
+export async function getResearchCombinedReadingTime(postId: string): Promise<string> {
+  const post = await getResearchPostById(postId)
+  if (!post) return readingTime(0, 60)
+
+  if (post.data.readingTimeOverride) {
+    return post.data.readingTimeOverride
+  }
+
+  let totalWords = calculateWordCountFromHtml(post.body)
+
+  if (!isSubpost(postId)) {
+    const subposts = await getSubpostsForResearchParent(postId)
+    for (const subpost of subposts) {
+      totalWords += calculateWordCountFromHtml(subpost.body)
+    }
+  }
+
+  return readingTime(totalWords, 60)
+}
+
+export async function getResearchPostReadingTime(postId: string): Promise<string> {
+  const post = await getResearchPostById(postId)
+  if (!post) return readingTime(0, 60)
+
+  if (post.data.readingTimeOverride) {
+    return post.data.readingTimeOverride
+  }
+
+  const wordCount = calculateWordCountFromHtml(post.body)
+  return readingTime(wordCount, 60)
+}
+
+export async function getResearchTOCSections(postId: string): Promise<TOCSection[]> {
+  const post = await getResearchPostById(postId)
+  if (!post) return []
+
+  const parentId = isSubpost(postId) ? getParentId(postId) : postId
+  const parentPost = isSubpost(postId) ? await getResearchPostById(parentId) : post
+
+  if (!parentPost) return []
+
+  const sections: TOCSection[] = []
+
+  const { headings: parentHeadings } = await render(parentPost)
+  const cleanedParentHeadings = cleanAstroHeadings(parentPost.body, parentHeadings)
+  if (cleanedParentHeadings.length > 0) {
+    sections.push({
+      type: 'parent',
+      title: 'Overview',
+      headings: cleanedParentHeadings.map((heading) => ({
+        slug: heading.slug,
+        text: heading.text,
+        depth: heading.depth,
+      })),
+    })
+  }
+
+  const subposts = await getSubpostsForResearchParent(parentId)
+  for (const subpost of subposts) {
+    const { headings: subpostHeadings } = await render(subpost)
+    const cleanedSubpostHeadings = cleanAstroHeadings(subpost.body, subpostHeadings)
+    if (cleanedSubpostHeadings.length > 0) {
+      sections.push({
+        type: 'subpost',
+        title: subpost.data.title,
+        headings: cleanedSubpostHeadings.map((heading, index) => ({
+          slug: heading.slug,
+          text: heading.text,
+          depth: heading.depth,
+          isSubpostTitle: index === 0,
+        })),
+        subpostId: subpost.id,
+      })
+    }
+  }
+
+  return sections
+}

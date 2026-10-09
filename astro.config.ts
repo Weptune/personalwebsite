@@ -21,6 +21,13 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   site: 'https://astro-erudite.vercel.app',
+  redirects: {
+    '/maths/the-math-of-transformers': '/research/are-llms-a-dead-end',
+    '/maths/are-llms-a-dead-end': '/research/are-llms-a-dead-end',
+    '/maths/visual-cryptography': '/research/visual-cryptography',
+    '/maths/minecraft-seed-generation': '/research/minecraft-seed-generation',
+    '/maths/burrows-wheeler': '/research/burrows-wheeler',
+  },
   integrations: [mdx(), react(), sitemap(), icon()],
   vite: {
     plugins: [tailwindcss()],

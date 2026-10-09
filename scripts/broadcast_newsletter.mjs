@@ -21,8 +21,8 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY
 const FROM_EMAIL = process.env.NEWSLETTER_FROM_EMAIL || 'weptune <newsletter@weptune.dev>'
 const SITE_URL = process.env.SITE_URL || 'https://weptune.dev'
 
-// Allowed collections strictly limited to thoughts and maths write-ups
-const ALLOWED_COLLECTIONS = ['thoughts', 'maths']
+// Allowed collections strictly limited to thoughts, maths, and research write-ups
+const ALLOWED_COLLECTIONS = ['thoughts', 'maths', 'research']
 
 import { execSync } from 'child_process'
 
@@ -57,13 +57,16 @@ function findLatestPostFromGitDiff() {
 
     const matchedFile = diffFiles.find(
       (f) =>
-        (f.startsWith('src/content/thoughts/') || f.startsWith('src/content/maths/')) &&
+        (f.startsWith('src/content/thoughts/') ||
+          f.startsWith('src/content/maths/') ||
+          f.startsWith('src/content/research/')) &&
         (f.endsWith('.md') || f.endsWith('.mdx'))
     )
 
     if (matchedFile && fs.existsSync(matchedFile)) {
       const isMaths = matchedFile.startsWith('src/content/maths/')
-      const collection = isMaths ? 'maths' : 'thoughts'
+      const isResearch = matchedFile.startsWith('src/content/research/')
+      const collection = isResearch ? 'research' : isMaths ? 'maths' : 'thoughts'
       const baseDir = `src/content/${collection}`
       const relPath = path.relative(baseDir, matchedFile).replace(/\\/g, '/')
       const slug = relPath.replace(/\.(md|mdx)$/, '').replace(/\/index$/, '')
