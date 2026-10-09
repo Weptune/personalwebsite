@@ -12,19 +12,19 @@ function isActive(href: string) {
   return currentPath.startsWith(href)
 }
 
-const NAV_ICONS: Record<string, string> = {
-  '/albums': 'lucide:disc',
-  '/movies': 'lucide:film',
-  '/thoughts': 'lucide:library-big',
-  '/maths': 'lucide:binary',
-  '/research': 'lucide:flask-conical',
-  '/projects': 'lucide:folder-kanban',
-  '/guestbook': 'lucide:message-square',
-  '/about': 'lucide:user',
-}
+const NAV_CARDS = [
+  { href: '/thoughts', label: 'thoughts', icon: 'lucide:library-big', hint: 'essays & writing' },
+  { href: '/maths', label: 'maths', icon: 'lucide:binary', hint: 'derivations & notes' },
+  { href: '/research', label: 'research', icon: 'lucide:flask-conical', hint: 'deep dives & papers' },
+  { href: '/projects', label: 'projects', icon: 'lucide:folder-kanban', hint: 'code & experiments' },
+  { href: '/albums', label: 'album reviews', icon: 'lucide:disc', hint: 'music archive' },
+  { href: '/movies', label: 'movie reviews', icon: 'lucide:film', hint: 'cinema ratings' },
+  { href: '/about', label: 'about me', icon: 'lucide:user', hint: 'bio & background' },
+  { href: '/guestbook', label: 'guestbook', icon: 'lucide:message-square', hint: 'leave a note' },
+]
 ---
 
-<div class="header-wrapper">
+<div class="header-wrapper" id="header-wrapper">
   <div class="header-container">
     <Link href="/" class="header-logo">
       <Image src={logo} alt="Logo" class="size-5 shrink-0 sm:size-6" />
@@ -70,14 +70,7 @@ const NAV_ICONS: Record<string, string> = {
     </button>
   </div>
 
-  <!-- Mobile backdrop -->
-  <div
-    id="mobile-menu-backdrop"
-    class="mobile-menu-backdrop"
-    aria-hidden="true"
-  ></div>
-
-  <!-- Mobile drawer panel -->
+  <!-- Mobile drawer panel (completely covers screen below header with solid background) -->
   <div
     id="mobile-menu-drawer"
     class="mobile-menu-drawer"
@@ -86,60 +79,69 @@ const NAV_ICONS: Record<string, string> = {
     aria-modal="true"
   >
     <div class="mobile-menu-content">
-      <div class="flex items-center justify-between mb-2 px-1">
-        <span class="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">
+      <div class="flex items-center justify-between mb-3 px-1">
+        <span class="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/70">
           navigation
         </span>
         <span class="text-[10px] font-mono text-muted-foreground/40">
-          {NAV_LINKS.length} pages
+          {NAV_CARDS.length} destinations
         </span>
       </div>
 
-      <nav class="flex flex-col gap-1" aria-label="Mobile navigation">
+      <nav class="grid grid-cols-2 gap-2" aria-label="Mobile navigation">
         {
-          NAV_LINKS.map((item) => {
+          NAV_CARDS.map((item) => {
             const active = isActive(item.href)
-            const iconName = NAV_ICONS[item.href] || 'lucide:link'
             return (
               <Link
                 href={item.href}
                 class:list={[
-                  'mobile-nav-item flex items-center justify-between px-3 py-2 rounded-lg border transition-all text-xs font-mono tracking-wider lowercase',
+                  'mobile-nav-card group relative flex flex-col justify-between p-3 rounded-xl border transition-all duration-200',
                   active
-                    ? 'border-primary/50 bg-primary/15 text-foreground font-semibold shadow-xs'
-                    : 'border-border/30 bg-secondary/20 hover:bg-secondary/50 hover:border-border/60 text-foreground/80 hover:text-foreground',
+                    ? 'border-accent/60 bg-accent/15 text-foreground ring-1 ring-accent/40 shadow-sm'
+                    : 'border-white/10 bg-white/[0.03] hover:bg-white/[0.08] hover:border-white/20 text-foreground/80 hover:text-foreground',
                 ]}
               >
-                <div class="flex items-center gap-2.5">
-                  <Icon
-                    name={iconName}
+                <div class="flex items-center justify-between mb-2">
+                  <div
                     class:list={[
-                      'size-3.5 shrink-0',
-                      active ? 'text-primary' : 'text-accent/80',
+                      'flex size-7 items-center justify-center rounded-lg border transition-colors',
+                      active
+                        ? 'border-accent/40 bg-accent/20 text-accent'
+                        : 'border-white/10 bg-white/[0.04] text-muted-foreground group-hover:text-accent group-hover:border-accent/30',
                     ]}
-                  />
-                  <span>{item.label}</span>
+                  >
+                    <Icon name={item.icon} class="size-3.5" />
+                  </div>
+                  {active ? (
+                    <span class="inline-flex items-center gap-1 text-[9px] font-mono text-accent uppercase tracking-wider font-semibold">
+                      <span class="size-1.5 rounded-full bg-accent animate-pulse" />
+                      here
+                    </span>
+                  ) : (
+                    <Icon
+                      name="lucide:arrow-up-right"
+                      class="size-3 text-muted-foreground/30 group-hover:text-foreground/70 transition-colors"
+                    />
+                  )}
                 </div>
-                {active ? (
-                  <span class="inline-flex items-center gap-1 text-[10px] text-primary/80 font-mono">
-                    <span class="size-1.5 rounded-full bg-primary animate-pulse" />
-                    <span>active</span>
-                  </span>
-                ) : (
-                  <Icon
-                    name="lucide:chevron-right"
-                    class="size-3 text-muted-foreground/35"
-                  />
-                )}
+                <div>
+                  <div class="font-medium text-xs tracking-wide lowercase group-hover:text-accent transition-colors">
+                    {item.label}
+                  </div>
+                  <div class="text-[10px] text-muted-foreground font-mono mt-0.5">
+                    {item.hint}
+                  </div>
+                </div>
               </Link>
             )
           })
         }
       </nav>
 
-      <!-- Social links at the bottom of the drawer -->
-      <div class="pt-3 mt-3 border-t border-border/30 flex items-center justify-between px-1">
-        <span class="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">
+      <!-- Social links bar -->
+      <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between px-1">
+        <span class="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/70">
           connect
         </span>
         <div class="flex items-center gap-1.5">
@@ -150,7 +152,7 @@ const NAV_ICONS: Record<string, string> = {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={social.label}
-                class="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-md hover:bg-secondary/40"
+                class="flex size-7 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] text-muted-foreground hover:text-foreground hover:border-accent/40 hover:bg-white/[0.08] transition-all"
               >
                 <Icon name={ICON_MAP[social.label]} class="size-3.5" />
               </a>
@@ -166,6 +168,12 @@ const NAV_ICONS: Record<string, string> = {
   .header-wrapper {
     position: relative;
     width: 100%;
+    transition: background-color 0.2s ease;
+  }
+
+  /* When mobile menu is open, make the top bar solidly opaque */
+  .header-wrapper.is-open {
+    background-color: #07080c !important;
   }
 
   .header-container {
@@ -201,70 +209,50 @@ const NAV_ICONS: Record<string, string> = {
   .mobile-menu-btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-    padding: 0.3rem 0.6rem;
-    border-radius: 0.375rem;
+    gap: 0.4rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 9999px;
     border: 1px solid var(--border);
-    background-color: color-mix(in oklab, var(--color-secondary, #222) 30%, transparent);
+    background-color: rgba(255, 255, 255, 0.05);
     color: var(--foreground);
     font-family: var(--font-mono);
-    font-size: 0.6875rem;
-    letter-spacing: 0.1em;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
     text-transform: lowercase;
     transition: all 0.2s ease;
     cursor: pointer;
   }
 
   .mobile-menu-btn:hover {
-    background-color: color-mix(in oklab, var(--color-secondary, #222) 60%, transparent);
+    background-color: rgba(255, 255, 255, 0.1);
     border-color: var(--color-border);
   }
 
   .mobile-menu-btn.is-active {
-    border-color: var(--primary);
-    background-color: color-mix(in oklab, var(--primary) 20%, transparent);
+    border-color: var(--accent, #a78bfa);
+    background-color: color-mix(in oklab, var(--accent, #a78bfa) 20%, transparent);
     color: var(--foreground);
+    box-shadow: 0 0 12px -2px rgba(167, 139, 250, 0.3);
   }
 
-  /* Mobile backdrop */
-  .mobile-menu-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    z-index: 40;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s ease;
-  }
-
-  .mobile-menu-backdrop.is-open {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  /* Mobile drawer */
+  /* Mobile drawer: Solid, completely opaque, full-viewport height below header */
   .mobile-menu-drawer {
     position: absolute;
     top: 100%;
     left: 0;
     right: 0;
-    z-index: 50;
-    background-color: color-mix(in oklab, var(--background) 95%, transparent);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-bottom: 1px solid var(--border);
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+    width: 100%;
+    height: calc(100dvh - 100%);
+    background-color: #07080c;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.9);
     transform: translateY(-8px);
     opacity: 0;
     pointer-events: none;
-    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
-    max-height: calc(100dvh - 60px);
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.18s ease;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    z-index: 50;
   }
 
   .mobile-menu-drawer.is-open {
@@ -277,7 +265,7 @@ const NAV_ICONS: Record<string, string> = {
     max-width: 480px;
     margin-left: auto;
     margin-right: auto;
-    padding: 0.875rem 1rem 1rem;
+    padding: 1rem 1rem 2.5rem;
   }
 
   /* Desktop breakpoint (>= 840px): show desktop nav, hide mobile elements */
@@ -300,7 +288,6 @@ const NAV_ICONS: Record<string, string> = {
     }
 
     .mobile-menu-btn,
-    .mobile-menu-backdrop,
     .mobile-menu-drawer {
       display: none !important;
     }
@@ -321,21 +308,21 @@ const NAV_ICONS: Record<string, string> = {
 
 <script>
   function setupMobileMenu() {
+    const headerWrapper = document.getElementById('header-wrapper')
     const toggleBtn = document.getElementById('mobile-menu-toggle')
     const drawer = document.getElementById('mobile-menu-drawer')
-    const backdrop = document.getElementById('mobile-menu-backdrop')
     const openIcon = toggleBtn?.querySelector('.menu-icon-open')
     const closeIcon = toggleBtn?.querySelector('.menu-icon-close')
     const btnText = toggleBtn?.querySelector('.mobile-menu-btn-text')
 
-    if (!toggleBtn || !drawer || !backdrop) return
+    if (!toggleBtn || !drawer || !headerWrapper) return
 
     let isOpen = false
 
     function openMenu() {
       isOpen = true
+      headerWrapper?.classList.add('is-open')
       drawer?.classList.add('is-open')
-      backdrop?.classList.add('is-open')
       toggleBtn?.classList.add('is-active')
       toggleBtn?.setAttribute('aria-expanded', 'true')
       openIcon?.classList.add('hidden')
@@ -346,8 +333,8 @@ const NAV_ICONS: Record<string, string> = {
 
     function closeMenu() {
       isOpen = false
+      headerWrapper?.classList.remove('is-open')
       drawer?.classList.remove('is-open')
-      backdrop?.classList.remove('is-open')
       toggleBtn?.classList.remove('is-active')
       toggleBtn?.setAttribute('aria-expanded', 'false')
       openIcon?.classList.remove('hidden')
@@ -370,27 +357,12 @@ const NAV_ICONS: Record<string, string> = {
       toggleMenu()
     }
 
-    // Backdrop click closes
-    backdrop.onclick = () => {
-      if (isOpen) closeMenu()
-    }
-
     // Close on any mobile nav link click
     drawer.querySelectorAll('a').forEach((link) => {
       link.onclick = () => {
         closeMenu()
       }
     })
-
-    // Close on outside click
-    const handleDocumentClick = (e: MouseEvent) => {
-      if (!isOpen) return
-      const target = e.target as HTMLElement
-      if (!drawer.contains(target) && !toggleBtn.contains(target)) {
-        closeMenu()
-      }
-    }
-    document.addEventListener('click', handleDocumentClick)
 
     // Close on Escape key
     const handleKeydown = (e: KeyboardEvent) => {
@@ -413,7 +385,6 @@ const NAV_ICONS: Record<string, string> = {
       'astro:before-swap',
       () => {
         closeMenu()
-        document.removeEventListener('click', handleDocumentClick)
         document.removeEventListener('keydown', handleKeydown)
         window.removeEventListener('resize', handleResize)
       },
