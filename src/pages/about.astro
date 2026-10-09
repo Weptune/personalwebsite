@@ -8,55 +8,61 @@ import Layout from '@/layouts/Layout.astro'
   <PageHead slot="head" title="About" />
   <Breadcrumbs items={[{ label: 'About', icon: 'lucide:info' }]} />
 
-  <section class="fade-in-up-soft about-hero space-y-8 p-6 sm:p-8">
+  <section class="gothic-panel fade-in-up-soft p-6 sm:p-8 space-y-8">
     <!-- Hero & Bio -->
-    <div class="space-y-4 rounded-xl border border-white/10 bg-black/20 p-6 backdrop-blur-[2px] sm:p-8">
+    <div class="space-y-4">
       <div class="flex flex-wrap items-center justify-between gap-3">
-        <h2 class="text-2xl font-medium tracking-tight">hi :3 im abhinav</h2>
-        <div class="flex gap-2 text-xs font-mono lowercase">
+        <h2 class="text-2xl sm:text-3xl font-medium tracking-tight normal-case">hi :3 im abhinav</h2>
+        <div class="flex items-center gap-2 text-xs font-mono lowercase">
           <span class="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-primary/90">feminist</span>
           <span class="rounded-full border border-purple-500/30 bg-purple-500/10 px-2.5 py-0.5 text-purple-300">bi</span>
           <span class="rounded-full border border-yellow-500/30 bg-yellow-500/10 px-2.5 py-0.5 text-yellow-300">enby</span>
         </div>
       </div>
 
-      <p class="text-foreground/90 leading-relaxed">
+      <p class="text-foreground/90 leading-relaxed text-base">
         im a 21 year old cs student with way too many interests. this website serves as a repository for everything that makes me myself.
       </p>
 
-      <p class="text-foreground/80 leading-relaxed text-sm">
+      <p class="text-muted-foreground leading-relaxed text-sm">
         it is usually common practice to separate your portfolio and personal sites, but for myself, i don't agree with that. i take pride in being passionate and open to learning about as many facets of the world as i can; they all play a part in shaping who i am, and what i believe in.
       </p>
     </div>
 
+    <!-- Subtle gradient divider matching homepage -->
+    <div class="h-[1px] w-full bg-gradient-to-r from-transparent via-primary/25 to-transparent"></div>
+
     <!-- Topics Cloud -->
-    <div class="space-y-3 rounded-xl border border-white/10 bg-black/20 p-6 backdrop-blur-[2px]">
+    <div class="space-y-3">
       <h3 class="text-xs font-mono uppercase tracking-widest text-muted-foreground">
         topics i enjoy & feel strongly about
       </h3>
       <div class="flex flex-wrap gap-2 text-xs">
-        <a href="/maths" class="rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-foreground/90 transition-colors hover:border-primary hover:bg-primary/20">math ↗</a>
-        <a href="/projects" class="rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-foreground/90 transition-colors hover:border-primary hover:bg-primary/20">cs ↗</a>
-        <a href="/research" class="rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-foreground/90 transition-colors hover:border-primary hover:bg-primary/20">ai & ml ↗</a>
-        <a href="/tags/cryptography" class="rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-foreground/90 transition-colors hover:border-primary hover:bg-primary/20">cryptography ↗</a>
-        <a href="/tags/politics" class="rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-foreground/90 transition-colors hover:border-primary hover:bg-primary/20">politics ↗</a>
-        <a href="/albums" class="rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-foreground/90 transition-colors hover:border-primary hover:bg-primary/20">music ↗</a>
-        <a href="/movies" class="rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-foreground/90 transition-colors hover:border-primary hover:bg-primary/20">cinema ↗</a>
-        <a href="/thoughts" class="rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-foreground/90 transition-colors hover:border-primary hover:bg-primary/20">writing ↗</a>
-        <a href="https://www.chess.com/member/weptunesworld" target="_blank" rel="noopener noreferrer" class="rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-foreground/90 transition-colors hover:border-primary hover:bg-primary/20">chess ↗</a>
-        <span class="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-foreground/80">reading</span>
-        <span class="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-foreground/80">philosophy</span>
-        <span class="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-foreground/80">minecraft</span>
-        <span class="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-foreground/80">osu</span>
-        <span class="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-foreground/80">fitness</span>
-        <span class="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-foreground/80">fashion</span>
-        <span class="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-foreground/80">tiny animals</span>
+        <a href="/maths" class="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-mono text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20">math ↗</a>
+        <a href="/projects" class="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-mono text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20">cs ↗</a>
+        <a href="/research" class="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-mono text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20">ai & ml ↗</a>
+        <a href="/tags/cryptography" class="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-mono text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20">cryptography ↗</a>
+        <a href="/tags/politics" class="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-mono text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20">politics ↗</a>
+        <a href="/albums" class="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-mono text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20">music ↗</a>
+        <a href="/movies" class="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-mono text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20">cinema ↗</a>
+        <a href="/thoughts" class="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-mono text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20">writing ↗</a>
+        <a href="https://www.chess.com/member/weptunesworld" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-mono text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20">chess ↗</a>
+        <span class="inline-flex items-center rounded-full border border-border/40 bg-secondary/30 px-3 py-1 font-mono text-muted-foreground">reading</span>
+        <span class="inline-flex items-center rounded-full border border-border/40 bg-secondary/30 px-3 py-1 font-mono text-muted-foreground">philosophy</span>
+        <span class="inline-flex items-center rounded-full border border-border/40 bg-secondary/30 px-3 py-1 font-mono text-muted-foreground">minecraft</span>
+        <span class="inline-flex items-center rounded-full border border-border/40 bg-secondary/30 px-3 py-1 font-mono text-muted-foreground">osu</span>
+        <span class="inline-flex items-center rounded-full border border-border/40 bg-secondary/30 px-3 py-1 font-mono text-muted-foreground">fitness</span>
+        <span class="inline-flex items-center rounded-full border border-border/40 bg-secondary/30 px-3 py-1 font-mono text-muted-foreground">fashion</span>
+        <span class="inline-flex items-center rounded-full border border-border/40 bg-secondary/30 px-3 py-1 font-mono text-muted-foreground">tiny animals</span>
       </div>
     </div>
 
-    <!-- 2-Column: Lyrics Callout + Ramona Frame -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-      <div class="rounded-xl border border-white/10 bg-black/20 p-6 backdrop-blur-[2px] font-serif italic text-sm text-foreground/85 leading-relaxed border-l-2 border-l-primary/60 space-y-1.5">
+    <!-- Subtle gradient divider matching homepage -->
+    <div class="h-[1px] w-full bg-gradient-to-r from-transparent via-primary/25 to-transparent"></div>
+
+    <!-- 2-Column: Lyrics Callout + Ramona -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center pt-1">
+      <div class="border-l-2 border-primary/40 pl-5 font-serif italic text-sm text-foreground/80 leading-relaxed space-y-1.5">
         <p>Movie actors puzzled during combat</p>
         <p>Leading man just stutters when he talks</p>
         <p>There were teardrops on his contract</p>
@@ -67,11 +73,11 @@ import Layout from '@/layouts/Layout.astro'
         <p>But I'll remind you of the truth</p>
       </div>
 
-      <div class="flex justify-center rounded-xl border border-white/10 bg-black/20 p-4 backdrop-blur-[2px]">
+      <div class="flex justify-center md:justify-end">
         <img
           src="/static/ramona.gif"
           alt="Ramona Flowers"
-          class="rounded-lg object-contain max-h-56 opacity-90 transition-opacity hover:opacity-100"
+          class="rounded-xl object-contain max-h-56 opacity-95 transition-all duration-300 hover:opacity-100 hover:scale-[1.02] shadow-lg shadow-black/20"
           loading="eager"
         />
       </div>
