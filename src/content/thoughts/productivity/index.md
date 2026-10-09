@@ -2,7 +2,7 @@
 title: productivity
 description: Site inauguration note.
 date: 2026-04-27
-tags: ['musings']
+tags: ['musings', 'productivity', 'philosophy']
 ---
 
 theres a certain archetype of person that im surrounded by.

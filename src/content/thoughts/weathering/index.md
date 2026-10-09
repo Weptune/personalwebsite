@@ -2,7 +2,7 @@
 title: Weathering
 description: Site inauguration note.
 date: 2026-05-18
-tags: ['meta']
+tags: ['poetry', 'personal', 'literature']
 readingTimeOverride: '3 min read'
 ---
 

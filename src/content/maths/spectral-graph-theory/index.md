@@ -2,7 +2,7 @@
 title: 'spectral graphs are fun :D'
 description: 'How turning a network into a system of quadratic constraints and computing Graph Laplacian eigenvectors solves 2D graph layout and bottleneck partitioning.'
 date: 2026-08-31
-tags: ['linear algebra', 'graph theory', 'algorithms', 'maths']
+tags: ['linear-algebra', 'graph-theory', 'algorithms', 'maths']
 image: './cover.jpg'
 pinned: false
 ---

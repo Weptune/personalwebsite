@@ -1,12 +1,14 @@
 ---
 import BlogCard from '@/components/BlogCard.astro'
 import Breadcrumbs from '@/components/Breadcrumbs.astro'
+import Link from '@/components/Link.astro'
 import PageHead from '@/components/PageHead.astro'
 import Search from '@/components/Search'
 import PaginationComponent from '@/components/ui/pagination'
 import { SITE } from '@/consts'
 import Layout from '@/layouts/Layout.astro'
-import { getAllMathsPosts, groupMathsPostsByYear } from '@/lib/data-utils'
+import { getAllMathsPosts, getMathsTags, groupMathsPostsByYear } from '@/lib/data-utils'
+import { Icon } from 'astro-icon/components'
 import type { PaginateFunction } from 'astro'
 
 export async function getStaticPaths({
@@ -22,6 +24,7 @@ const { page } = Astro.props
 
 const postsByYear = groupMathsPostsByYear(page.data)
 const years = Object.keys(postsByYear).sort((a, b) => parseInt(b) - parseInt(a))
+const mathsTags = await getMathsTags()
 
 const mathsSearchData = page.data.map((post) => ({
   id: post.id,
@@ -40,12 +43,32 @@ const mathsSearchData = page.data.map((post) => ({
     ]}
   />
 
-  <div class="mb-8">
+  <div class="mb-8 flex flex-col gap-3">
     <Search
       client:load
       items={mathsSearchData}
       placeholder="Search maths writeups..."
     />
+    {
+      mathsTags.length > 0 && (
+        <div class="flex flex-wrap items-center gap-1.5 text-xs">
+          <span class="text-muted-foreground font-mono flex items-center gap-1 mr-1 text-[11px]">
+            <Icon name="lucide:tags" class="size-3" />
+            tags:
+          </span>
+          {mathsTags.map(({ tag, count }) => (
+            <Link
+              href={`/tags/${tag}`}
+              class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full border border-border/40 bg-secondary/30 text-muted-foreground hover:text-foreground hover:border-accent/50 hover:bg-secondary/60 transition-all font-mono text-[11px]"
+            >
+              <span class="text-accent/80 font-mono">#</span>
+              <span>{tag}</span>
+              <span class="text-[10px] text-muted-foreground/60 ml-0.5">({count})</span>
+            </Link>
+          ))}
+        </div>
+      )
+    }
   </div>
 
   <div class="flex min-h-[calc(100vh-18rem)] flex-col gap-y-8">

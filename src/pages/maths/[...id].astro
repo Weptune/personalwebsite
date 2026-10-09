@@ -144,6 +144,21 @@ const showTOC = tocSections.length > 0 && tocSections.some((s) => s.headings.len
             )
           }
         </p>
+        {
+          post.data.tags && post.data.tags.length > 0 && (
+            <div class="mt-3 flex flex-wrap items-center justify-center gap-1.5">
+              {post.data.tags.map((tag: string) => (
+                <a
+                  href={`/tags/${tag}`}
+                  class="inline-flex items-center gap-0.5 text-xs font-mono px-2.5 py-0.5 rounded-full border border-border/50 bg-secondary/40 text-muted-foreground hover:text-foreground hover:border-accent/60 hover:bg-secondary/80 transition-all"
+                >
+                  <span class="text-accent/80 font-mono">#</span>
+                  {tag}
+                </a>
+              ))}
+            </div>
+          )
+        }
         <div class="mt-3 flex items-center justify-center">
           <GlowToggle />
         </div>

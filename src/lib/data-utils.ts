@@ -141,6 +141,64 @@ export async function getSortedTags(): Promise<
     })
 }
 
+export async function getThoughtsTags(): Promise<
+  { tag: string; count: number }[]
+> {
+  const posts = await getAllPosts()
+  const tagCounts = posts.reduce((acc, post) => {
+    post.data.tags?.forEach((tag) => {
+      acc.set(tag, (acc.get(tag) || 0) + 1)
+    })
+    return acc
+  }, new Map<string, number>())
+
+  return [...tagCounts.entries()]
+    .map(([tag, count]) => ({ tag, count }))
+    .sort((a, b) => {
+      const countDiff = b.count - a.count
+      return countDiff !== 0 ? countDiff : a.tag.localeCompare(b.tag)
+    })
+}
+
+export async function getMathsTags(): Promise<
+  { tag: string; count: number }[]
+> {
+  const posts = await getAllMathsPosts()
+  const tagCounts = posts.reduce((acc, post) => {
+    post.data.tags?.forEach((tag) => {
+      acc.set(tag, (acc.get(tag) || 0) + 1)
+    })
+    return acc
+  }, new Map<string, number>())
+
+  return [...tagCounts.entries()]
+    .map(([tag, count]) => ({ tag, count }))
+    .sort((a, b) => {
+      const countDiff = b.count - a.count
+      return countDiff !== 0 ? countDiff : a.tag.localeCompare(b.tag)
+    })
+}
+
+export async function getResearchTags(): Promise<
+  { tag: string; count: number }[]
+> {
+  const posts = await getAllResearchPosts()
+  const tagCounts = posts.reduce((acc, post) => {
+    post.data.tags?.forEach((tag) => {
+      acc.set(tag, (acc.get(tag) || 0) + 1)
+    })
+    return acc
+  }, new Map<string, number>())
+
+  return [...tagCounts.entries()]
+    .map(([tag, count]) => ({ tag, count }))
+    .sort((a, b) => {
+      const countDiff = b.count - a.count
+      return countDiff !== 0 ? countDiff : a.tag.localeCompare(b.tag)
+    })
+}
+
+
 export function getParentId(subpostId: string): string {
   return subpostId.split('/')[0]
 }

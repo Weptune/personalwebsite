@@ -4,10 +4,10 @@ description: 'A first-principles critique of autoregressive sequence modeling: w
 date: 2026-09-26
 tags:
   [
-    'deep learning',
-    'complexity theory',
-    'scaling laws',
-    'linear algebra',
+    'deep-learning',
+    'complexity-theory',
+    'scaling-laws',
+    'linear-algebra',
     'algorithms',
   ]
 image: './cover.jpg'

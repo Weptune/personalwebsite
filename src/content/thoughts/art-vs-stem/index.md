@@ -2,7 +2,7 @@
 title: '"why are stem students considered smarter than arts students?"'
 description: Site inauguration note.
 date: 2026-06-05
-tags: ['rant']
+tags: ['rant', 'education', 'stem']
 ---
 
 because they are

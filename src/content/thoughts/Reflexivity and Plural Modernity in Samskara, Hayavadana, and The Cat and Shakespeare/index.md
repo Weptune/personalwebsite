@@ -2,7 +2,7 @@
 title: Reflexivity and Plural Modernity in Samskara, Hayavadana, and The Cat and Shakespeare
 description: a
 date: 2026-02-26
-tags: ['meta']
+tags: ['literature', 'philosophy', 'culture']
 ---
 
 Wrote this for my literature elective, why not post it here. Its about 3 texts in particular, but I don't think you need to read the texts to understand it, they just serve as examples to support the themes and the arguments made
