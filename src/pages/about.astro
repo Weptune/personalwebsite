@@ -8,11 +8,11 @@ import Layout from '@/layouts/Layout.astro'
   <PageHead slot="head" title="About" />
   <Breadcrumbs items={[{ label: 'About', icon: 'lucide:info' }]} />
 
-  <section class="gothic-panel fade-in-up-soft p-6 sm:p-8 space-y-8">
+  <section class="fade-in-up-soft about-hero space-y-8 p-6 sm:p-8">
     <!-- Hero & Bio -->
     <div class="space-y-4">
       <div class="flex flex-wrap items-center justify-between gap-3">
-        <h2 class="text-2xl sm:text-3xl font-medium tracking-tight normal-case">hi <span class="font-mono font-normal text-primary/90 inline-block">:3</span> im abhinav</h2>
+        <h2 class="text-2xl sm:text-3xl font-medium tracking-tight normal-case">hi <span class="font-sans font-medium text-primary/90 inline-block">:3</span> im abhinav</h2>
         <div class="flex flex-wrap items-center gap-2 text-xs font-mono lowercase">
           <span class="rounded-full border border-rose-400/25 bg-rose-500/10 px-2.5 py-0.5 text-rose-300/90 transition-colors hover:border-rose-400/40 hover:bg-rose-500/15">feminist</span>
           <span class="rounded-full border border-violet-400/25 bg-violet-500/10 px-2.5 py-0.5 text-violet-300/90 transition-colors hover:border-violet-400/40 hover:bg-violet-500/15">bi</span>
@@ -40,26 +40,26 @@ import Layout from '@/layouts/Layout.astro'
       </h3>
       <div class="space-y-2">
         <!-- Row 1: 8 topics -->
-        <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs">
-          <a href="/maths" class="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 sm:px-3 sm:py-1 font-mono text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20">math ↗</a>
-          <a href="/projects" class="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 sm:px-3 sm:py-1 font-mono text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20">cs ↗</a>
-          <a href="/research" class="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 sm:px-3 sm:py-1 font-mono text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20">ai & ml ↗</a>
-          <a href="/tags/cryptography" class="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 sm:px-3 sm:py-1 font-mono text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20">cryptography ↗</a>
-          <a href="/tags/politics" class="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 sm:px-3 sm:py-1 font-mono text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20">politics ↗</a>
-          <a href="/albums" class="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 sm:px-3 sm:py-1 font-mono text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20">music ↗</a>
-          <a href="/movies" class="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 sm:px-3 sm:py-1 font-mono text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20">cinema ↗</a>
-          <a href="/thoughts" class="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 sm:px-3 sm:py-1 font-mono text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20">writing ↗</a>
+        <div class="flex flex-wrap sm:flex-nowrap items-center gap-1 sm:gap-1.5 text-[11px] font-mono">
+          <a href="/maths" class="inline-flex items-center gap-0.5 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20 shrink-0">math ↗</a>
+          <a href="/projects" class="inline-flex items-center gap-0.5 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20 shrink-0">cs ↗</a>
+          <a href="/research" class="inline-flex items-center gap-0.5 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20 shrink-0">ai & ml ↗</a>
+          <a href="/tags/cryptography" class="inline-flex items-center gap-0.5 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20 shrink-0">cryptography ↗</a>
+          <a href="/tags/politics" class="inline-flex items-center gap-0.5 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20 shrink-0">politics ↗</a>
+          <a href="/albums" class="inline-flex items-center gap-0.5 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20 shrink-0">music ↗</a>
+          <a href="/movies" class="inline-flex items-center gap-0.5 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20 shrink-0">cinema ↗</a>
+          <a href="/thoughts" class="inline-flex items-center gap-0.5 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20 shrink-0">writing ↗</a>
         </div>
         <!-- Row 2: 8 topics -->
-        <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs">
-          <a href="https://www.chess.com/member/weptunesworld" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 sm:px-3 sm:py-1 font-mono text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20">chess ↗</a>
-          <a href="/tags/literature" class="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 sm:px-3 sm:py-1 font-mono text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20">reading ↗</a>
-          <a href="/tags/philosophy" class="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 sm:px-3 sm:py-1 font-mono text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20">philosophy ↗</a>
-          <a href="/projects/minecraft-seed-generation" class="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 sm:px-3 sm:py-1 font-mono text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20">minecraft ↗</a>
-          <a href="https://osu.ppy.sh/users/24049768" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 sm:px-3 sm:py-1 font-mono text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20">osu ↗</a>
-          <a href="#" class="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 sm:px-3 sm:py-1 font-mono text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20">fitness ↗</a>
-          <a href="/thoughts/vanity-in-fashion-culture" class="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 sm:px-3 sm:py-1 font-mono text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20">fashion ↗</a>
-          <a href="#" class="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 sm:px-3 sm:py-1 font-mono text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20">tiny animals ↗</a>
+        <div class="flex flex-wrap sm:flex-nowrap items-center gap-1 sm:gap-1.5 text-[11px] font-mono">
+          <a href="https://www.chess.com/member/weptunesworld" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-0.5 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20 shrink-0">chess ↗</a>
+          <a href="/tags/literature" class="inline-flex items-center gap-0.5 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20 shrink-0">reading ↗</a>
+          <a href="/tags/philosophy" class="inline-flex items-center gap-0.5 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20 shrink-0">philosophy ↗</a>
+          <a href="/projects/minecraft-seed-generation" class="inline-flex items-center gap-0.5 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20 shrink-0">minecraft ↗</a>
+          <a href="https://osu.ppy.sh/users/24049768" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-0.5 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20 shrink-0">osu ↗</a>
+          <a href="#" class="inline-flex items-center gap-0.5 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20 shrink-0">fitness ↗</a>
+          <a href="/thoughts/vanity-in-fashion-culture" class="inline-flex items-center gap-0.5 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20 shrink-0">fashion ↗</a>
+          <a href="#" class="inline-flex items-center gap-0.5 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-foreground/90 transition-all hover:border-primary/60 hover:bg-primary/20 shrink-0">tiny animals ↗</a>
         </div>
       </div>
     </div>
