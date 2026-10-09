@@ -1,11 +1,22 @@
 ---
 import Breadcrumbs from '@/components/Breadcrumbs.astro'
+import Link from '@/components/Link.astro'
 import PageHead from '@/components/PageHead.astro'
 import ProjectCard from '@/components/ProjectCard.astro'
+import Search from '@/components/Search'
 import Layout from '@/layouts/Layout.astro'
-import { getAllProjects } from '@/lib/data-utils'
+import { getAllProjects, getProjectsTags } from '@/lib/data-utils'
+import { Icon } from 'astro-icon/components'
 
 const projects = await getAllProjects()
+const projectsTags = await getProjectsTags()
+
+const projectsSearchData = projects.map((project) => ({
+  id: project.id,
+  title: project.data.name,
+  url: project.data.link,
+  description: project.data.description,
+}))
 ---
 
 <Layout class="max-w-3xl">
@@ -15,6 +26,34 @@ const projects = await getAllProjects()
     description="Things I’ve built, broken, and slowly put back together."
   />
   <Breadcrumbs items={[{ label: 'Projects', icon: 'lucide:folder-kanban' }]} />
+
+  <div class="mb-8 flex flex-col gap-3">
+    <Search
+      client:load
+      items={projectsSearchData}
+      placeholder="Search projects..."
+    />
+    {
+      projectsTags.length > 0 && (
+        <div class="flex flex-wrap items-center gap-1.5 text-xs">
+          <span class="text-muted-foreground font-mono flex items-center gap-1 mr-1 text-[11px]">
+            <Icon name="lucide:tags" class="size-3" />
+            tags:
+          </span>
+          {projectsTags.map(({ tag, count }) => (
+            <Link
+              href={`/tags/${tag}`}
+              class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full border border-border/40 bg-secondary/30 text-muted-foreground hover:text-foreground hover:border-accent/50 hover:bg-secondary/60 transition-all font-mono text-[11px]"
+            >
+              <span class="text-accent/80 font-mono">#</span>
+              <span>{tag}</span>
+              <span class="text-[10px] text-muted-foreground/60 ml-0.5">({count})</span>
+            </Link>
+          ))}
+        </div>
+      )
+    }
+  </div>
 
   <section class="flex flex-col gap-4 fade-in-up-soft">
     {

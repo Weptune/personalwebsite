@@ -47,13 +47,22 @@ export async function getAllWritingPosts(): Promise<AllWritingEntry[]> {
 }
 
 export async function getAllTags(): Promise<Map<string, number>> {
-  const posts = await getAllWritingPosts()
-  return posts.reduce((acc, post) => {
+  const [posts, projects] = await Promise.all([
+    getAllWritingPosts(),
+    getAllProjects(),
+  ])
+  const tagCounts = new Map<string, number>()
+  posts.forEach((post) => {
     post.data.tags?.forEach((tag) => {
-      acc.set(tag, (acc.get(tag) || 0) + 1)
+      tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1)
     })
-    return acc
-  }, new Map<string, number>())
+  })
+  projects.forEach((project) => {
+    project.data.tags?.forEach((tag) => {
+      tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1)
+    })
+  })
+  return tagCounts
 }
 
 export async function getAdjacentPosts(currentId: string): Promise<{
@@ -196,6 +205,32 @@ export async function getResearchTags(): Promise<
       const countDiff = b.count - a.count
       return countDiff !== 0 ? countDiff : a.tag.localeCompare(b.tag)
     })
+}
+
+export async function getProjectsTags(): Promise<
+  { tag: string; count: number }[]
+> {
+  const projects = await getAllProjects()
+  const tagCounts = projects.reduce((acc, project) => {
+    project.data.tags?.forEach((tag) => {
+      acc.set(tag, (acc.get(tag) || 0) + 1)
+    })
+    return acc
+  }, new Map<string, number>())
+
+  return [...tagCounts.entries()]
+    .map(([tag, count]) => ({ tag, count }))
+    .sort((a, b) => {
+      const countDiff = b.count - a.count
+      return countDiff !== 0 ? countDiff : a.tag.localeCompare(b.tag)
+    })
+}
+
+export async function getProjectsByTag(
+  tag: string,
+): Promise<CollectionEntry<'projects'>[]> {
+  const projects = await getAllProjects()
+  return projects.filter((project) => project.data.tags?.includes(tag))
 }
 
 

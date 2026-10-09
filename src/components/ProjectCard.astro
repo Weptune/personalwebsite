@@ -14,11 +14,11 @@ const { project } = Astro.props
 ---
 
 <div
-  class="hover:bg-muted/50 rounded-xl border p-4 transition-all duration-500 ease-out hover:-translate-y-1"
+  class="gothic-panel p-4 transition-all duration-500 ease-out hover:-translate-y-1 flex flex-col gap-3"
 >
   <Link
     href={project.data.link}
-    class="flex flex-col gap-4 sm:flex-row"
+    class="group flex flex-col gap-4 sm:flex-row grow"
     external
   >
     {
@@ -35,7 +35,7 @@ const { project } = Astro.props
       )
     }
     <div class="grow">
-      <h3 class="mb-1 text-lg font-medium">
+      <h3 class="mb-1 text-lg font-medium tracking-wide group-hover:text-accent transition-colors">
         {project.data.name}
       </h3>
       <p class="text-muted-foreground mb-2 text-sm">
@@ -43,7 +43,7 @@ const { project } = Astro.props
       </p>
       {
         project.data.startDate && (
-          <p class="text-muted-foreground/70 mb-2 flex items-center gap-x-1.5 text-xs">
+          <p class="text-muted-foreground/70 mb-2 flex items-center gap-x-1.5 text-xs font-mono">
             <span class="flex items-center gap-x-1.5">
               <Icon name="lucide:calendar" class="size-3" />
               <span>
@@ -56,15 +56,23 @@ const { project } = Astro.props
           </p>
         )
       }
-      {
-        project.data.tags && (
-          <div class="flex flex-wrap gap-2">
-            {project.data.tags.map((tag: string) => (
-              <Badge variant="muted">{tag}</Badge>
-            ))}
-          </div>
-        )
-      }
     </div>
   </Link>
+
+  {
+    project.data.tags && project.data.tags.length > 0 && (
+      <div class="flex flex-wrap items-center gap-1.5 pt-2 border-t border-border/25">
+        <Icon name="lucide:tags" class="size-3 text-muted-foreground/60 mr-0.5 shrink-0" />
+        {project.data.tags.map((tag: string) => (
+          <Link
+            href={`/tags/${tag}`}
+            class="inline-flex items-center gap-0.5 text-[11px] font-mono px-2 py-0.5 rounded-full border border-border/40 bg-secondary/30 text-muted-foreground hover:text-foreground hover:border-accent/50 hover:bg-secondary/60 transition-all duration-200"
+          >
+            <span class="text-accent/80 font-mono">#</span>
+            {tag}
+          </Link>
+        ))}
+      </div>
+    )
+  }
 </div>

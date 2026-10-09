@@ -2,8 +2,9 @@
 import BlogCard from '@/components/BlogCard.astro'
 import Breadcrumbs from '@/components/Breadcrumbs.astro'
 import PageHead from '@/components/PageHead.astro'
+import ProjectCard from '@/components/ProjectCard.astro'
 import Layout from '@/layouts/Layout.astro'
-import { getAllTags, getPostsByTag } from '@/lib/data-utils'
+import { getAllTags, getPostsByTag, getProjectsByTag } from '@/lib/data-utils'
 
 export async function getStaticPaths() {
   const tagMap = await getAllTags()
@@ -12,25 +13,28 @@ export async function getStaticPaths() {
   return Promise.all(
     uniqueTags.map(async (tag) => {
       const posts = await getPostsByTag(tag)
+      const projects = await getProjectsByTag(tag)
       return {
         params: { id: tag },
         props: {
           tag,
           posts,
+          projects,
         },
       }
     }),
   )
 }
 
-const { tag, posts } = Astro.props
+const { tag, posts, projects } = Astro.props
+const totalCount = posts.length + projects.length
 ---
 
 <Layout class="max-w-3xl">
   <PageHead
     slot="head"
-    title={`Posts tagged with "${tag}"`}
-    description={`A collection of posts tagged with ${tag}.`}
+    title={`Entries tagged with "${tag}"`}
+    description={`A collection of posts and projects tagged with ${tag}.`}
     noindex
   />
   <Breadcrumbs
@@ -46,17 +50,43 @@ const { tag, posts } = Astro.props
       <span>{tag}</span>
     </h1>
     <p class="text-sm text-muted-foreground mt-1 font-mono">
-      {posts.length} {posts.length === 1 ? 'post' : 'posts'} across thoughts, maths, and research
+      {totalCount} {totalCount === 1 ? 'entry' : 'entries'} across writing and projects
     </p>
   </div>
 
-  <ul class="flex flex-col gap-y-4">
-    {
-      posts.map((post) => (
-        <li>
-          <BlogCard entry={post} />
-        </li>
-      ))
-    }
-  </ul>
+  {
+    posts.length > 0 && (
+      <div class="space-y-4 mb-8">
+        {projects.length > 0 && (
+          <h2 class="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+            Writing ({posts.length})
+          </h2>
+        )}
+        <ul class="flex flex-col gap-y-4">
+          {posts.map((post) => (
+            <li>
+              <BlogCard entry={post} />
+            </li>
+          ))}
+        </ul>
+      </div>
+    )
+  }
+
+  {
+    projects.length > 0 && (
+      <div class="space-y-4">
+        {posts.length > 0 && (
+          <h2 class="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+            Projects ({projects.length})
+          </h2>
+        )}
+        <div class="flex flex-col gap-4">
+          {projects.map((project) => (
+            <ProjectCard project={project} />
+          ))}
+        </div>
+      </div>
+    )
+  }
 </Layout>
