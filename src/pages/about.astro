@@ -9,33 +9,67 @@ import Layout from '@/layouts/Layout.astro'
   <PageHead slot="head" title="About" />
   <Breadcrumbs items={[{ label: 'About', icon: 'lucide:info' }]} />
 
-  <section class="fade-in-up-soft about-hero">
-    <div class="min-w-full">
-      <div class="prose mb-8">
-        <p class="mt-0">
-          hi :3 im abhinav. im a 21 year old cs student with way too many interests. this website serves as a way for me to display some of them.
-        </p>
-        <p>
-          im lazy but ill add more here eventually
-        </p>
-        <p>
-          Movie actors puzzled during combat<br>
-          Leading man just stutters when he talks<br>
-          There were teardrops on his contract<br>
-          But there was chicken to defrost<br>
-          Hiding in the pedals of amnesia<br>
-          Like a flower not in bloom<br>
-          You can act like you were swindled<br>
-          But I'll remind you of the truth<br>
-        </p>
-      </div>
+  <section class="fade-in-up-soft about-hero space-y-8 p-6 sm:p-8">
+    <!-- Hero & Bio -->
+    <div class="space-y-4 rounded-xl border border-white/10 bg-black/20 p-6 backdrop-blur-[2px] sm:p-8">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 class="text-2xl font-medium tracking-tight">hi :3 im abhinav</h2>
+        <div class="flex gap-2 text-xs font-mono lowercase">
+          <span class="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-primary/90">feminist</span>
+          <span class="rounded-full border border-purple-500/30 bg-purple-500/10 px-2.5 py-0.5 text-purple-300">bi</span>
+          <span class="rounded-full border border-yellow-500/30 bg-yellow-500/10 px-2.5 py-0.5 text-yellow-300">enby</span>
+        </div>
       </div>
 
-      <div class="mt-12 flex justify-center">
+      <p class="text-foreground/90 leading-relaxed">
+        im a 21 year old cs student with way too many interests. this website serves as a repository for everything that makes me myself.
+      </p>
+
+      <p class="text-foreground/80 leading-relaxed text-sm">
+        it is usually common practice to separate your portfolio and personal sites, but for myself, i don't agree with that. i take pride in being passionate and open to learning about as many facets of the world as i can; they all play a part in shaping who i am, and what i believe in.
+      </p>
+    </div>
+
+    <!-- Topics Cloud -->
+    <div class="space-y-3 rounded-xl border border-white/10 bg-black/20 p-6 backdrop-blur-[2px]">
+      <h3 class="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+        topics i enjoy & feel strongly about
+      </h3>
+      <div class="flex flex-wrap gap-2 text-xs">
+        <a href="/maths" class="rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-foreground/90 transition-colors hover:border-primary hover:bg-primary/20">math ↗</a>
+        <a href="/projects" class="rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-foreground/90 transition-colors hover:border-primary hover:bg-primary/20">cs & projects ↗</a>
+        <a href="/research" class="rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-foreground/90 transition-colors hover:border-primary hover:bg-primary/20">ai & ml ↗</a>
+        <a href="/albums" class="rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-foreground/90 transition-colors hover:border-primary hover:bg-primary/20">music ↗</a>
+        <a href="/thoughts" class="rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-foreground/90 transition-colors hover:border-primary hover:bg-primary/20">writing ↗</a>
+        <span class="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-foreground/80">politics</span>
+        <span class="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-foreground/80">philosophy</span>
+        <span class="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-foreground/80">chess</span>
+        <span class="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-foreground/80">cinema</span>
+        <span class="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-foreground/80">reading</span>
+        <span class="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-foreground/80">sports & fitness</span>
+        <span class="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-foreground/80">fashion</span>
+        <span class="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-foreground/80">tiny animals</span>
+      </div>
+    </div>
+
+    <!-- 2-Column: Lyrics Callout + Ramona Frame -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+      <div class="rounded-xl border border-white/10 bg-black/20 p-6 backdrop-blur-[2px] font-serif italic text-sm text-foreground/85 leading-relaxed border-l-2 border-l-primary/60 space-y-1.5">
+        <p>Movie actors puzzled during combat</p>
+        <p>Leading man just stutters when he talks</p>
+        <p>There were teardrops on his contract</p>
+        <p>But there was chicken to defrost</p>
+        <p>Hiding in the pedals of amnesia</p>
+        <p>Like a flower not in bloom</p>
+        <p>You can act like you were swindled</p>
+        <p>But I'll remind you of the truth</p>
+      </div>
+
+      <div class="flex justify-center rounded-xl border border-white/10 bg-black/20 p-4 backdrop-blur-[2px]">
         <img
           src="/static/ramona.gif"
           alt="Ramona Flowers"
-          class="max-h-64 rounded-lg object-contain opacity-90"
+          class="rounded-lg object-contain max-h-56 opacity-90 transition-opacity hover:opacity-100"
           loading="eager"
         />
       </div>
