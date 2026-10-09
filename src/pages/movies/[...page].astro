@@ -1,8 +1,10 @@
 ---
 import Breadcrumbs from '@/components/Breadcrumbs.astro'
+import Link from '@/components/Link.astro'
 import PageHead from '@/components/PageHead.astro'
 import Search from '@/components/Search'
 import Layout from '@/layouts/Layout.astro'
+import { Icon } from 'astro-icon/components'
 import { Image } from 'astro:assets'
 import { getCollection, render } from 'astro:content'
 
@@ -140,33 +142,37 @@ const { page, totalCount } = Astro.props as Props
   />
   <Breadcrumbs items={[{ label: 'Movie reviews', icon: 'lucide:film' }]} />
 
-  <div class="mb-2 flex items-center justify-between">
-    <p class="text-muted-foreground text-sm">
-      {totalCount} movie{totalCount !== 1 ? 's' : ''} reviewed
-    </p>
-  </div>
-
-  <div class="mb-6 flex flex-wrap gap-3">
-    <a
-      href="/movies/100"
-      class="text-muted-foreground hover:text-foreground text-sm transition-colors"
-    >
-      ★ 100/100
-    </a>
-    <a
-      href="/movies/categories"
-      class="text-muted-foreground hover:text-foreground text-sm transition-colors"
-    >
-      Categories
-    </a>
-  </div>
-
-  <div class="mb-6">
+  <div class="mb-8 flex flex-col gap-3">
     <Search
       client:load
       items={movieSearchData}
       placeholder="Search movies..."
     />
+    <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+      <div class="flex flex-wrap items-center gap-1.5">
+        <span class="text-muted-foreground font-mono flex items-center gap-1 mr-1 text-[11px]">
+          <Icon name="lucide:filter" class="size-3" />
+          browse:
+        </span>
+        <Link
+          href="/movies/100"
+          class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border border-border/40 bg-secondary/30 text-muted-foreground hover:text-foreground hover:border-accent/50 hover:bg-secondary/60 transition-all font-mono text-[11px]"
+        >
+          <span class="text-accent/90">★</span>
+          <span>100/100</span>
+        </Link>
+        <Link
+          href="/movies/categories"
+          class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border border-border/40 bg-secondary/30 text-muted-foreground hover:text-foreground hover:border-accent/50 hover:bg-secondary/60 transition-all font-mono text-[11px]"
+        >
+          <Icon name="lucide:layout-grid" class="size-3 text-accent/80" />
+          <span>categories</span>
+        </Link>
+      </div>
+      <p class="text-muted-foreground text-[11px] font-mono">
+        {totalCount} movie{totalCount !== 1 ? 's' : ''} reviewed
+      </p>
+    </div>
   </div>
 
   {
