@@ -184,6 +184,8 @@ const NAV_CARDS = [
   }
 
   .header-container {
+    position: relative;
+    z-index: 60;
     margin-left: auto;
     margin-right: auto;
     width: 100%;
@@ -238,18 +240,17 @@ const NAV_CARDS = [
   /* Dynamic theme accent styling for the active close button */
   .mobile-menu-btn.is-active {
     border-color: var(--primary);
-    background-color: color-mix(in oklab, var(--primary) 15%, transparent);
+    background-color: color-mix(in oklch, var(--primary) 15%, transparent);
     color: var(--primary);
-    box-shadow: 0 0 14px -2px color-mix(in oklab, var(--primary) 35%, transparent);
+    box-shadow: 0 0 14px -2px color-mix(in oklch, var(--primary) 35%, transparent);
   }
 
   /* Mobile backdrop (dimmed overlay over page) */
   .mobile-menu-backdrop {
     position: fixed;
-    top: 0;
-    left: 0;
+    inset: 0;
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
     background-color: rgba(0, 0, 0, 0.65);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
@@ -283,6 +284,8 @@ const NAV_CARDS = [
     transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.18s ease;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
     z-index: 50;
   }
 
@@ -339,7 +342,14 @@ const NAV_CARDS = [
 </style>
 
 <script>
+  let cleanupMobileMenu: (() => void) | null = null
+
   function setupMobileMenu() {
+    if (cleanupMobileMenu) {
+      cleanupMobileMenu()
+      cleanupMobileMenu = null
+    }
+
     const headerWrapper = document.getElementById('header-wrapper')
     const toggleBtn = document.getElementById('mobile-menu-toggle')
     const drawer = document.getElementById('mobile-menu-drawer')
@@ -367,11 +377,11 @@ const NAV_CARDS = [
       openIcon?.classList.add('hidden')
       closeIcon?.classList.remove('hidden')
       if (btnText) btnText.textContent = 'close'
-      document.documentElement.style.overflow = 'hidden'
       document.body.style.overflow = 'hidden'
     }
 
     function closeMenu() {
+      if (!isOpen) return
       isOpen = false
       headerWrapper?.classList.remove('is-open')
       drawer?.classList.remove('is-open')
@@ -386,7 +396,6 @@ const NAV_CARDS = [
       openIcon?.classList.remove('hidden')
       closeIcon?.classList.add('hidden')
       if (btnText) btnText.textContent = 'menu'
-      document.documentElement.style.overflow = ''
       document.body.style.overflow = ''
     }
 
@@ -404,10 +413,11 @@ const NAV_CARDS = [
       toggleMenu()
     }
 
-    // Backdrop click closes
+    // Backdrop click closes cleanly
     if (backdrop) {
-      backdrop.onclick = () => {
-        if (isOpen) closeMenu()
+      backdrop.onclick = (e) => {
+        e.stopPropagation()
+        closeMenu()
       }
     }
 
@@ -417,16 +427,6 @@ const NAV_CARDS = [
         closeMenu()
       }
     })
-
-    // Close on outside click
-    const handleDocumentClick = (e: MouseEvent) => {
-      if (!isOpen) return
-      const target = e.target as HTMLElement
-      if (!drawer.contains(target) && !toggleBtn.contains(target)) {
-        closeMenu()
-      }
-    }
-    document.addEventListener('click', handleDocumentClick)
 
     // Close on Escape key
     const handleKeydown = (e: KeyboardEvent) => {
@@ -444,19 +444,19 @@ const NAV_CARDS = [
     }
     window.addEventListener('resize', handleResize)
 
-    // Clean up on page navigation
-    document.addEventListener(
-      'astro:before-swap',
-      () => {
-        closeMenu()
-        document.removeEventListener('click', handleDocumentClick)
-        document.removeEventListener('keydown', handleKeydown)
-        window.removeEventListener('resize', handleResize)
-      },
-      { once: true },
-    )
+    cleanupMobileMenu = () => {
+      closeMenu()
+      document.body.style.overflow = ''
+      document.removeEventListener('keydown', handleKeydown)
+      window.removeEventListener('resize', handleResize)
+    }
   }
 
-  setupMobileMenu()
   document.addEventListener('astro:page-load', setupMobileMenu)
+  document.addEventListener('astro:before-swap', () => {
+    if (cleanupMobileMenu) {
+      cleanupMobileMenu()
+      cleanupMobileMenu = null
+    }
+  })
 </script>
