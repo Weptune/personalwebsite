@@ -1,5 +1,5 @@
 ---
-title: 'Stealing Jewels with Topology: The Necklace Splitting Theorem'
+title: 'How to Rob a Jewelry Store with Algebraic Topology'
 description: 'How two jewel thieves use the Borsuk-Ulam Theorem on high-dimensional spheres to solve an impossible discrete division puzzle.'
 date: 2026-10-10
 tags: ['topology', 'combinatorics', 'algorithms']
@@ -21,7 +21,7 @@ Here is the central question:
 
 ---
 
-## 1. The Shocking Bound
+## 1. Ten Million Beads, Only k Cuts
 
 Let us test our intuition on small values of $k$:
 
@@ -47,7 +47,7 @@ The breakthrough comes from a completely unexpected direction: **continuous alge
 
 ---
 
-## 2. Step 1: Continuous Measures on the Unit Interval
+## 2. Melting Discrete Gems into Smooth Density
 
 The discrete problem is difficult because beads are granular integer objects. To make progress, we take a standard detour: we turn the discrete necklace into a continuous interval.
 
@@ -70,7 +70,7 @@ The continuous version of our puzzle can now be stated cleanly:
 
 ---
 
-## 3. Step 2: The Geometry of Cuts as Points on a Sphere
+## 3. The Sphere That Encodes Every Cut
 
 How can we parameterize all possible ways to place $k$ cuts and assign segments to the two thieves?
 
@@ -105,7 +105,7 @@ This antipodal symmetry is the golden key to the entire proof.
 
 ---
 
-## 4. Step 3: The Discrepancy Vector Field
+## 4. Opposite Poles Swap the Loot
 
 Now let us measure how unfair a given division $x \in S^k$ is.
 
@@ -136,7 +136,7 @@ Does such a point $x^*$ guaranteed to exist?
 
 ---
 
-## 5. Step 4: The Borsuk-Ulam Theorem Delivers the Proof
+## 5. The Borsuk-Ulam Killshot
 
 To guarantee the existence of our fair partition point $x^*$, we bring in one of the most famous results in algebraic topology:
 
@@ -166,7 +166,7 @@ And how many cuts were used? Since $x^*$ has $k+1$ coordinates, the interval $[0
 
 ---
 
-## 6. Step 5: From Continuous Measures to Discrete Beads
+## 6. You Can't Slice an Emerald in Half (The Rounding Step)
 
 At this point, a careful reader will object:
 
@@ -190,7 +190,7 @@ Thus, the discrete theorem holds unconditionally.
 
 ---
 
-## 7. A Python Demonstration: Finding the Cuts
+## 7. Slicing a Real Necklace in Python
 
 To see how fair cuts look in practice, consider a small necklace with $k = 2$ colors: 8 rubies ($R$) and 6 emeralds ($E$):
 
@@ -242,11 +242,11 @@ Running this script reveals valid cut positions such as cuts at indices `(4, 11)
 
 ---
 
-## 8. Generalizations and the Computational Complexity (PPA)
+## 8. More Thieves and the PPA Complexity Trap
 
 The story does not end with two thieves.
 
-### What if there are $m$ thieves?
+### Scaling Up to m Thieves
 
 Noga Alon extended the theorem to arbitrary $m \ge 2$ thieves:
 
@@ -256,7 +256,7 @@ For $m = 2$, $k(2 - 1) = k$, which matches our theorem.
 
 The proof for general $m$ is even more advanced: instead of the simple $\mathbb{Z}_2$-antipodal action of the Borsuk-Ulam theorem, it uses topological fixed-point theorems for prime cyclic group actions $\mathbb{Z}_p$ acting on products of unit spheres and Stiefel manifolds.
 
-### The Computational Catch: The PPA Class
+### Guaranteed to Exist, Intractable to Find
 
 The Borsuk-Ulam theorem guarantees that a fair partition exists, but it is **non-constructive**: it gives no efficient algorithm to find the cut points.
 
@@ -271,7 +271,7 @@ Even though topology guarantees a fair split exists, actually finding where to m
 
 ---
 
-## Summary
+## The Takeaway
 
 The Necklace Splitting Theorem is a great example of the power of **topological combinatorics**:
 
