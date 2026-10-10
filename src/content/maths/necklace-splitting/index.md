@@ -267,18 +267,18 @@ In 2019, computer scientists Aris Filos-Ratsikas and Paul Goldberg resolved a lo
 
 PPA is the complexity class that captures problems whose existence is guaranteed by topological parity arguments (like Sperner's Lemma and the Borsuk-Ulam theorem). It contains other famous hard problems, such as finding Nash equilibria in certain non-cooperative games.
 
-This means that while topology guarantees a fair split exists with absolute mathematical certainty, actually finding the cuts on a massive necklace is believed to be computationally intractable in the worst case!
+Even though topology guarantees a fair split exists, actually finding where to make the cuts on a large necklace is computationally intractable in the worst case.
 
 ---
 
 ## Summary
 
-The Necklace Splitting Theorem is widely considered a masterpiece of modern mathematics because it embodies the power of **topological combinatorics**:
+The Necklace Splitting Theorem is a great example of the power of **topological combinatorics**:
 
-1. You start with an apparently intractable discrete puzzle about indivisible beads and cuts.
+1. You start with an apparently messy discrete puzzle about indivisible beads and cuts.
 2. You continuous-ize the problem by mapping beads to probability measures on $[0, 1]$.
 3. You realize that all cut locations and thief assignments can be encoded as coordinates on a unit sphere $S^k$, where antipodal points naturally swap the thieves.
 4. The Borsuk-Ulam theorem immediately forces a zero-discrepancy point to exist on the sphere.
 5. You round back to discrete beads.
 
-Whenever discrete math hits an impenetrable wall of casework, a continuous topological detour often reveals that the solution was sitting on a sphere all along.
+It is a really clean example of how framing a discrete problem geometrically can turn an otherwise messy proof into something intuitive.
