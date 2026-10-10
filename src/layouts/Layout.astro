@@ -19,9 +19,10 @@ const { class: className } = Astro.props
 
 <!doctype html>
 <html
-  class="bg-background text-foreground scheme-light-dark overflow-x-hidden w-full"
+  class="bg-background text-foreground scheme-dark overflow-x-hidden w-full"
   lang={SITE.locale}
   data-theme="dark"
+  style="color-scheme: dark; background-color: var(--deep-space-2, #030006);"
 >
   <Head>
     <link
@@ -30,9 +31,9 @@ const { class: className } = Astro.props
     />
     <slot name="head" />
   </Head>
-  <body class="flex h-fit min-h-screen flex-col font-sans overflow-x-hidden w-full">
+  <body class="flex h-fit min-h-screen flex-col font-sans overflow-x-hidden w-full bg-background" style="background-color: var(--deep-space-2, #030006);">
     <CursorTrail />
-    <div id="celestial-bg" class="pointer-events-none fixed inset-0 z-0 will-change-transform [transform:translateZ(0)] [contain:paint]" aria-hidden="true">
+    <div id="celestial-bg" class="pointer-events-none fixed inset-0 z-0 bg-[var(--deep-space-2,#030006)] will-change-transform [transform:translateZ(0)] [contain:paint]" aria-hidden="true">
       <canvas
         id="starfield-webgl"
         class="absolute inset-0 h-full w-full opacity-0 transition-opacity duration-1000"
@@ -2349,7 +2350,18 @@ const { class: className } = Astro.props
         document.addEventListener('celestial-theme-change', onThemeChange)
         document.addEventListener('mousemove', onMouseMove, { passive: true })
         document.addEventListener('click', onClick)
-        document.addEventListener('visibilitychange', () => { paused = document.hidden })
+        document.addEventListener('visibilitychange', () => {
+          paused = document.hidden
+          if (!document.hidden) {
+            const webglCanvas = document.getElementById('starfield-webgl')
+            if (webglCanvas) {
+              const gl = webglCanvas.getContext('webgl')
+              if (gl && gl.isContextLost()) {
+                setupStarfield()
+              }
+            }
+          }
+        })
 
         function resize() {
           width = window.innerWidth
@@ -3224,6 +3236,17 @@ const { class: className } = Astro.props
         currentTheme = localStorage.getItem('celestial-theme') || 'stars'
         const webglCanvas = document.getElementById('starfield-webgl')
 
+        if (webglCanvas && !webglCanvas.dataset.contextHandlerBound) {
+          webglCanvas.dataset.contextHandlerBound = 'true'
+          webglCanvas.addEventListener('webglcontextlost', (e) => {
+            e.preventDefault()
+            if (webglCleanup) { webglCleanup(); webglCleanup = null; }
+          }, false)
+          webglCanvas.addEventListener('webglcontextrestored', () => {
+            setupStarfield()
+          }, false)
+        }
+
         if (currentTheme === 'sun') {
           webglCleanup = startWebGLSun()
           if (webglCanvas) {
@@ -3350,6 +3373,9 @@ const { class: className } = Astro.props
         const root = document.documentElement
         root.setAttribute('data-celestial-theme', storedTheme)
         root.setAttribute('data-text-glow', localStorage.getItem('text-glow') || 'on')
+        root.style.colorScheme = 'dark'
+        root.style.backgroundColor = active.ds2
+        root.style.setProperty('--background', active.ds1)
         root.style.setProperty('--primary', active.p)
         root.style.setProperty('--nebula-color-1', active.c1)
         root.style.setProperty('--nebula-color-2', active.c2)

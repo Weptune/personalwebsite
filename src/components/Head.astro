@@ -22,11 +22,8 @@ import Favicons from './Favicons.astro'
     content="telephone=no,date=no,address=no,email=no,url=no"
   />
 
-  <meta
-    name="theme-color"
-    content="#121212"
-    media="(prefers-color-scheme: dark)"
-  />
+  <meta name="theme-color" content="#030006" />
+  <meta name="color-scheme" content="dark" />
 
   <link rel="sitemap" href="/sitemap-index.xml" />
   <link rel="manifest" href="/site.webmanifest" />
@@ -109,6 +106,9 @@ import Favicons from './Favicons.astro'
       const active = palettes[theme] || palettes.stars;
       const root = document.documentElement;
       root.setAttribute('data-celestial-theme', theme);
+      root.style.colorScheme = 'dark';
+      root.style.backgroundColor = active.deepSpace2;
+      root.style.setProperty('--background', active.deepSpace1);
       root.style.setProperty('--primary', active.primary);
       root.style.setProperty('--nebula-color-1', active.color1);
       root.style.setProperty('--nebula-color-2', active.color2);

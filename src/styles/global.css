@@ -100,6 +100,8 @@
 /* ------------------------------------------------ */
 
 :root {
+  color-scheme: dark;
+  background-color: #030006;
   --background: oklch(0.08 0 0);
   --foreground: oklch(0.95 0 0);
 
@@ -618,6 +620,7 @@ body {
 /* ------------------------------------------------ */
 
 [data-celestial-theme="stars"] {
+  --background: oklch(0.06 0.01 260);
   /* Override primary to a rich cosmic purple */
   --primary: oklch(0.76 0.22 295);
   --primary-foreground: oklch(0.12 0.03 295);
