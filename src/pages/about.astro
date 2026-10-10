@@ -14,10 +14,38 @@ import Layout from '@/layouts/Layout.astro'
       <div class="flex flex-wrap items-center justify-between gap-3">
         <h2 class="text-2xl sm:text-3xl font-medium tracking-tight normal-case">hi <span class="font-sans font-medium text-primary/90 inline-block">:3</span> im abhinav</h2>
         <div class="flex flex-wrap items-center gap-2 text-xs font-mono lowercase">
-          <span class="rounded-full border border-rose-400/25 bg-rose-500/10 px-2.5 py-0.5 text-rose-300/90 transition-colors hover:border-rose-400/40 hover:bg-rose-500/15">feminist</span>
-          <span class="rounded-full border border-violet-400/25 bg-violet-500/10 px-2.5 py-0.5 text-violet-300/90 transition-colors hover:border-violet-400/40 hover:bg-violet-500/15">bi</span>
-          <span class="rounded-full border border-amber-300/25 bg-amber-400/10 px-2.5 py-0.5 text-amber-200/90 transition-colors hover:border-amber-300/40 hover:bg-amber-400/15">enby</span>
-          <span class="rounded-full border border-cyan-400/25 bg-cyan-500/10 px-2.5 py-0.5 text-cyan-200/90 transition-colors hover:border-cyan-400/40 hover:bg-cyan-500/15">any prns</span>
+          <!-- feminist -->
+          <span class="identity-badge badge-feminist" title="feminist">
+            <span class="feminist-symbol" aria-hidden="true">♀</span>
+            <span>feminist</span>
+          </span>
+
+          <!-- bi -->
+          <span class="identity-badge badge-bi" title="bisexual">
+            <span class="flag-pin" aria-hidden="true">
+              <span class="stripe-bi-pink"></span>
+              <span class="stripe-bi-purple"></span>
+              <span class="stripe-bi-blue"></span>
+            </span>
+            <span>bi</span>
+          </span>
+
+          <!-- enby (non-binary) -->
+          <span class="identity-badge badge-enby" title="non-binary (enby)">
+            <span class="flag-pin" aria-hidden="true">
+              <span class="stripe-enby-yellow"></span>
+              <span class="stripe-enby-white"></span>
+              <span class="stripe-enby-purple"></span>
+              <span class="stripe-enby-black"></span>
+            </span>
+            <span>enby</span>
+          </span>
+
+          <!-- any prns -->
+          <span class="identity-badge badge-pronouns" title="any pronouns (they / he / she)">
+            <span class="flag-pin flag-spectrum" aria-hidden="true"></span>
+            <span>any prns</span>
+          </span>
         </div>
       </div>
 
@@ -91,3 +119,143 @@ import Layout from '@/layouts/Layout.astro'
     </div>
   </section>
 </Layout>
+
+<style>
+  .identity-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.2rem 0.65rem;
+    border-radius: 9999px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    text-transform: lowercase;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: default;
+    user-select: none;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  .identity-badge:hover {
+    transform: translateY(-1px) scale(1.03);
+  }
+
+  /* 1. Feminist */
+  .badge-feminist {
+    border: 1px solid rgba(251, 113, 133, 0.35);
+    background: linear-gradient(135deg, rgba(244, 63, 94, 0.16) 0%, rgba(217, 70, 239, 0.12) 100%);
+    color: #fecdd3;
+  }
+  .badge-feminist:hover {
+    border-color: rgba(251, 113, 133, 0.7);
+    color: #ffffff;
+    box-shadow: 0 0 14px -1px rgba(244, 63, 94, 0.4);
+  }
+  .feminist-symbol {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 0.75rem;
+    line-height: 1;
+    color: #fb7185;
+    user-select: none;
+    transition: color 0.2s ease;
+  }
+  .badge-feminist:hover .feminist-symbol {
+    color: #ffffff;
+  }
+
+  /* 2. Bisexual (Magenta / Purple / Royal Blue) */
+  .badge-bi {
+    border: 1px solid rgba(167, 139, 250, 0.35);
+    background: linear-gradient(135deg, rgba(214, 2, 112, 0.16) 0%, rgba(155, 79, 150, 0.15) 50%, rgba(0, 56, 168, 0.18) 100%);
+    color: #f5d0fe;
+  }
+  .badge-bi:hover {
+    border-color: rgba(232, 121, 249, 0.7);
+    color: #ffffff;
+    box-shadow: 0 0 14px -1px rgba(214, 2, 112, 0.35), 0 0 14px -1px rgba(0, 56, 168, 0.3);
+  }
+
+  /* 3. Non-Binary / Enby (Yellow / White / Purple / Charcoal) */
+  .badge-enby {
+    border: 1px solid rgba(253, 224, 71, 0.35);
+    background: linear-gradient(135deg, rgba(252, 244, 52, 0.14) 0%, rgba(255, 255, 255, 0.06) 30%, rgba(156, 92, 212, 0.18) 70%, rgba(44, 44, 44, 0.25) 100%);
+    color: #fef08a;
+  }
+  .badge-enby:hover {
+    border-color: rgba(253, 224, 71, 0.7);
+    color: #ffffff;
+    box-shadow: 0 0 14px -1px rgba(252, 244, 52, 0.3), 0 0 14px -1px rgba(156, 92, 212, 0.35);
+  }
+
+  /* 4. Any Pronouns (Spectrum / Prism) */
+  .badge-pronouns {
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(168, 85, 247, 0.14) 50%, rgba(244, 114, 182, 0.15) 100%);
+    color: #bae6fd;
+  }
+  .badge-pronouns:hover {
+    border-color: rgba(56, 189, 248, 0.7);
+    color: #ffffff;
+    box-shadow: 0 0 14px -1px rgba(56, 189, 248, 0.35), 0 0 14px -1px rgba(244, 114, 182, 0.3);
+  }
+
+  /* Micro Pride Flag Pins */
+  .flag-pin {
+    display: inline-flex;
+    flex-direction: column;
+    width: 0.65rem;
+    height: 0.45rem;
+    border-radius: 2px;
+    overflow: hidden;
+    flex-shrink: 0;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
+    border: 0.5px solid rgba(255, 255, 255, 0.25);
+  }
+
+  /* Bi stripes: 40% Magenta (#d60270), 20% Purple (#9b4f96), 40% Blue (#0038a8) */
+  .stripe-bi-pink {
+    width: 100%;
+    height: 40%;
+    background-color: #d60270;
+  }
+  .stripe-bi-purple {
+    width: 100%;
+    height: 20%;
+    background-color: #9b4f96;
+  }
+  .stripe-bi-blue {
+    width: 100%;
+    height: 40%;
+    background-color: #0038a8;
+  }
+
+  /* Enby stripes: 25% Yellow (#fcf434), 25% White (#ffffff), 25% Purple (#9c5cd4), 25% Charcoal (#2c2c2c) */
+  .stripe-enby-yellow {
+    width: 100%;
+    height: 25%;
+    background-color: #fcf434;
+  }
+  .stripe-enby-white {
+    width: 100%;
+    height: 25%;
+    background-color: #ffffff;
+  }
+  .stripe-enby-purple {
+    width: 100%;
+    height: 25%;
+    background-color: #9c5cd4;
+  }
+  .stripe-enby-black {
+    width: 100%;
+    height: 25%;
+    background-color: #2c2c2c;
+  }
+
+  /* Any pronouns spectrum gradient */
+  .flag-spectrum {
+    background: linear-gradient(135deg, #38bdf8 0%, #a855f7 50%, #f472b6 100%);
+  }
+</style>
