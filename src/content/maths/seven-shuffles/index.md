@@ -1,31 +1,34 @@
 ---
-title: 'The Seven Shuffles Theorem'
-description: 'Why four riffle shuffles leave a deck of cards almost completely ordered, and how seven shuffles trigger a sharp phase transition into randomness.'
-date: 2026-10-14
+title: 'Why Four Shuffles Leave a Deck Unmixed'
+description: 'In casual card games and casinos alike, four riffle shuffles look thorough. In reality, the mathematical distance to randomness remains 1.0000 until a sharp cutoff at shuffle seven.'
+date: 2026-03-09
 tags: ['probability', 'combinatorics', 'markov-chains']
-image: './cover.jpg'
+image: './cover.png'
 pinned: false
 ---
+
+_Cover art by [@prynmatica](https://x.com/prynmatica) :3_
 
 In a standard deck of 52 playing cards, the number of possible orderings is $52!$, which is roughly $8.0658 \times 10^{67}$. This number is larger than the number of square meters on the surface of every star in the observable universe. If every human who ever lived shuffled a deck once every second since the Big Bang, humanity would still have witnessed less than an infinitesimal fraction of the possible configurations.
 
 Because that permutation space is so vast, most card players assume that almost any chaotic physical mixing is sufficient to make a deck unpredictable. In casual games, and for decades in commercial casinos, dealers would riffle shuffle a deck three or four times before dealing a hand of blackjack or poker. The reasoning felt intuitive: after four shuffles, every single card has been displaced from its original position, cards from the top and bottom of the deck are thoroughly intertwined, and no adjacent pair from the factory order remains intact.
 
-In 1992, mathematicians Dave Bayer and Persi Diaconis published a landmark paper titled *Trailing the Dovetail Shuffle to its Lair*. They proved that this intuition is completely wrong.
+In 1992, mathematicians Dave Bayer and Persi Diaconis published _Trailing the Dovetail Shuffle to its Lair_. They proved that this intuition is completely wrong.
 
-After four riffle shuffles, the deck is not random. It is not even partially random in any meaningful statistical sense. The mathematical distance between a four-shuffled deck and genuine randomness is $1.0000$ to four decimal places. You can construct bets based on simple card orders where the house has an enormous negative expectation. 
+After four riffle shuffles, the deck is not random. It is not even partially random in any meaningful statistical sense. The mathematical distance between a four-shuffled deck and genuine randomness is $1.0000$ to four decimal places. You can construct bets based on simple card orders where the house has an enormous negative expectation.
 
-Then, between the fifth, sixth, and seventh shuffles, something unusual happens. The distribution of permutations does not slowly drift toward uniform randomness. Instead, it experiences a sharp mathematical phase transition known as the **cutoff phenomenon**. At six shuffles, the deck remains heavily biased. At seven shuffles, the bias abruptly collapses, and the total variation distance drops to $0.334$.
+Then, between the fifth, sixth, and seventh shuffles, something unusual happens. The distribution of permutations does not slowly drift toward uniform randomness. Instead, it experiences a sharp mathematical phase transition known as the **cutoff phenomenon**. At six shuffles, the deck remains heavily biased. At seven shuffles, the bias collapses, and the total variation distance drops to $0.334$.
 
-Here is how the mathematics works.
+Here is how the mechanics work.
 
 ---
 
 ## 1. The Gilbert-Shannon-Reeds Model
 
-To analyze a physical shuffle mathematically, we need a realistic model of how humans actually shuffle cards. 
+To analyze a physical shuffle mathematically, we need a realistic model of how humans actually shuffle cards.
 
 A riffle shuffle (or dovetail shuffle) consists of two physical steps:
+
 1. **The Cut**: The dealer cuts the deck of $n$ cards into two packets of sizes $c$ and $n - c$.
 2. **The Riffle**: The dealer releases the cards from their thumbs so that the two packets interleave into a single combined stack.
 
@@ -34,6 +37,7 @@ In 1955, Edgar Gilbert and Claude Shannon developed a probabilistic model for th
 The model rests on two simple assumptions:
 
 ### Step 1: The Binomial Cut
+
 When a human cuts a deck of $n$ cards in half, they rarely divide it into exactly $n/2$ and $n/2$. Instead, the size of the top packet $c$ follows a binomial distribution with parameters $n$ and $p = 1/2$:
 
 $$\mathbb{P}(c) = \frac{1}{2^n} \binom{n}{c}$$
@@ -41,6 +45,7 @@ $$\mathbb{P}(c) = \frac{1}{2^n} \binom{n}{c}$$
 For $n = 52$, the average cut size is 26, with standard deviation $\sqrt{52 \times 0.5 \times 0.5} \approx 3.6$ cards. Almost all cuts land between 20 and 32 cards.
 
 ### Step 2: Proportional Interleaving
+
 Suppose the left hand holds a packet of $A$ cards and the right hand holds a packet of $B$ cards. As the dealer lets cards fall from their thumbs, the probability that the next card drops from the left packet is proportional to the size of that packet:
 
 $$\mathbb{P}(\text{next card falls from left}) = \frac{A}{A + B}$$
@@ -74,6 +79,7 @@ Let us illustrate this with a small 6-card deck initially ordered:
 $$(1, 2, 3, 4, 5, 6)$$
 
 Suppose we cut the deck into two packets:
+
 - Left packet: $(1, 2, 3)$
 - Right packet: $(4, 5, 6)$
 
@@ -82,10 +88,13 @@ Now we interleave them into a new permutation:
 $$(1, 4, 2, 5, 3, 6)$$
 
 How many rising sequences does this permutation have? Let us trace the consecutive numbers:
+
 - Starting with 1: we find $1$, then $2$, then $3$. These form the sequence $(1, 2, 3)$.
 - Starting with the next missing number, 4: we find $4$, then $5$, then $6$. These form the sequence $(4, 5, 6)$.
 
 Every card belongs to exactly one rising sequence. The permutation $(1, 4, 2, 5, 3, 6)$ has **exactly 2 rising sequences**.
+
+![Rising Sequences Interleaving](./diagram_interleaving.png)
 
 Now consider the fundamental theorem of riffle shuffles:
 
@@ -103,11 +112,11 @@ Each existing rising sequence can at most be cut in two by the new cut point and
 
 Let us evaluate this bound for a standard 52-card deck:
 
-* After $1$ shuffle: at most $2^1 = 2$ rising sequences.
-* After $2$ shuffles: at most $2^2 = 4$ rising sequences.
-* After $3$ shuffles: at most $2^3 = 8$ rising sequences.
-* After $4$ shuffles: at most $2^4 = 16$ rising sequences.
-* After $5$ shuffles: at most $2^5 = 32$ rising sequences.
+- After $1$ shuffle: at most $2^1 = 2$ rising sequences.
+- After $2$ shuffles: at most $2^2 = 4$ rising sequences.
+- After $3$ shuffles: at most $2^3 = 8$ rising sequences.
+- After $4$ shuffles: at most $2^4 = 16$ rising sequences.
+- After $5$ shuffles: at most $2^5 = 32$ rising sequences.
 
 Now pause and consider what a truly random permutation of 52 cards looks like.
 
@@ -139,10 +148,12 @@ $$\frac{\sum_{r=1}^{16} A(52, r)}{52!} \approx 0.00226 \quad (0.226\%)$$
 
 This reveals the reachability barrier:
 
-* **After 4 shuffles**, the maximum number of rising sequences a deck can possibly have is $2^4 = 16$.
-* Therefore, after 4 shuffles, **over 99.77% of all possible permutations have probability strictly zero.**
+- **After 4 shuffles**, the maximum number of rising sequences a deck can possibly have is $2^4 = 16$.
+- Therefore, after 4 shuffles, **over 99.77% of all possible permutations have probability strictly zero.**
 
-You cannot reach them. No matter which cards fall where, 4 shuffles physically cannot generate any permutation that requires 17 or more rising sequences. The dealer has not shuffled the deck into a random state; they have confined it to a microscopic sub-manifold comprising less than a quarter of one percent of the permutation group.
+![The Reachability Wall](./diagram_reachability_wall.png)
+
+You cannot reach them. No matter which cards fall where, 4 shuffles physically cannot generate any permutation that requires 17 or more rising sequences. The dealer has not shuffled the deck into a random state; they have confined it to a microscopic subset comprising less than a quarter of one percent of the permutation group.
 
 Even after 5 shuffles, where $2^5 = 32$, any permutation requiring 33 or more rising sequences has probability exactly zero.
 
@@ -170,8 +181,9 @@ Using this geometric and algebraic formulation, Bayer and Diaconis proved:
 This is an astonishingly clean formula. The probability of obtaining a permutation $\sigma$ does not depend on the individual values of its cards or their complex pairings. It depends **solely on a single integer**: the number of rising sequences $r$ in $\sigma$.
 
 Let us examine what this formula tells us:
-* If $r > 2^k$, then $2^k + n - r < n$, and the binomial coefficient $\binom{2^k + n - r}{n} = 0$. The probability is zero, matching our earlier combinatorial bound.
-* When $k$ becomes large, $2^k \gg n$, and the binomial coefficient can be approximated using Stirling's expansion:
+
+- If $r > 2^k$, then $2^k + n - r < n$, and the binomial coefficient $\binom{2^k + n - r}{n} = 0$. The probability is zero, matching our earlier combinatorial bound.
+- When $k$ becomes large, $2^k \gg n$, and the binomial coefficient can be approximated using Stirling's expansion:
   $$\binom{2^k + n - r}{n} \approx \frac{(2^k)^n}{n!}$$
   Then $Q^k(\sigma) \to \frac{1}{n!}$, which is the uniform distribution.
 
@@ -184,8 +196,9 @@ To quantify how close the distribution $Q^k$ is to the uniform distribution $U(\
 $$\|Q^k - U\|_{\text{TV}} = \max_{A \subseteq S_n} |Q^k(A) - U(A)| = \frac{1}{2} \sum_{\sigma \in S_n} \left| Q^k(\sigma) - \frac{1}{n!} \right|$$
 
 Total variation distance has a concrete operational meaning: it represents the maximum advantage any gambler can achieve on any event $A$ over random guessing.
-* If $\|Q^k - U\|_{\text{TV}} = 1.0$, there exists an event that occurs with probability 1 under $Q^k$ but with probability near 0 under $U$. The deck is completely non-random.
-* If $\|Q^k - U\|_{\text{TV}} = 0.0$, the distribution is indistinguishable from uniform randomness.
+
+- If $\|Q^k - U\|_{\text{TV}} = 1.0$, there exists an event that occurs with probability 1 under $Q^k$ but with probability near 0 under $U$. The deck is completely non-random.
+- If $\|Q^k - U\|_{\text{TV}} = 0.0$, the distribution is indistinguishable from uniform randomness.
 
 Because $Q^k(\sigma)$ is identical for all permutations with the same number of rising sequences $r$, and because there are exactly $A(n, r)$ such permutations, the sum over all $52!$ configurations collapses to a simple 52-term sum:
 
@@ -194,32 +207,21 @@ $$\|Q^k - U\|_{\text{TV}} = \frac{1}{2} \sum_{r=1}^{n} A(n, r) \left| \frac{\bin
 Evaluating this sum for $n = 52$ yields the exact numbers:
 
 | Shuffles ($k$) | Total Variation Distance $\|Q^k - U\|_{\text{TV}}$ | Reachable Rising Sequences ($2^k$) |
-|:---:|:---:|:---:|
-| 1 | 1.0000 | 2 |
-| 2 | 1.0000 | 4 |
-| 3 | 1.0000 | 8 |
-| 4 | 1.0000 | 16 |
-| 5 | 0.9237 | 32 |
-| 6 | 0.6135 | 64 (all 52) |
-| 7 | **0.3341** | all 52 |
-| 8 | 0.1672 | all 52 |
-| 9 | 0.0854 | all 52 |
-| 10 | 0.0429 | all 52 |
+| :------------: | :------------------------------------------------: | :--------------------------------: |
+|       1        |                       1.0000                       |                 2                  |
+|       2        |                       1.0000                       |                 4                  |
+|       3        |                       1.0000                       |                 8                  |
+|       4        |                       1.0000                       |                 16                 |
+|       5        |                       0.9237                       |                 32                 |
+|       6        |                       0.6135                       |            64 (all 52)             |
+|       7        |                     **0.3341**                     |               all 52               |
+|       8        |                       0.1672                       |               all 52               |
+|       9        |                       0.0854                       |               all 52               |
+|       10       |                       0.0429                       |               all 52               |
 
-Look at the trajectory of this curve:
+![The Cutoff Transition](./diagram_cutoff_transition.png)
 
-```
-TV Distance
- 1.0 |========---------
- 0.8 |        \
- 0.6 |         \  (k = 6: 0.614)
- 0.4 |          \
- 0.2 |           \  (k = 7: 0.334)
- 0.0 |____________\_________________
-     1  2  3  4  5  6  7  8  9  10  Shuffles
-```
-
-For the first four shuffles, the variation distance is effectively pinned at 1.0. The deck is not mixing gradually. 
+For the first four shuffles, the variation distance is effectively pinned at 1.0. The deck is not mixing gradually.
 
 Then, between shuffles 5 and 7, the distance plunges precipitously: from $0.924$ down to $0.334$. After shuffle 7, each subsequent shuffle cuts the remaining variation distance roughly in half: $0.167$ at 8, $0.085$ at 9, and $0.043$ at 10.
 
@@ -282,7 +284,7 @@ def bayer_diaconis_tv(n: int, max_k: int = 10) -> list[tuple[int, float]]:
     after k = 1 ... max_k Gilbert-Shannon-Reeds riffle shuffles.
     """
     n_factorial = math.factorial(n)
-    
+
     # Precompute Eulerian numbers A(n, 1) through A(n, n)
     eulerian = [eulerian_number(n, r) for r in range(1, n + 1)]
     assert sum(eulerian) == n_factorial, "Eulerian sum must equal n!"
@@ -291,7 +293,7 @@ def bayer_diaconis_tv(n: int, max_k: int = 10) -> list[tuple[int, float]]:
     for k in range(1, max_k + 1):
         two_k = 2**k
         two_kn = 2**(k * n)
-        
+
         tv_numerator = 0
         for r in range(1, n + 1):
             count = eulerian[r - 1]
@@ -305,7 +307,7 @@ def bayer_diaconis_tv(n: int, max_k: int = 10) -> list[tuple[int, float]]:
         # Divide by 2 * n! * 2^(kn)
         tv_distance = tv_numerator / (2 * n_factorial * two_kn)
         results.append((k, tv_distance))
-        
+
     return results
 
 if __name__ == "__main__":
@@ -339,7 +341,7 @@ Bayer-Diaconis Total Variation Distance for n = 52:
 
 ## 8. Exploiting the Defect: A Simple Practical Test
 
-Why does a total variation distance of $1.0000$ matter to a player at a table? 
+Why does a total variation distance of $1.0000$ matter to a player at a table?
 
 Suppose you are playing a game where a dealer shuffles a new deck 3 times and begins dealing cards one by one from the top. Can you exploit the order?
 
@@ -350,8 +352,9 @@ Yes, easily. Consider this simple prediction rule:
 Because 3 shuffles can produce at most $2^3 = 8$ rising sequences, the cards in the deck are partitioned into at most 8 long monotonic threads. On average, each thread contains $52 / 8 = 6.5$ cards.
 
 Under genuine randomness, the chance that the next card is higher than the current card is roughly $50\%$. But after only 3 or 4 shuffles:
-* If the card just dealt is a 4, there is a very high probability that the 5 from that same original packet is sitting just a few cards deeper in the stack.
-* The probability of correctly guessing whether the next card is higher or lower rises from $50\%$ to over **$75\%$**.
+
+- If the card just dealt is a 4, there is a very high probability that the 5 from that same original packet is sitting just a few cards deeper in the stack.
+- The probability of correctly guessing whether the next card is higher or lower rises from $50\%$ to over **$75\%$**.
 
 Persi Diaconis once demonstrated this to casino executives. He bet that after 4 shuffles, he could consistently predict whether upcoming cards were red or black, high or low, with statistical significance. When they saw the results, several major casino operators changed their dealer procedures, requiring automated shuffling machines or mandating at least seven riffle shuffles combined with a box cut before dealing.
 
@@ -359,8 +362,8 @@ Persi Diaconis once demonstrated this to casino executives. He bet that after 4 
 
 ## 9. Conclusion
 
-The Seven Shuffles Theorem is a masterclass in how mathematical rigor upends physical intuition.
+Physical mixing is deceptive. To human vision, three or four riffle shuffles look thorough: every card has moved, original neighbors have been separated, and cards from the top and bottom of the deck are intertwined. But human perception tracks local disorder, whereas genuine randomness is a global property of the symmetric group.
 
-A physical system can appear completely scrambled to the human eye while preserving deep structural invariants. Cards that look disordered after three shuffles remain trapped within rigid combinatorial corridors governed by Eulerian numbers and powers of two.
+The Gilbert-Shannon-Reeds model shows why local disorder fails to randomize the deck. Each riffle shuffle at most doubles the number of rising sequences. Because powers of two grow moderately and a typical permutation contains 26 or 27 rising sequences, the first four shuffles leave the deck confined to less than a quarter of a percent of all configurations. It is not that the cards are slowly approaching uniform distribution. Until five or six shuffles have occurred, the vast majority of possible orderings have probability strictly zero.
 
-Only when the number of rising sequences allowed by the shuffle ($2^k$) substantially exceeds the number of cards in the deck ($n = 52$) does the constraint unlock. At seven shuffles, the combinatorial walls dissolve, the variation distance drops through the floor, and the deck enters genuine randomness.
+The abruptness of the transition is what makes the cutoff mathematically interesting. The total variation distance does not leak away steadily over time. It stays pinned at 1.000 for four shuffles, begins to move at five, and drops sharply through seven, after which each extra shuffle roughly halves the remaining bias. If you want a random deck of 52 cards, seven riffles is where the mathematics finally catches up with the table.
