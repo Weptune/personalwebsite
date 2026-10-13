@@ -8,7 +8,7 @@ pinned: false
 draft: false
 ---
 
-![Applying Statistics to LLM Evaluations](./cover.jpg)
+*The cover art is from https://x.com/DemensaMusic/status/2105568847113883950?s=20 :)*
 
 Research on large language models (LLMs) is empirically driven. For this reason, model evaluations play a pivotal role in the field's progress. We improve models by making changes, evaluating them, and iterating. Despite their foundational role, however, evaluations are usually handled in a naive manner. In most cases, we just test a model's performance over a finite evaluation dataset and directly compare performance metrics to those of other models with no consideration for whether these results are statistically significant or not. Such an approach leads to incorrect or misleading interpretations of evaluation results. As researchers, we want to avoid mistaking noise for progress and instead equip ourselves with the statistical tools needed to run informative model evaluations.
 
@@ -627,17 +627,3 @@ To summarize the practical best practices:
 [3] Madaan, Lovish, et al. "Quantifying variance in evaluation benchmarks." arXiv preprint arXiv:2406.10229 (2024).
 
 [4] Heineman, David, et al. "Signal and noise: A framework for reducing uncertainty in language model evaluation." arXiv preprint arXiv:2409.00630 (2024).
-
----
-
-### Footnotes
-
-1. The evaluation process is stochastic, so if we re-run the evaluation on this question multiple times we can observe a different result.
-2. Previously, we introduced the sample variance, denoted as $s^2$. The sample standard deviation, denoted as $s$, is simply the square root of this expression.
-3. The $z$-score refers to the realized value $z$ of the standardized random variable $Z$.
-4. The reason we must assume variance $\sigma^2$ is finite is so that this expression is well-defined and exists. Standard deviation and standard error are not finite or meaningful when variance is infinite.
-5. We write the normal distribution as $\mathcal{N}(\mu, \sigma^2)$, where $\mu$ is the mean of the normal distribution and $\sigma^2$ is the variance.
-6. Here, the unconditional versions of $s$ and $x$ (without the $i$ subscript) are used, so we are taking this expectation over the entire super-population.
-7. More specifically, if we are reporting a metric in the range $[0, 1]$ that takes fractional values (e.g., an F1 score or ROUGE), this Bernoulli formula cannot be used.
-8. Practically, monotonicity is computed by taking the sequence of scores throughout training and measuring the Kendall rank correlation between this sequence and a perfectly monotonic sequence (i.e., a sequence in which performance strictly increases at every training checkpoint).
-9. In the context of LLMs, a Cloze task refers to a fill-in-the-blank test where the model is given context with missing tokens and asked to predict the missing information.
