@@ -1,5 +1,5 @@
 ---
-title: 'Why Four Shuffles Leave a Deck Unmixed'
+title: "Your Deck of Cards Isn't Actually Shuffled"
 description: 'In casual card games and casinos alike, four riffle shuffles look thorough. In reality, the mathematical distance to randomness remains 1.0000 until a sharp cutoff at shuffle seven.'
 date: 2026-03-09
 tags: ['probability', 'combinatorics', 'markov-chains']
