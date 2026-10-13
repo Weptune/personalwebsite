@@ -3,12 +3,12 @@ title: 'Applying Statistics to LLM Evaluations'
 description: 'Most LLM evaluations are conducted without a deep consideration of statistics. Here is how to apply statistical rigor, error bars, and variance reduction to model benchmarks.'
 date: 2026-03-09
 tags: ['machine-learning', 'statistics', 'evaluation', 'llm']
-image: './cover.png'
+image: './cover.jpg'
 pinned: false
 draft: false
 ---
 
-![Applying Statistics to LLM Evaluations](./cover.png)
+![Applying Statistics to LLM Evaluations](./cover.jpg)
 
 Research on large language models (LLMs) is empirically driven. For this reason, model evaluations play a pivotal role in the field's progress. We improve models by making changes, evaluating them, and iterating. Despite their foundational role, however, evaluations are usually handled in a naive manner. In most cases, we just test a model's performance over a finite evaluation dataset and directly compare performance metrics to those of other models with no consideration for whether these results are statistically significant or not. Such an approach leads to incorrect or misleading interpretations of evaluation results. As researchers, we want to avoid mistaking noise for progress and instead equip ourselves with the statistical tools needed to run informative model evaluations.
 
