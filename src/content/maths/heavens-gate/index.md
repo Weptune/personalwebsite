@@ -633,7 +633,7 @@ _Figure 11: The improvement loop. Games become training positions, Stockfish lab
 
 Self-play results measure progress relative to a previous version, not absolute strength. Absolute strength was measured with fixed anchors: Blunder 7.6 (CCRL Blitz 2631) at 10+0.1, and Stockfish with `UCI_Elo` 2800, 3000 and 3190 at 60+0.6, the control at which its limiter is calibrated. A pooled maximum-likelihood fit over all anchor games gives the rating:
 
-![Anchored rating](./rating.png)
+![Anchored rating](./anchored_rating.png)
 _Figure 12: Anchored ratings with 95% intervals at each stage. The latest measured build scored 91% against Blunder 7.6 and 48.8% against Stockfish at 3000, pooling to 3024 (2967 to 3084), with no time forfeits in 220 games._
 
 Two changes merged after that measurement (+32 and +19 in self-play) suggest the current build is somewhat higher; self-play gains usually shrink against other opponents, so no number is claimed until the next anchor match. A check at 2+1 of the engine before and after two merges measured +108 over 40 games, so the fast-control gains carry over to slower play. The anchors were measured on local hardware rather than by CCRL, which adds perhaps 50 to 100 Elo of systematic uncertainty to the absolute figure; the relative progress, 2361 to 3024 under identical conditions, is the robust result.
