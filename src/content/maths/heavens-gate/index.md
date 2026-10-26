@@ -10,7 +10,7 @@ draft: false
 
 Every engine at the top of the computer chess rating lists now evaluates positions with a neural network. Stockfish replaced its hand-written evaluation with NNUE and later deleted the classical code entirely. The hand-crafted evaluation, a list of chess rules with numeric weights, is generally considered an obsolete art.
 
-Heaven's Gate is a chess engine with no neural network in it. It is about 10,000 lines of C++20: bitboard move generation, a principal variation search with the standard modern selectivity, and an evaluation made of 1,158 integer weights. Measured against engines with published CCRL Blitz ratings, it moved from **about 2361 to about 3024** on an anchored scale.
+Heaven's Gate is a chess engine with no neural network in it. It is about 10,000 lines of C++20: bitboard move generation, a principal variation search with the standard modern selectivity, and an evaluation made of 1,158 integer weights. Measured against engines with published CCRL Blitz ratings, it moved from **about 2361 to about 3024** on an anchored scale. You can play against the engine directly in your browser at [heavensgateonline.vercel.app](https://heavensgateonline.vercel.app/).
 
 Before settling on that linear evaluation, the engine began with a design that was neither classical nor neural: an evaluator built on **spectral graph theory and tropical algebra**. 
 
@@ -33,18 +33,210 @@ None of the individual techniques in Heaven's Gate are new; alpha-beta, Texel tu
 
 This writeup covers the full stack and the mathematics under each layer:
 
-1. the board representation and why magic bitboards are a perfect hash,
-2. alpha-beta search, its complexity bounds, and the pruning rules that break them,
-3. the engine's original evaluator, a spectral-tropical model built on graph Laplacians and max-plus algebra, and a mathematical post-mortem of why it could not work,
-4. the linear evaluation that replaced it, and an exact method for fitting it,
-5. the statistics of deciding whether a change is real, and
-6. stochastic approximation for tuning search parameters that cannot be fitted to data.
+1. the theoretical architecture of spectral graphs and tropical minimax geometry,
+2. the board representation and why magic bitboards are a perfect hash,
+3. alpha-beta search, its complexity bounds, and the pruning rules that break them,
+4. the mathematical post-mortem of why the spectral-tropical model broke down under real-time search,
+5. the linear evaluation that replaced it,
+6. an exact regression method for fitting 1,158 evaluation weights,
+7. the sequential statistics of deciding whether an Elo gain is real, and
+8. stochastic approximation (SPSA) for tuning search parameters that cannot be fitted to static data.
 
 One disclosure up front: the engine contains no network, but the positions its weights were fitted to were labelled by Stockfish, which does. The features are hand-designed; the regression targets came from a stronger engine.
 
 ---
 
-## 1. Board Representation
+## 1. The Theory: Spectral Graphs and Tropical Minimax Geometry
+
+Modern chess engines are almost universally built on neural networks. Whether using NNUE (Efficiently Updatable Neural Networks) in Stockfish or deep convolutional and residual networks in Leela Chess Zero, the prevailing methodology frames position evaluation as high-dimensional statistical pattern matching. You project tens of thousands of sparse coordinates or tensor planes into layers of unconstrained weights, allowing gradient descent to extract empirical correlations across millions of self-play games.
+
+A neural network has no built-in notion of geometric space, graph connectivity, or physical force. To an NNUE, a chess position is a high-dimensional binary vector; to a deep convolutional network, it is a stack of spatial bit-planes processed through brute-force tensor contractions.
+
+Heaven's Gate began from a completely different intellectual lineage: an attempt at an analytical, coordinate-free physics of the board. Rather than fitting millions of opaque weights to game outcomes, the initial engine modeled the chess board as an interconnected dynamical system:
+
+1. **The Spatial Graph**: Every piece on the board is a vertex in a weighted graph, whose edges represent physical lines of force, defense, attack, and multi-piece batteries.
+2. **Spectral Graph Theory**: The combinatorial graph Laplacian ($L = D - A$) acts as a discrete Laplace-Beltrami operator across the board. Its spectral invariants (the Fiedler value $\lambda_2$, Dirichlet energy, and Cheeger conductance bottlenecks) measure piece coordination and structural vulnerability directly from the spectrum, treating tactical harmony like vibrational modes or diffusion on a network.
+3. **Chebyshev Graph Convolutions**: Higher-order multi-hop piece coordination (such as a queen backing a bishop on a long diagonal, or doubled rooks on an open file) is captured without expensive matrix diagonalization via truncated Chebyshev polynomials of the normalized Laplacian ($T_2(\tilde{L}) = 2\tilde{L}^2 - I$).
+4. **Tropical Minimax Geometry**: Instead of passing these invariants into conventional linear algebra or black-box neural layers, the engine evaluated them over the max-plus semiring $(\mathbb{R} \cup \{-\infty\}, \max, +)$ of tropical geometry: the native algebra of minimax trees. By evaluating positions as dual-surface tropical rational functions ($\mathbb{T}_1 - \mathbb{T}_2$) across 10 Spatial King Buckets, the evaluator constructed a piecewise-linear, non-convex polyhedral decision surface.
+
+### The Piece Interaction Tensor
+
+A standard bitboard representation records piece locations as 64-bit integers. While optimal for bitwise move generation, it isolates pieces from one another: a knight on f3 is merely a bit in a register, containing no direct information about the pawn it anchors on e5 or the enemy king it pressures on g8.
+
+To capture the board as a physical force network, the engine transforms the position into a dynamic weighted undirected graph $G = (V, E)$. The vertex set $V$ consists of all active pieces on the board ($N \le 32$, shrinking dynamically as pieces are captured). The edges $e_{ij} = (v_i, v_j)$ represent tactical and spatial interactions, quantified by a symmetric adjacency matrix $A \in \mathbb{R}^{N \times N}$.
+
+The edge weights $w_{ij}$ are defined by a piece-interaction tensor scaled by spatial distance:
+
+$$
+w_{ij} = \operatorname{BaseWeight}(p_i, p_j) \cdot \operatorname{DistanceFactor}(s_i, s_j) \cdot \operatorname{RelationType}(p_i, p_j).
+$$
+
+For any two pieces $p_i$ on square $s_i$ and $p_j$ on square $s_j$:
+
+- **Direct Defense (Same Color)**: Base weight $w_{ij} = 0.50$ (e.g. a pawn defending an outpost knight).
+- **Direct Attack (Opposing Colors)**: Base weight $w_{ij} = 0.85$ (e.g. a bishop striking an enemy queen).
+- **Ray Battery / X-Ray Support**: When two pieces share a rank, file, or diagonal with no intervening pieces of lower value, $w_{ij} = 1.20$. This explicitly encodes rook batteries along open files and queen-bishop batteries on long diagonals.
+- **Chebyshev Distance Decay**: Tactical influence decays with king-move distance $d_\infty(s_i, s_j) = \max(|x_i - x_j|, |y_i - y_j|)$:
+
+$$
+\operatorname{DistanceFactor}(s_i, s_j) = \frac{1.0}{1.0 + 0.15 \cdot d_\infty(s_i, s_j)}.
+$$
+
+The adjacency matrix $A$ is zero along the main diagonal ($w_{ii} = 0$) and strictly symmetric ($w_{ij} = w_{ji}$).
+
+### The Graph Laplacian and Discrete Dirichlet Energy
+
+From the adjacency matrix $A$, the degree matrix $D \in \mathbb{R}^{N \times N}$ is the diagonal matrix of row sums:
+
+$$
+D_{ii} = \sum_{j=1}^N w_{ij}.
+$$
+
+The combinatorial graph Laplacian is defined as:
+
+$$
+L = D - A.
+$$
+
+In continuous physics, the Laplace-Beltrami operator $\Delta = \operatorname{div} \nabla$ governs diffusion, wave propagation, and electrostatic potential. On the discrete piece graph, $L$ acts as its discrete analogue. For any signal vector $\mathbf{u} \in \mathbb{R}^N$ assigning a potential value $u_i$ to each piece $v_i$, the quadratic form $\mathbf{u}^\top L \mathbf{u}$ computes the discrete Dirichlet energy across the network:
+
+$$
+\mathbf{u}^\top L \mathbf{u} = \mathbf{u}^\top (D - A) \mathbf{u} = \sum_{i=1}^N D_{ii} u_i^2 - \sum_{i=1}^N \sum_{j=1}^N w_{ij} u_i u_j = \frac{1}{2} \sum_{i=1}^N \sum_{j=1}^N w_{ij} (u_i - u_j)^2.
+$$
+
+Because $w_{ij} \ge 0$, this sum of squares is non-negative for all $\mathbf{u}$. Hence $L$ is symmetric positive-semidefinite ($L \succeq 0$), and all its eigenvalues are real and non-negative:
+
+$$
+0 = \lambda_1 \le \lambda_2 \le \lambda_3 \le \dots \le \lambda_N.
+$$
+
+The smallest eigenvalue $\lambda_1 = 0$ corresponds to the trivial uniform eigenvector $\mathbf{v}_1 = \frac{1}{\sqrt{N}} \mathbf{1}$, since $L \mathbf{1} = (D - A)\mathbf{1} = \mathbf{0}$.
+
+### Algebraic Connectivity ($\lambda_2$) and the Cheeger Bottleneck
+
+The second smallest eigenvalue, $\lambda_2$, was introduced by Miroslav Fiedler in 1973 and is known as the **Fiedler value** or **algebraic connectivity**. By the Courant-Fischer Rayleigh-Ritz theorem, it satisfies:
+
+$$
+\lambda_2 = \min_{\mathbf{u} \perp \mathbf{1},\, \|\mathbf{u}\|_2 = 1} \mathbf{u}^\top L \mathbf{u} = \min_{\sum u_i = 0} \frac{\sum_{i,j} w_{ij} (u_i - u_j)^2}{\sum_i u_i^2}.
+$$
+
+In physical systems, $\lambda_2$ measures how easily energy diffuses through a medium; in structural mechanics, it measures the stiffness of a truss. In Heaven's Gate's theoretical formulation, $\lambda_2$ served as a scale-invariant measure of **piece coordination**:
+
+- **High Algebraic Connectivity ($\lambda_2 \gg 0$)**: The player's pieces form a cohesive, mutually defending web. Rooks connect along ranks, minor pieces anchor central outposts, and the structure is resilient to tactical disruptions.
+- **Low Algebraic Connectivity ($\lambda_2 \to 0$)**: The piece network is fragmented into isolated clusters. A stranded queen on the rim or an undeveloped rook produces a near-zero Fiedler value, signaling vulnerability to forks and deflection tactics.
+
+The mathematical bridge from the spectrum to tactical weakness is the **Cheeger inequality**. For a graph $G$ with maximum degree $d_{\max}$, the Cheeger conductance constant $h(G)$ measures the worst-case structural bottleneck:
+
+$$
+h(G) = \min_{S \subset V,\, 0 < |S| \le N/2} \frac{\sum_{i \in S, j \notin S} w_{ij}}{|S|}.
+$$
+
+Cheeger's inequality bounds this conductance directly by the Fiedler value:
+
+$$
+\frac{\lambda_2}{2} \;\le\; h(G) \;\le\; \sqrt{2 \, d_{\max} \, \lambda_2}.
+$$
+
+A small Fiedler value proves the existence of a severe topological bottleneck where an opponent can sever defending pieces from the king's sector.
+
+### Multi-Scale Topology: 4 Spatial Subgraphs and Chebyshev Convolutions
+
+A single global Fiedler value averages the entire board into one scalar, which risks washing out localized imbalances (such as a crushing attack on the kingside paired with passive pieces on the queenside). To retain spatial sensitivity, the engine decomposed the piece graph into **4 Localized Spatial Subgraphs**:
+
+1. **Kingside Zone ($G_{\text{ks}}$)**: Files f, g, h. Measures kingside attacking momentum and castled shield stability.
+2. **Queenside Zone ($G_{\text{qs}}$)**: Files a, b, c. Measures flank pawn storms and queenside file control.
+3. **Center Zone ($G_{\text{ctr}}$)**: Files d, e. Measures central space occupation and piece transit.
+4. **Back-Rank Zone ($G_{\text{br}}$)**: Ranks 1-2 for White, ranks 7-8 for Black. Measures back-rank vulnerability and piece development.
+
+By extracting per-side Fiedler values $\lambda_2(G_Z^{\text{Us}})$ and $\lambda_2(G_Z^{\text{Them}})$ across each zone, the model generated 8 localized spectral invariants.
+
+Furthermore, tactical chess combinations rely on multi-hop indirect coordination: a queen aligned behind a bishop on a long diagonal, or doubled rooks along an open file. In graph signal processing, spectral convolutions filter signals across graph topologies:
+
+$$
+g_\theta \star \mathbf{u} = U g_\theta(\Lambda) U^\top \mathbf{u},
+$$
+
+where $L = U \Lambda U^\top$ is the complete Laplacian eigendecomposition. Computing $U$ on every evaluation call is far too slow for tree search. Hammond et al. and Defferrard et al. showed that spectral filters can be truncated using **Chebyshev polynomials** $T_k(x)$ on the normalized Laplacian $\tilde{L} = \frac{2}{\lambda_{\max}} L - I$:
+
+$$
+T_0(x) = 1, \qquad T_1(x) = x, \qquad T_2(x) = 2x^2 - 1.
+$$
+
+The **2-hop Chebyshev graph convolution** evaluates 2-step indirect coordination:
+
+$$
+T_2(\tilde{L}) = 2\tilde{L}^2 - I.
+$$
+
+Because matrix powers of $\tilde{L}$ require only sparse matrix-vector multiplications, $T_2(\tilde{L})$ propagates indirect tactical support across two edges without computing matrix inverses or full eigendecompositions.
+
+### Minimax Geometry over the Tropical Semiring
+
+Once spectral and topological features are extracted into a feature vector $\mathbf{x} \in \mathbb{R}^{22}$, the engine must evaluate that vector into a centipawn score.
+
+Standard evaluations use linear dot products $\mathbf{w}^\top \mathbf{x} + b$. But linear functions cannot model tactical conditional boundaries: a pawn shield is vital when the king is on g1, but irrelevant if the king has castled queenside. Neural networks solve this by cascading matrix multiplications through non-linear activations (like ReLU), but sacrifice geometric interpretability and require heavy memory bandwidth.
+
+Heaven's Gate grounded its evaluation in **tropical geometry**. The **max-plus semiring** is the algebraic system $(\mathbb{T}, \oplus, \otimes)$ over $\mathbb{T} = \mathbb{R} \cup \{-\infty\}$ with:
+
+$$
+a \oplus b = \max(a, b), \qquad a \otimes b = a + b.
+$$
+
+Under this semiring, a polynomial takes the form:
+
+$$
+P_{\text{trop}}(\mathbf{x}) = \bigoplus_{j=1}^M \left( b_j \otimes x_1^{\otimes w_{j1}} \otimes \dots \otimes x_k^{\otimes w_{jk}} \right) = \max_{1 \le j \le M} \left( \mathbf{w}_j^\top \mathbf{x} + b_j \right).
+$$
+
+A tropical polynomial is a piecewise-linear convex function: the upper envelope of a family of affine hyperplanes.
+
+This is not an arbitrary mathematical choice: **tropical algebra is the native algebra of minimax search**. When an engine searches a game tree, MAX nodes compute $\max$ (tropical addition), while path accumulation sums costs and bonuses (tropical multiplication). Evaluating a position through a tropical polynomial corresponds algebraically to evaluating competing tactical hypotheses and selecting the dominant sector.
+
+To handle spatial asymmetry across the board, the engine partitioned positions into **10 Spatial King Buckets** (based on the enemy king's location: ranks 1-2 on kingside, queenside, or center; ranks 3-5; ranks 6-8; mirrored for both sides). Each bucket maintained 16 distinct affine sectors:
+
+$$
+\mathbb{T}(\mathbf{x}) = \max_{1 \le j \le 16} \left( \mathbf{w}_j^\top \mathbf{x} + b_j \right).
+$$
+
+### Dual-Surface Tropical Rational Functions ($\mathbb{T}_1 - \mathbb{T}_2$)
+
+A single tropical polynomial is convex by construction. But chess evaluation is inherently non-convex: positional factors like advancing a pawn storm or sacrificing material rise to an optimum and then drop off sharply.
+
+To break convexity without losing the tropical formulation, Heaven's Gate formulated evaluation as a **tropical rational function**: the difference of two tropical polynomials:
+
+$$
+f(\mathbf{x}) = \mathbb{T}_1(\mathbf{x}) - \mathbb{T}_2(\mathbf{x}) = \max_{j=1}^{16} \left( \mathbf{w}_{1,j}^\top \mathbf{x} + b_{1,j} \right) - \max_{k=1}^{16} \left( \mathbf{w}_{2,k}^\top \mathbf{x} + b_{2,k} \right).
+$$
+
+Here the two surfaces serve distinct tactical roles:
+- $\mathbb{T}_1(\mathbf{x})$ (**Advantage Surface**, 160 sectors across 10 buckets): Models material dominance, active piece coordination, passed pawns, and Fiedler connectivity.
+- $\mathbb{T}_2(\mathbf{x})$ (**Vulnerability Surface**, 160 sectors across 10 buckets): Models king exposure, structural bottlenecks, tactical pins, and counter-attack avenues.
+
+Subtracting $\mathbb{T}_2$ from $\mathbb{T}_1$ yields a general non-convex piecewise-linear surface, capable of modeling sharp local penalties, piece traps, and non-monotonic positional dynamics.
+
+To optimize the parameters via stochastic gradient descent (Adam SGD), the non-differentiable maximum was smoothed using the **Log-Sum-Exp** operator with temperature $\tau = 3.0$:
+
+$$
+\mathbb{T}_1^\tau(\mathbf{x}) = \tau \log \left( \sum_{j=1}^{16} \exp \left( \frac{\mathbf{w}_{1,j}^\top \mathbf{x} + b_{1,j}}{\tau} \right) \right).
+$$
+
+The partial derivatives recover the softmax distribution over sectors:
+
+$$
+p_{1,j} = \frac{\partial \mathbb{T}_1^\tau}{\partial b_{1,j}} = \frac{\exp\left(\frac{\mathbf{w}_{1,j}^\top \mathbf{x} + b_{1,j}}{\tau}\right)}{\sum_{m=1}^{16} \exp\left(\frac{\mathbf{w}_{1,m}^\top \mathbf{x} + b_{1,m}}{\tau}\right)},
+$$
+
+allowing gradients to flow into each sector proportional to its competitive dominance.
+
+---
+
+That was the mathematical vision: an engine whose understanding of the board sprang from continuous topological invariants and tropical minimax geometry rather than unconstrained neural curve-fitting. 
+
+To understand why this model ultimately could not survive competitive play, we must first examine how a modern chess engine generates moves (Section 2) and traverses millions of branches per second in search (Section 3). The severe computational and game-theoretic realities that emerge under the clock will then lead directly to our mathematical audit in Section 4.
+
+---
+
+## 2. Board Representation
 
 ### Bitboards
 
@@ -105,7 +297,7 @@ Move generation is verified by perft: the exact count of leaf nodes of the legal
 
 ---
 
-## 2. Search
+## 3. Search
 
 ### Negamax and the cost of exhaustive search
 
@@ -244,7 +436,7 @@ if (is_non_pv && depth >= 3 && !in_chk && eval >= beta &&
 
 The observation fails in zugzwang, where every move worsens the position; that is common in pawn endings, hence the non-pawn-material condition and the verification search at high depth.
 
-**Reverse futility pruning** returns early at depth $d \le 6$ when $\text{eval} - 70d \ge \beta$: the position is so far above $\beta$ that a shallow search is unlikely to drop below it. **Futility pruning** is the mirror for $\alpha$: at $d \le 4$, quiet moves are skipped when $\text{eval} + 185d \le \alpha$. Both margins were set by SPSA (Section 7).
+**Reverse futility pruning** returns early at depth $d \le 6$ when $\text{eval} - 70d \ge \beta$: the position is so far above $\beta$ that a shallow search is unlikely to drop below it. **Futility pruning** is the mirror for $\alpha$: at $d \le 4$, quiet moves are skipped when $\text{eval} + 185d \le \alpha$. Both margins were set by SPSA (Section 8).
 
 **Late move reductions** exploit ordering quality. Move $m$ (1-indexed) at depth $d$ is searched at depth $d - 1 - r(d, m)$ with
 
@@ -289,89 +481,46 @@ where $\sigma_{\text{stab}}(k) \in \{1.4, 1.2, 1.0, 0.9, 0.8\}$ decreases with t
 
 ---
 
-## 3. The First Evaluator: Spectral Graphs and Tropical Algebra
+## 4. The Mathematical Post-Mortem: Why the Graph Failed Under the Clock
 
-The engine's original evaluation was not a list of chess rules. It treated the position as a weighted graph, extracted spectral invariants of its Laplacian, and fed them to a piecewise-linear function over the max-plus semiring. It is worth describing carefully, both because the mathematics is attractive and because the reasons it failed are instructive.
+The physical and geometric theory detailed in Section 1 is mathematically compelling. But a chess evaluation function does not run on paper: it runs under an alpha-beta search traversing millions of nodes per second, where evaluation errors compound exponentially down the tree.
 
-### The piece graph and its Laplacian
+When the spectral-tropical pipeline was tested in real search, every layer of its mathematical apparatus broke down under the clock. It is worth dissecting the exact reasons, both because the breakdown is mathematically instructive and because it explains why classical linear models and neural networks succeed where continuous physics fails.
 
-Let the $N \le 32$ pieces on the board be the vertices. Every pair $(i, j)$ is joined by an edge with weight
+### Why the Spectral Invariants Collapsed
 
-$$
-w_{ij} =
-\begin{cases}
-\dfrac{1}{d_\infty(s_i, s_j)} + 1.5 \cdot [\text{slider aligned on a line}] & \text{same colour}, \\[2ex]
-\dfrac{2\, v(p_j)}{d_\infty(s_i, s_j)} & \text{opposing colours},
-\end{cases}
-$$
-
-where $d_\infty$ is the Chebyshev (king-move) distance and $v$ a piece value (pawn 1, knight 3, bishop 3.2, rook 5, queen 9, king 12). With adjacency $A = (w_{ij})$ and degree matrix $D = \operatorname{diag}(\sum_j w_{ij})$, the combinatorial Laplacian is $L = D - A$. Its quadratic form is
-
-$$
-u^\top L u = \sum_{i < j} w_{ij} (u_i - u_j)^2 \ge 0,
-$$
-
-so $L$ is symmetric positive semidefinite with eigenvalues $0 = \lambda_1 \le \lambda_2 \le \dots \le \lambda_N$, and $L\mathbf{1} = 0$.
-
-From this the evaluator took:
-
-- **the Fiedler value** $\lambda_2 = \min_{u \perp \mathbf{1},\, \|u\| = 1} u^\top L u$, the algebraic connectivity, interpreted as piece coordination, both for the whole graph and for each colour's subgraph;
-- **a "spectral gap"** defined here as $\lambda_N - \lambda_2$;
-- **the trace** $\operatorname{Tr}(L) = \sum_i D_{ii}$, interpreted as total pressure;
-- plus aggregate features (king pressure, slider batteries, pawn cohesion, mobility, centre control, king shield, phase), 22 features in all.
-
-The appeal is the Cheeger inequality, which ties $\lambda_2$ to the graph's bottleneck. For the conductance $h(G)$,
-
-$$
-\frac{\lambda_2}{2} \le h(G) \le \sqrt{2\, d_{\max}\, \lambda_2},
-$$
-
-so a small Fiedler value means the pieces split into weakly connected groups, which sounds exactly like "uncoordinated".
-
-![Piece graph and its spectrum](./spectral.png)
-_Figure 4: Left: the complete weighted graph of a middlegame position (edge width proportional to $w_{ij}$). Right: its exact Laplacian spectrum, computed in double precision, against the engine's iterative estimate of $\lambda_{\max}$ (from a float32 reimplementation of the same iteration)._
-
-### A post-mortem of the spectral features
-
-Each of these features fails on mathematical grounds before any chess is played.
+The theoretical appeal of the combinatorial Laplacian $L = D - A$ was that its spectrum, and specifically the Fiedler value $\lambda_2$, would measure tactical coordination through the Cheeger conductance bound $\lambda_2 / 2 \le h(G) \le \sqrt{2 d_{\max} \lambda_2}$. In competitive practice, this theoretical connection dissolved:
 
 **The graph is complete, so connectivity carries no information.** Every pair of pieces has a positive edge, determined only by distance and piece type. It is not an attack graph: a rook behind its own pawn and a rook on an open file get the same weights. A complete graph with positive weights is always connected, so $\lambda_2 > 0$ in every position, and its magnitude mostly reflects how spread out the pieces are. On the four test positions I checked, $\lambda_2$ ranged from 5.1 (a sparse endgame) to 14.1 (a crowded middlegame), tracking piece count and density far more than anything resembling coordination.
 
 **The trace is a sum of pairwise terms.** Since $\operatorname{Tr}(L) = \sum_i \sum_{j \ne i} w_{ij} = 2 \sum_{i<j} w_{ij}$, the "total pressure" feature is a fixed function of piece pairs and their distance, which a hand-crafted evaluation would express directly as a king-tropism or piece-pair table, at a fraction of the cost and with tunable weights per pair.
 
-**The eigenvalue estimates were not converged.** The engine estimated $\lambda_{\max}$ with four steps of power iteration, then $\lambda_2$ with five steps of power iteration on the shifted matrix $\lambda_{\max} I - L$ after projecting out $\mathbf{1}$. Power iteration converges like $(\lambda_{N-1}/\lambda_N)^k$, which for these spectra (clusters of near-equal eigenvalues, Figure 4) is nowhere near converged after four or five steps. Worse, the first iteration starts from $v_0 = \mathbf{1}/\sqrt{N}$, which is *exactly* the eigenvector of $\lambda_1 = 0$, so in exact arithmetic $L v_0 = 0$ and the iteration has nothing to amplify; in floating point it escapes only through rounding error. On my test positions, a float32 reimplementation gave $\lambda_{\max} = 41.7$ against a true 85.8 on one position, and $\lambda_2 = 0$ against a true 11.8 on the same position.
+**The eigenvalue estimates were not converged.** A chess search cannot afford an $O(N^3)$ QR decomposition per node. To meet time budgets, the engine estimated $\lambda_{\max}$ with four steps of power iteration, then $\lambda_2$ with five steps of power iteration on the shifted matrix $\lambda_{\max} I - L$ after projecting out $\mathbf{1}$. Power iteration converges like $(\lambda_{N-1}/\lambda_N)^k$, which for these spectra (clusters of near-equal eigenvalues, Figure 4) is nowhere near converged after four or five steps. Worse, the first iteration starts from $v_0 = \mathbf{1}/\sqrt{N}$, which is *exactly* the eigenvector of $\lambda_1 = 0$, so in exact arithmetic $L v_0 = 0$ and the iteration has nothing to amplify; in floating point it escapes only through rounding error. On my test positions, a float32 reimplementation gave $\lambda_{\max} = 41.7$ against a true 85.8 on one position, and $\lambda_2 = 0$ against a true 11.8 on the same position.
 
 **The edge weights depend on vertex order.** The opposing-colour weight uses the value of the second endpoint, $v(p_j)$, and the code computes each edge once for $i < j$ in square order. Since White's pieces usually occupy lower squares, a White-Black pair is weighted by the Black piece's value regardless of which piece is attacking, which breaks the colour symmetry an evaluation must have.
 
-### The tropical surface
+![Piece graph and its spectrum](./spectral.png)
+_Figure 4: Left: the complete weighted graph of a middlegame position (edge width proportional to $w_{ij}$). Right: its exact Laplacian spectrum, computed in double precision, against the engine's iterative estimate of $\lambda_{\max}$ (from a float32 reimplementation of the same iteration)._
 
-The 22 features $x \in \mathbb{R}^{22}$ were mapped to a score by a tropical polynomial. In the max-plus semiring $(\mathbb{R} \cup \{-\infty\}, \oplus, \otimes)$ with $a \oplus b = \max(a, b)$ and $a \otimes b = a + b$, a tropical polynomial in $x$ is
+### Why the Tropical Surface Failed in Search
 
-$$
-T(x) = \bigoplus_{j=1}^{M} \left( b_j \otimes x_1^{\otimes a_{j1}} \otimes \dots \otimes x_k^{\otimes a_{jk}} \right) = \max_{1 \le j \le M} \left( w_j^\top x + b_j \right).
-$$
+Evaluating the feature vector through a tropical polynomial or rational function introduced mathematical pathologies of its own:
 
-The evaluator used $M = 64$ such affine "sectors" per king bucket, with 10 buckets (5 regions of the opponent king's position, mirrored, for each side to move): $640 \times (22 + 1) = 14{,}720$ parameters. To make it differentiable for training, the hard maximum was replaced by a temperature-$\tau$ log-sum-exp with $\tau = 3$:
+**Convexity cannot capture positional peaks.** A maximum of affine hyperplanes is strictly convex, and so is log-sum-exp. Along any feature ray, the evaluation can only bend upward. But chess positional value frequently rises and then falls: the value of advancing pawns in a storm, of king activity versus exposure, or of piece mobility versus defensive duty. A convex model cannot represent an interior optimum in any direction.
 
-$$
-T_\tau(x) = \tau \log\left( \frac{1}{M} \sum_{j=1}^{M} e^{(w_j^\top x + b_j)/\tau} \right).
-$$
-
-Three properties of this form decide its fate.
-
-**It is convex in $x$.** A maximum of affine functions is convex, and so is log-sum-exp. Along any feature, the score can only bend upward. An evaluation must often bend the other way: the value of advancing a pawn storm, of king pressure against one's own exposure, or of piece activity versus safety rises and then falls. A convex model cannot represent an interior optimum in any direction.
-
-**The smoothing adds a position-dependent bias.** Writing $y_j = w_j^\top x + b_j$, the bounds $\frac{1}{M} e^{\max_j y_j/\tau} \le \frac{1}{M}\sum_j e^{y_j/\tau} \le e^{\max_j y_j/\tau}$ give, after taking $\tau \log$,
+**Softmax smoothing adds a position-dependent bias.** Writing $y_j = \mathbf{w}_j^\top \mathbf{x} + b_j$, the bounds $\frac{1}{M} e^{\max_j y_j/\tau} \le \frac{1}{M}\sum_j e^{y_j/\tau} \le e^{\max_j y_j/\tau}$ give, after taking $\tau \log$:
 
 $$
-\max_j y_j - \tau \log M \;\le\; T_\tau(x) \;\le\; \max_j y_j .
+\max_j y_j - \tau \log M \;\le\; T_\tau(\mathbf{x}) \;\le\; \max_j y_j.
 $$
 
-With $\tau = 3$ internal units, $M = 64$ and the output scaled by 10 into centipawns, the gap is up to $10 \cdot 3 \ln 64 \approx 125$ centipawns, and where in that range the score lands depends on how many sectors happen to be close to the maximum, which has nothing to do with chess.
+With $\tau = 3$ internal units, $M = 64$ and the output scaled by 10 into centipawns, the gap is up to $10 \cdot 3 \ln 64 \approx 125$ centipawns. Where in that 125-centipawn window the score lands depends on how many sectors happen to cluster near the maximum, injecting artificial score swings into alpha-beta search windows that have nothing to do with chess.
 
-**It is a neural network in disguise, but with the wrong inductive bias.** Since $\max(a, b) = b + \operatorname{ReLU}(a - b)$, a maximum over 64 affine functions is a ReLU network of depth $\lceil \log_2 64 \rceil = 6$, and more generally every ReLU network computes a difference of two tropical polynomials (Zhang, Naitzat and Lim). The "no neural network" engine began as a small hand-structured network with an eigensolver in front of it. It also inherited the training pathology of one: under the hard maximum, a gradient reaches only the winning sector, so sectors that never win stop learning, the analogue of dead ReLU units.
+**Dead sectors and vanishing gradients.** Under the hard maximum $\max_j (\mathbf{w}_j^\top \mathbf{x} + b_j)$, gradient descent updates only the single winning sector. Any sector that fails to achieve a maximum on early training batches receives zero gradient, permanently freezing its weights. In practice, a handful of sectors monopolized the entire surface while the remaining sectors went dead.
 
-Yet despite that mathematical equivalence, the spectral-tropical pipeline is the conceptual opposite of how actual chess neural networks (like NNUE or deep residual nets) operate:
+### The Contrast: Analytical Physics vs Neural Curve-Fitting
+
+It is instructive to contrast why this analytical architecture collapsed while neural networks like NNUE excel:
 
 - **Representation level:** NNUE feeds tens of thousands of sparse binary features (half-KP coordinates: piece type, piece square, and king square) directly into wide linear layers, preserving every granular tactical interaction (such as an exact pin, fork, or battery). The spectral-tropical evaluator did the opposite: it aggressively compressed the entire 32-piece board down to 22 scalar invariants (mostly Laplacian eigenvalues and aggregate graph traces), throwing away fine-grained tactical locality under the assumption that global algebraic connectivity was a sufficient summary.
 - **Geometric structure:** Neural networks in chess use unconstrained, highly overparameterized linear combinations whose non-linearities can partition the feature space into millions of complex, non-convex decision regions. The tropical polynomial forced the entire evaluation into a single, globally convex polyhedral cone, where scores could only accelerate upward along extremal rays.
@@ -383,7 +532,7 @@ The audit that started the strength work found that the spectral-tropical evalua
 
 ---
 
-## 4. The Linear Evaluation
+## 5. The Linear Evaluation
 
 The evaluation that plays is a sum of hand-designed terms: material, piece-square tables, pawn structure (doubled, isolated, backward, connected, phalanx, passed pawns by rank with blocker, free-path and king-distance terms), mobility, king safety (shield, storms, open files, weighted king-zone attackers, safe checks), threats, outposts, rook placement, bishop pair, material imbalance and endgame scaling.
 
@@ -441,7 +590,7 @@ with integer coefficients $c_j(x)$ and residuals $r(x)$ for fixed constants. Thi
 
 ---
 
-## 5. Fitting 1,158 Weights
+## 6. Fitting 1,158 Weights
 
 ### The Texel objective
 
@@ -518,7 +667,7 @@ keeping only quiet positions (best move not a capture, $|c| \le 1500$). With ide
 
 ---
 
-## 6. Measurement
+## 7. Measuring Real Progress
 
 ### Why measurement comes first
 
@@ -594,7 +743,7 @@ Tests run on two cores at fast time controls are sensitive to background load. O
 
 ---
 
-## 7. Tuning the Search with SPSA
+## 8. Tuning the Search with SPSA
 
 Search margins affect play only through the tree, so they cannot be fitted to labelled positions. They were tuned with simultaneous perturbation stochastic approximation. Let $f(\theta)$ be expected match score. Each iteration draws $\Delta \in \{-1, +1\}^n$ uniformly and plays a short match between $\theta + c\Delta$ and $\theta - c\Delta$. Since $\mathbb{E}[\Delta_i \Delta_j] = \delta_{ij}$, a Taylor expansion gives
 
@@ -629,7 +778,7 @@ _Figure 11: The improvement loop. Games become training positions, Stockfish lab
 
 ---
 
-## 8. Results and Limitations
+## 9. Results and Limitations
 
 Self-play results measure progress relative to a previous version, not absolute strength. Absolute strength was measured with fixed anchors: Blunder 7.6 (CCRL Blitz 2631) at 10+0.1, and Stockfish with `UCI_Elo` 2800, 3000 and 3190 at 60+0.6, the control at which its limiter is calibrated. A pooled maximum-likelihood fit over all anchor games gives the rating:
 
@@ -665,7 +814,7 @@ Most of the measured strength came from the plain parts. The +218 came from fitt
 
 What I think is genuinely distinctive about Heaven's Gate is not any single feature but how much of it can be checked. The evaluation is a readable list of chess ideas with fitted weights, the tuner is provably consistent with the engine it tunes, every merged change has an interval attached, every rejected change is on record, and the rating rests on independently rated opponents. That is a different kind of achievement from raw strength: an engine near 3000 where you can point at any number in it and say where it came from and how much it is worth. In an era where the strongest engines are trained black boxes, a strong engine that is fully explainable seemed worth building, and worth writing up.
 
-The engine is open source at [github.com/Weptune/Heavens-Gate](https://github.com/Weptune/Heavens-Gate).
+The engine is open source at [github.com/Weptune/Heavens-Gate](https://github.com/Weptune/Heavens-Gate), and you can play against it directly in your browser at [heavensgateonline.vercel.app](https://heavensgateonline.vercel.app/).
 
 ### References
 
