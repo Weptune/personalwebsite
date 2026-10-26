@@ -12,6 +12,15 @@ Every engine at the top of the computer chess rating lists now evaluates positio
 
 Heaven's Gate is a chess engine with no neural network in it. It is about 10,000 lines of C++20: bitboard move generation, a principal variation search with the standard modern selectivity, and an evaluation made of 1,158 integer weights. Measured against engines with published CCRL Blitz ratings, it moved from **about 2361 to about 3024** on an anchored scale.
 
+Before settling on that linear evaluation, the engine began with a design that was neither classical nor neural: an evaluator built on **spectral graph theory and tropical algebra**. 
+
+When modern engines evaluate chess positions with neural networks (whether NNUE or deep convolutional nets), they treat evaluation as high-dimensional statistical curve-fitting. You feed tens of thousands of sparse coordinates or tensor planes into layers of unconstrained weights, letting gradient descent discover arbitrary statistical correlations from millions of self-play games. A spectral-tropical approach comes from a completely different intellectual lineage. Instead of empirical statistical regression, it attempts an analytical, coordinate-free physical theory of the board:
+
+- It treats the pieces as vertices in a continuous, weighted spatial graph, using the combinatorial graph Laplacian ($L = D - A$) to compute real-valued topological invariants: the Fiedler eigenvalue ($\lambda_2$) for piece coordination, the spectral gap, and Cheeger conductance bottlenecks, treating piece harmony like vibrational frequencies or heat diffusion across a physical circuit.
+- Then, instead of mapping those invariants through conventional linear algebra over the real field $(\mathbb{R}, +, \times)$, it evaluates them over the max-plus semiring $(\mathbb{R} \cup \{-\infty\}, \max, +)$ of tropical geometry, where addition is maximum and multiplication is addition: the mathematics of shortest paths, dynamic programming, and piecewise-linear polyhedral cones.
+
+It was an attempt at an analytical physics of chess rather than a statistical neural net. The reason that geometric dream failed, and how a transparent linear model succeeded in its place, is one of the central stories of the engine.
+
 ### What makes it worth writing about
 
 None of the individual techniques in Heaven's Gate are new; alpha-beta, Texel tuning and SPSA are all decades-old or well documented. What is less common is the combination, and the evidence attached to it:
@@ -20,7 +29,7 @@ None of the individual techniques in Heaven's Gate are new; alpha-beta, Texel tu
 - **The tuner fits the real engine, not a copy of it.** Most tuners reimplement the evaluation in a form they can differentiate. This one measures each coefficient by perturbing the engine's own evaluation function, and refuses to run unless its model reproduces the engine to within $10^{-6}$ centipawns. The weights it produces are exactly optimal for the code that plays, which is a stronger guarantee than tuning usually gives.
 - **Every claim is tested, including the failures.** Every change went through a pentanomial sequential test against the previous version, and the negative results are published here alongside the positive ones: 33 candidates, 8 merged. The rating comes from matches against independently rated engines, not from self-play.
 - **It learns from its own games.** The latest evaluation was refitted on positions harvested from the engine's own test games, so the data it trains on is concentrated on the positions it actually reaches.
-- **It is built on a documented failure.** The first version used graph spectra and tropical algebra. Rather than quietly deleting it, this writeup analyses exactly why it could not work, which turned out to be one of the more useful parts of the project.
+- **It is built on a documented failure.** The first version did not use an NN or classical heuristics; it evaluated positions through graph spectra and tropical algebra. Rather than quietly deleting it, this writeup analyses exactly why an analytical physical theory of piece coordination could not work where empirical linear and neural models succeed, which turned out to be one of the most useful parts of the project.
 
 This writeup covers the full stack and the mathematics under each layer:
 
@@ -360,7 +369,13 @@ $$
 
 With $\tau = 3$ internal units, $M = 64$ and the output scaled by 10 into centipawns, the gap is up to $10 \cdot 3 \ln 64 \approx 125$ centipawns, and where in that range the score lands depends on how many sectors happen to be close to the maximum, which has nothing to do with chess.
 
-**It is a neural network in disguise.** Since $\max(a, b) = b + \operatorname{ReLU}(a - b)$, a maximum over 64 affine functions is a ReLU network of depth $\lceil \log_2 64 \rceil = 6$, and more generally every ReLU network computes a difference of two tropical polynomials (Zhang, Naitzat and Lim). The "no neural network" engine began as a small hand-structured network with an eigensolver in front of it. It also inherited the training pathology of one: under the hard maximum, a gradient reaches only the winning sector, so sectors that never win stop learning, the analogue of dead ReLU units.
+**It is a neural network in disguise, but with the wrong inductive bias.** Since $\max(a, b) = b + \operatorname{ReLU}(a - b)$, a maximum over 64 affine functions is a ReLU network of depth $\lceil \log_2 64 \rceil = 6$, and more generally every ReLU network computes a difference of two tropical polynomials (Zhang, Naitzat and Lim). The "no neural network" engine began as a small hand-structured network with an eigensolver in front of it. It also inherited the training pathology of one: under the hard maximum, a gradient reaches only the winning sector, so sectors that never win stop learning, the analogue of dead ReLU units.
+
+Yet despite that mathematical equivalence, the spectral-tropical pipeline is the conceptual opposite of how actual chess neural networks (like NNUE or deep residual nets) operate:
+
+- **Representation level:** NNUE feeds tens of thousands of sparse binary features (half-KP coordinates: piece type, piece square, and king square) directly into wide linear layers, preserving every granular tactical interaction (such as an exact pin, fork, or battery). The spectral-tropical evaluator did the opposite: it aggressively compressed the entire 32-piece board down to 22 scalar invariants (mostly Laplacian eigenvalues and aggregate graph traces), throwing away fine-grained tactical locality under the assumption that global algebraic connectivity was a sufficient summary.
+- **Geometric structure:** Neural networks in chess use unconstrained, highly overparameterized linear combinations whose non-linearities can partition the feature space into millions of complex, non-convex decision regions. The tropical polynomial forced the entire evaluation into a single, globally convex polyhedral cone, where scores could only accelerate upward along extremal rays.
+- **Optimization mechanics:** While modern neural networks benefit from smooth gradient descent across dense parameter spaces with billions of training positions, the hard max-plus surface created dead sectors where gradients vanished for any sector that failed to win, while the iterative eigensolver in front of it injected noisy, unconverged gradients into the backward pass.
 
 ### What happened to it
 
@@ -636,7 +651,15 @@ The engine does not lose for lack of calculation. It loses by overvaluing positi
 
 ## Conclusion
 
-A hand-crafted engine, done carefully, is a linear model with about a thousand weights, fitted exactly to millions of labelled positions, running under a search whose margins are tuned by stochastic approximation and whose every change must pass a sequential test. The more elaborate first design, graph spectra feeding a tropical surface, failed for reasons that were visible in the mathematics: a complete graph has no connectivity structure to measure, unconverged power iterations do not estimate eigenvalues, and a convex model cannot express an interior optimum.
+Modern computer chess has converged uniformly on neural networks. Whether through NNUE's sparse feature layers in Stockfish or deep residual networks in Leela Chess Zero, the prevailing consensus is that chess evaluation is an empirical statistical regression: you feed raw board configurations into millions of unconstrained parameters and let gradient descent learn the patterns from vast oceans of game data.
+
+Heaven's Gate's first evaluator was a bid to break away from both standard neural networks and classical heuristic lists. Instead of statistical pattern recognition, it tried to formulate chess evaluation as an analytical physics problem: treating piece coordination as vibrational frequencies and Cheeger conductance on a graph Laplacian, and evaluating strategic advantage as an extremal polyhedral surface over the max-plus semiring of tropical geometry.
+
+That it failed is not a flaw in the underlying mathematics, but a lesson in inductive bias. Chess is fundamentally a game of discrete, brittle, non-convex interactions: a single blocked pawn breaks a diagonal, a single weak square collapses a defense, and positional advantage often rises and then falls. Neural networks succeed because their high-dimensional parameter spaces can absorb those messy, non-linear exceptions through sheer data volume. The spectral-tropical model failed because it attempted to smooth that rugged discrete reality into continuous spectral vibrations and convex polyhedra: a complete graph has no connectivity structure to measure, unconverged power iterations do not estimate eigenvalues, and a convex model cannot express an interior optimum.
+
+When Heaven's Gate finally crossed 3000 Elo, it did so by taking the opposite lesson: not by retreating into an opaque black-box neural network, and not by chasing exotic geometric abstractions, but by building a clean, transparent linear evaluation where every single one of the 1,158 weights has a concrete meaning, an exact regression fit, and a measurable confidence interval.
+
+A hand-crafted engine, done carefully, is a linear model with about a thousand weights, fitted exactly to millions of labelled positions, running under a search whose margins are tuned by stochastic approximation and whose every change must pass a sequential test.
 
 Most of the measured strength came from the plain parts. The +218 came from fitting weights that already existed, the +54 from allocating time better, and the +45 from deleting code. The common thread is that a number without a confidence interval is not a measurement, and a measurement against your own previous version is not a rating.
 
