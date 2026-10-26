@@ -52,7 +52,7 @@ const OPTIONS = ['The Stars', 'The Sun', 'The Ocean', 'The Sky', 'The Moon'] as 
   const SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string | undefined
 
   const BASELINE_COUNTS: Record<string, number> = {
-    'The Stars': 58,
+    'The Stars': 98,
     'The Sun': 28,
     'The Ocean': 24,
     'The Sky': 33,
@@ -145,19 +145,7 @@ const OPTIONS = ['The Stars', 'The Sun', 'The Ocean', 'The Sky', 'The Moon'] as 
       } catch {}
     }
 
-    // Set initial checked radio based on active theme
-    try {
-      const storedTheme = localStorage.getItem('celestial-theme') || 'stars'
-      const revMap: Record<string, string> = {
-        stars: 'The Stars',
-        sun: 'The Sun',
-        ocean: 'The Ocean',
-        sky: 'The Sky',
-        moon: 'The Moon'
-      }
-      const radio = f.querySelector(`input[value="${revMap[storedTheme]}"]`) as HTMLInputElement | null
-      if (radio) radio.checked = true
-    } catch {}
+
 
     function getSelected(): string | null {
       const data = new FormData(f)
@@ -335,7 +323,7 @@ const OPTIONS = ['The Stars', 'The Sun', 'The Ocean', 'The Sky', 'The Moon'] as 
 
       const choice = userChoice || localStorage.getItem(POLL_KEY)
       if (choice) {
-        headerArea.textContent = `Thanks — you chose ${choice}.`
+        headerArea.textContent = `Thanks - you chose ${choice}.`
       } else {
         const saved = localStorage.getItem(POLL_KEY)
         if (saved) {
@@ -381,7 +369,6 @@ const OPTIONS = ['The Stars', 'The Sun', 'The Ocean', 'The Sky', 'The Moon'] as 
     }
 
     changeBtn.onclick = () => {
-      localStorage.removeItem(POLL_HAS_VOTED_KEY)
       voteArea.hidden = false
       resultsArea.hidden = true
       stopPolling()
@@ -432,13 +419,29 @@ const OPTIONS = ['The Stars', 'The Sun', 'The Ocean', 'The Sky', 'The Moon'] as 
       }
     }
 
-    // Bind click listener to each radio input to dynamically cast vote on click (even if already checked)
+    // Allow selecting or changing vote by clicking radio or label
     const inputs = f.querySelectorAll('input[type="radio"]')
     inputs.forEach((input: any) => {
+      input.addEventListener('change', () => {
+        if (input.checked && input.value) {
+          castVote(input.value)
+        }
+      })
       input.addEventListener('click', () => {
-        const choice = input.value
-        if (choice && !hasVoted()) {
-          castVote(choice)
+        if (input.value) {
+          castVote(input.value)
+        }
+      })
+    })
+
+    const labels = f.querySelectorAll('label')
+    labels.forEach((label: any) => {
+      label.addEventListener('click', (e: MouseEvent) => {
+        const radio = label.querySelector('input[type="radio"]') as HTMLInputElement | null
+        if (!radio) return
+        if (e.target !== radio) {
+          radio.checked = true
+          castVote(radio.value)
         }
       })
     })
@@ -464,23 +467,60 @@ const OPTIONS = ['The Stars', 'The Sun', 'The Ocean', 'The Sky', 'The Moon'] as 
     }
     document.addEventListener('visibilitychange', onVisibilityChange)
 
+    // Listen for theme changes from outside (e.g. Try another theme button) to change vote
+    const onCelestialThemeChange = (e: any) => {
+      const newTheme = e.detail?.theme
+      const themeToOption: Record<string, string> = {
+        stars: 'The Stars',
+        sun: 'The Sun',
+        ocean: 'The Ocean',
+        sky: 'The Sky',
+        moon: 'The Moon'
+      }
+      const newChoice = themeToOption[newTheme]
+      if (newChoice && localStorage.getItem(POLL_KEY) !== newChoice) {
+        castVote(newChoice)
+      }
+    }
+    document.addEventListener('celestial-theme-change', onCelestialThemeChange)
+
     // Astro transition cleanup
     document.addEventListener('astro:before-swap', () => {
       stopPolling()
       document.removeEventListener('visibilitychange', onVisibilityChange)
+      document.removeEventListener('celestial-theme-change', onCelestialThemeChange)
     }, { once: true })
 
-    // Restore results instantly if already voted
-    if (hasVoted()) {
-      const localCounts = getLocalCounts()
-      showResultsUI(localCounts)
-      
-      fetchResults().then((rows) => {
-        if (rows && hasVoted()) {
-          const adjusted = adjustGlobalCounts(rows)
-          showResultsUI(adjusted)
-        }
-      }).catch(() => {})
+    const themeToOption: Record<string, string> = {
+      stars: 'The Stars',
+      sun: 'The Sun',
+      ocean: 'The Ocean',
+      sky: 'The Sky',
+      moon: 'The Moon'
+    }
+
+    if (!hasVoted()) {
+      // Whenever someone new opens, The Stars gets a vote and is selected by default
+      castVote('The Stars')
+    } else {
+      // Returning visitor: sync with current theme if it was changed
+      const storedTheme = localStorage.getItem('celestial-theme') || 'stars'
+      const expectedChoice = themeToOption[storedTheme] || 'The Stars'
+      const currentChoice = localStorage.getItem(POLL_KEY) || 'The Stars'
+
+      if (currentChoice !== expectedChoice) {
+        castVote(expectedChoice)
+      } else {
+        const localCounts = getLocalCounts()
+        showResultsUI(localCounts, currentChoice)
+
+        fetchResults().then((rows) => {
+          if (rows && hasVoted()) {
+            const adjusted = adjustGlobalCounts(rows)
+            showResultsUI(adjusted, currentChoice)
+          }
+        }).catch(() => {})
+      }
     }
   }
 

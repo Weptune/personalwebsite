@@ -75,11 +75,19 @@ const recentThoughts = await getRecentPosts(SITE.featuredPostCount)
       e.preventDefault()
 
       const themes = ['stars', 'sun', 'ocean', 'sky', 'moon']
+      const themeToChoice: Record<string, string> = {
+        stars: 'The Stars',
+        sun: 'The Sun',
+        ocean: 'The Ocean',
+        sky: 'The Sky',
+        moon: 'The Moon'
+      }
       const current = localStorage.getItem('celestial-theme') || 'stars'
       const idx = themes.indexOf(current)
       const next = themes[(idx + 1) % themes.length]
 
       localStorage.setItem('celestial-theme', next)
+      localStorage.setItem('poll-choice', themeToChoice[next])
       document.documentElement.setAttribute('data-celestial-theme', next)
       document.dispatchEvent(new CustomEvent('celestial-theme-change', { detail: { theme: next } }))
       window.location.reload()
