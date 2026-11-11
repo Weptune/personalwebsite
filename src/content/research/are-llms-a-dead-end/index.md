@@ -14,7 +14,7 @@ For several years, progress in large language models followed a consistent empir
 
 Recently, however, standard pretraining has encountered clear diminishing returns. Training runs now cost hundreds of millions of dollars, yet marginal reductions in cross-entropy loss yield progressively smaller improvements on complex reasoning benchmarks.
 
-In response, frontier AI research has shifted focus toward inference-time compute. Rather than generating an answer in a single forward pass, modern reasoning architectures like GPT Astra and Fable 5.5 generate thousands of intermediate scratchpad tokens, exploring candidate derivations and checking intermediate steps before producing a final output. On closed-loop tasks with automated verification, such as competitive programming and mathematics competitions, this test-time search delivers measurable accuracy gains.
+In response, frontier AI research has shifted focus toward inference-time compute. Rather than generating an answer in a single forward pass, modern reasoning architectures like GPT Astra and Opus 5.5 generate thousands of intermediate scratchpad tokens, exploring candidate derivations and checking intermediate steps before producing a final output. On closed-loop tasks with automated verification, such as competitive programming and mathematics competitions, this test-time search delivers measurable accuracy gains.
 
 Yet generating long chains of intermediate tokens does not change the underlying mechanics of autoregression; it expands their context window.
 
@@ -79,7 +79,7 @@ In an autoregressive transformer, there is no such check. If the model outputs a
 
 ## 3. The KV Cache and Attention Entropy Dilution
 
-Inference-time models such as GPT Astra and Fable 5.5 frequently generate phrases that resemble human self-correction: *"Wait, let me rethink this assumption..."* or *"Alternatively, consider another case..."* This behavior creates the appearance of an algorithm backtracking through a search tree.
+Inference-time models such as GPT Astra and Opus 5.5 frequently generate phrases that resemble human self-correction: *"Wait, let me rethink this assumption..."* or *"Alternatively, consider another case..."* This behavior creates the appearance of an algorithm backtracking through a search tree.
 
 Mechanically, however, the model cannot backtrack.
 
