@@ -1,6 +1,6 @@
 ---
-title: 'what makes a real brain different from an artificial one'
-description: 'Worms, mice and artificial neural networks put through the same seven tests, each scored against how much real animals differ from one another: where the networks fell short, what closed the gap, and the prediction of mine that failed.'
+title: 'what differentiates artificial and real neural networks?'
+description: 'my attempt at figuring out this very open ended question :)'
 date: 2026-11-21
 tags: ['ai', 'neuroscience']
 image: './cover.jpg'
@@ -8,7 +8,9 @@ pinned: false
 draft: false
 ---
 
-Ask what separates a brain from an artificial neural network and the usual answer is a list of parts. Brains have spikes, dendrites and neuromodulators, no backpropagation, and in a human a power budget of about 20 watts. Networks have floating-point units, global gradients and a clock. Every item on that list is true. None of them says whether it matters for what the system does, because a difference in parts only becomes a difference in kind once it shows up in something that can be measured on both systems.
+This is a topic that has fascinated me for ages and i finally have showcase-worthy results. Everything here, including each test as it was written before it ran, is public at [nematica.weptune.dev](https://nematica.weptune.dev), on [X](https://x.com/W3ptune/status/2124172793025827293), and in the [repository](https://github.com/Weptune/nematica).
+
+Ask what separates a brain from an artificial neural network and the usual answer is a list of parts, but none of them says whether it matters for what the system does, because a difference in parts only becomes a difference in kind once it shows up in something that can be measured on both systems.
 
 NEMATICA is my attempt to measure it. The method fits in three sentences. Record a living nervous system and an artificial network the same way, through the same instrument. Run both through the same tests. Score every test against one yardstick, how much real animals differ from each other, so that a network passes when it sits no further from an animal than a second animal would.
 
@@ -16,15 +18,13 @@ The animals are a worm with 302 neurons and the visual cortex of the mouse. The 
 
 The short version: in six of the seven, an ordinary network or an ordinary copy of a brain was measurably unlike the animal. In five of those, the difference traced back to something specific that the network had not been shown or had not been built to carry, and supplying it closed the gap or most of it. The sixth is still unexplained. In the seventh I predicted a difference and found none.
 
-Everything here, including each test as it was written before it ran, is public at [nematica.weptune.dev](https://nematica.weptune.dev) and in the [repository](https://github.com/Weptune/nematica).
-
 ---
 
 ## 1. The Animals and the Networks
 
 ### Why a Worm
 
-*Caenorhabditis elegans* is a nematode one millimetre long with 302 neurons. Its wiring diagram was the first to be mapped completely (White et al., 1986), and a modern microscope can record a large share of the neurons in its head at once, many of them identified by name.
+_Caenorhabditis elegans_ is a nematode one millimetre long with 302 neurons. Its wiring diagram was the first to be mapped completely (White et al., 1986), and a modern microscope can record a large share of the neurons in its head at once, many of them identified by name.
 
 For a project about cause and effect, the decisive dataset is the signal propagation atlas of Randi et al. (2023). In 113 worms held still under the microscope, single neurons were switched on with light, one at a time, about every 30 seconds, while the rest of the head was imaged. That gives a brain's ongoing activity and its response to being pushed at a known place, in the same animals.
 
@@ -34,13 +34,13 @@ A result in one animal is a result about that animal. The second species is the 
 
 ### The Data
 
-| Recordings | Animals | What they are | Used in |
-| :--- | :--- | :--- | :--- |
-| Signal propagation atlas (Randi et al., 2023) | 113 worms | Held still; one neuron switched on by light about every 30 s; the head imaged at 2 frames per second for about 37 minutes | I, VI |
-| Atanas et al. (2023) | 30 worms | Moving freely, whole-brain imaging | VII (development) |
-| Baskoylu et al. (2026) | 27 worms | Moving freely in an arena with a copper barrier | III, VII (test) |
-| Allen Visual Coding Neuropixels | 58 mice | Spikes from visual cortex, at rest and watching repeated film clips | IV, V |
-| Allen Visual Behavior Neuropixels | 66 mice | Spikes across cortex while light is delivered: 39 mice whose Sst or Vip cells respond to it, and 27 with no light-sensitive cells | II, VI |
+| Recordings                                    | Animals   | What they are                                                                                                                     | Used in           |
+| :-------------------------------------------- | :-------- | :-------------------------------------------------------------------------------------------------------------------------------- | :---------------- |
+| Signal propagation atlas (Randi et al., 2023) | 113 worms | Held still; one neuron switched on by light about every 30 s; the head imaged at 2 frames per second for about 37 minutes         | I, VI             |
+| Atanas et al. (2023)                          | 30 worms  | Moving freely, whole-brain imaging                                                                                                | VII (development) |
+| Baskoylu et al. (2026)                        | 27 worms  | Moving freely in an arena with a copper barrier                                                                                   | III, VII (test)   |
+| Allen Visual Coding Neuropixels               | 58 mice   | Spikes from visual cortex, at rest and watching repeated film clips                                                               | IV, V             |
+| Allen Visual Behavior Neuropixels             | 66 mice   | Spikes across cortex while light is delivered: 39 mice whose Sst or Vip cells respond to it, and 27 with no light-sensitive cells | II, VI            |
 
 None of these recordings are mine. They were made and published by the people named above, and the project keeps only summary numbers computed from them.
 
@@ -52,17 +52,17 @@ A **copy** is a model fitted to recordings of an animal and then asked to stand 
 
 A **network as it comes** is never fitted to an animal. It is run, recorded through the animal's instrument, and measured: a random recurrent network, a recurrent network trained on a task, a spiking network, GRU and CfC character models, Pythia transformers from 14 million to 1 billion parameters, and Mamba state-space models at 130 and 370 million.
 
-The first role asks whether a model of a brain is a model of *that* brain. The second asks whether networks nobody tried to make brain-like differ from brains anyway. The seven questions use both.
+The first role asks whether a model of a brain is a model of _that_ brain. The second asks whether networks nobody tried to make brain-like differ from brains anyway. The seven questions use both.
 
-| | Question | Role of the network | Animals |
-| :--- | :--- | :--- | :--- |
-| I | **The Echo.** Poke one neuron: does a copy respond the way the real brain does? | copy | 113 worms |
-| II | **The Push.** Can watching tell which way a cell pushes the rest of the brain? | copy | 39 mice |
-| III | **The Face.** Is a good copy still an individual, or an average animal? | copy | 27 worms |
-| IV | **The Long Memory.** Does a brain hold on to the past longer than a network? | as it comes | 35 mice |
-| V | **The Inner Light.** Does a brain carry more internal state than a network? | as it comes | 49 mice |
-| VI | **The Waning.** Ask the same thing twice: does the answer fade? | as it comes | 37 worms, 39 mice |
-| VII | **The Journey.** Does a copy built on a still animal hold once the animal moves? | copy | 57 worms |
+|     | Question                                                                         | Role of the network | Animals           |
+| :-- | :------------------------------------------------------------------------------- | :------------------ | :---------------- |
+| I   | **The Echo.** Poke one neuron: does a copy respond the way the real brain does?  | copy                | 113 worms         |
+| II  | **The Push.** Can watching tell which way a cell pushes the rest of the brain?   | copy                | 39 mice           |
+| III | **The Face.** Is a good copy still an individual, or an average animal?          | copy                | 27 worms          |
+| IV  | **The Long Memory.** Does a brain hold on to the past longer than a network?     | as it comes         | 35 mice           |
+| V   | **The Inner Light.** Does a brain carry more internal state than a network?      | as it comes         | 49 mice           |
+| VI  | **The Waning.** Ask the same thing twice: does the answer fade?                  | as it comes         | 37 worms, 39 mice |
+| VII | **The Journey.** Does a copy built on a still animal hold once the animal moves? | copy                | 57 worms          |
 
 The names come from the project site, where each question is filed under one of the seven classical planets. They are labels and nothing more.
 
@@ -177,7 +177,7 @@ The version that passes the registered rule (at least five of the six resting te
 
 One thing it did not need was fast coupling between different neuron types. Removing that improved its resting score. The detail comes back in Question VII.
 
-The caveats are real. The model was designed on these worms, so its passes show robustness across splits and seeds, not confirmation in new animals. On a separate set of worms carrying the *unc-31* mutation it passed in 3 of 5 seeds, where the bar I had set was 4. And a pass means within about a quarter of a real worm.
+The caveats are real. The model was designed on these worms, so its passes show robustness across splits and seeds, not confirmation in new animals. On a separate set of worms carrying the _unc-31_ mutation it passed in 3 of 5 seeds, where the bar I had set was 4. And a pass means within about a quarter of a real worm.
 
 ---
 
@@ -189,11 +189,11 @@ The Echo is a result about a worm, a calcium microscope and single neurons. The 
 
 In the Allen Visual Behavior Neuropixels sessions, mice carried a light-gated channel in one of two kinds of inhibitory interneuron, Sst or Vip. Each session has about five minutes of spontaneous activity and a block in which light is delivered either as 10 ms pulses or as a slower swell lasting one second. I registered five claims before computing any response to the one-second light. Then I built a linear copy from the spontaneous minutes alone and asked it one coarse question: when these cells are driven, what share of brain regions goes up? (A region here is a group of units from one brain area with one spike shape.)
 
-| | Sst mice (29) | Vip mice (10) |
-| :--- | :--- | :--- |
-| Share of regions that rose, measured (median) | 12.5% | 79% |
-| Share the copy fitted to rest predicted would rise (median) | 77% | 69% |
-| Mice in which most regions fell (Sst) or rose (Vip) | 29 of 29 | 10 of 10 |
+|                                                             | Sst mice (29) | Vip mice (10) |
+| :---------------------------------------------------------- | :------------ | :------------ |
+| Share of regions that rose, measured (median)               | 12.5%         | 79%           |
+| Share the copy fitted to rest predicted would rise (median) | 77%           | 69%           |
+| Mice in which most regions fell (Sst) or rose (Vip)         | 29 of 29      | 10 of 10      |
 
 Driving Sst cells lowered activity in most regions in every one of 29 mice. The copy built from rest predicted the opposite, a rise in 77% of regions, and in 28 of the 29 mice it predicted more regions rising than actually rose.
 
@@ -233,10 +233,10 @@ At small $\lambda$ every worm keeps its own dynamics. At large $\lambda$ every w
 - **Forecast skill** is the usual one. Fit on the first half of a worm's recording, predict the second half, report $R^2$.
 - **Individuality** is the yardstick's. It is the median distance between the copy's simulated worms divided by the median distance between real worms. At 1 the simulated worms differ from each other as much as real ones do.
 
-| $\lambda$ | 30 | 100 | 300 | 1,000 | 3,000 | 10,000 | 100,000 |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Forecast $R^2$ | 0.701 | 0.733 | 0.752 | 0.760 | **0.761** | 0.760 | 0.758 |
-| Individuality | 1.052 | 1.038 | **0.990** | 0.909 | 0.783 | 0.625 | 0.456 |
+| $\lambda$      | 30    | 100   | 300       | 1,000 | 3,000     | 10,000 | 100,000 |
+| :------------- | :---- | :---- | :-------- | :---- | :-------- | :----- | :------ |
+| Forecast $R^2$ | 0.701 | 0.733 | 0.752     | 0.760 | **0.761** | 0.760  | 0.758   |
+| Individuality  | 1.052 | 1.038 | **0.990** | 0.909 | 0.783     | 0.625  | 0.456   |
 
 Forecast skill peaks at $\lambda = 3{,}000$. At that setting individuality is 0.78, and the simulated worms are too typical on which neurons move together and on how neurons encode velocity and reversals. Back off to $\lambda = 300$ and the forecast is worse by 0.009 in $R^2$, while individuality returns to 0.99.
 
@@ -292,14 +292,14 @@ $M_1$ is the **internal share**: the fraction of a unit's structured activity th
 
 Across 49 mice watching the film, the median internal share is 0.59, with the middle half of the mice between 0.54 and 0.67.
 
-| Network | Internal share $M_1$ | Registered verdict on "the mice have more" |
-| :--- | :--- | :--- |
-| GRU | 0.13 | confirmed |
-| CfC | 0.16 | confirmed |
-| Pythia, 14M to 1B | 0.33, 0.51, 0.46, 0.60 | not decided: the sizes straddle the mice |
-| Task-trained recurrent network | 0.80 | refuted: the network has more |
-| Mamba, 130M and 370M | 0.85, 0.86 | refuted: the network has more |
-| **Mice (median of 49)** | **0.59** | |
+| Network                        | Internal share $M_1$   | Registered verdict on "the mice have more" |
+| :----------------------------- | :--------------------- | :----------------------------------------- |
+| GRU                            | 0.13                   | confirmed                                  |
+| CfC                            | 0.16                   | confirmed                                  |
+| Pythia, 14M to 1B              | 0.33, 0.51, 0.46, 0.60 | not decided: the sizes straddle the mice   |
+| Task-trained recurrent network | 0.80                   | refuted: the network has more              |
+| Mamba, 130M and 370M           | 0.85, 0.86             | refuted: the network has more              |
+| **Mice (median of 49)**        | **0.59**               |                                            |
 
 All four claims failed.
 
@@ -325,13 +325,13 @@ Second, one pattern stood out after the result. Along the clip, the mice hold th
 
 In the worm atlas the same neuron is sometimes poked more than once. Divide its later response by the one before it, and sort by the time between the two:
 
-| Time between the two pokes | Second response / first | Interval | Pairs (worms) |
-| :--- | :--- | :--- | :--- |
-| 0.6 to 2 min | 0.47 | 0.34 to 0.64 | 56 (37) |
-| 2 to 5 min | 0.64 | 0.52 to 0.78 | 128 (70) |
-| 5 to 10 min | 0.89 | 0.71 to 1.11 | 175 (78) |
-| 10 to 20 min | 1.02 | 0.82 to 1.26 | 155 (67) |
-| 20 to 40 min | 1.10 | 0.76 to 1.53 | 50 (30) |
+| Time between the two pokes | Second response / first | Interval     | Pairs (worms) |
+| :------------------------- | :---------------------- | :----------- | :------------ |
+| 0.6 to 2 min               | 0.47                    | 0.34 to 0.64 | 56 (37)       |
+| 2 to 5 min                 | 0.64                    | 0.52 to 0.78 | 128 (70)      |
+| 5 to 10 min                | 0.89                    | 0.71 to 1.11 | 175 (78)      |
+| 10 to 20 min               | 1.02                    | 0.82 to 1.26 | 155 (67)      |
+| 20 to 40 min               | 1.10                    | 0.76 to 1.53 | 50 (30)       |
 
 A neuron poked again within two minutes gives about half the response, and the deficit is gone after roughly ten minutes. This curve is exploratory: every consecutive repeat of a neuron, compared against control pairs matched for the gap. The drop itself had first shown up in a registered test.
 
@@ -361,12 +361,12 @@ It failed. On 30 freely moving worms (Atanas et al., 2023) the recipe passed 1 o
 
 I then registered a single test. Give the recipe exactly those two things, retune nothing else, and score it once on 27 moving worms from a second dataset (Baskoylu et al., 2026) on which no model of this family had been run. For the second ingredient, the model learns its dynamics on the ranks of each neuron's activity, and each simulated worm takes its distribution shapes from one real training worm.
 
-| Copy | Tests passed of 6, in each run | What it fails |
-| :--- | :--- | :--- |
-| Plain linear copy fitted to rest | 3, 3, 3, 3, 3 | distribution, correlations (too typical), dimensionality |
-| The recipe from still worms | 2, 1, 2, 1, 3 | distribution, correlations and lead-lag in every run |
-| **The recipe with both changes** | **4, 4, 4, 4, 4** | timescale and reversal-bout timing |
-| Coupling only (three runs, not a registered contender) | 5, 4, 5 | distribution |
+| Copy                                                   | Tests passed of 6, in each run | What it fails                                            |
+| :----------------------------------------------------- | :----------------------------- | :------------------------------------------------------- |
+| Plain linear copy fitted to rest                       | 3, 3, 3, 3, 3                  | distribution, correlations (too typical), dimensionality |
+| The recipe from still worms                            | 2, 1, 2, 1, 3                  | distribution, correlations and lead-lag in every run     |
+| **The recipe with both changes**                       | **4, 4, 4, 4, 4**              | timescale and reversal-bout timing                       |
+| Coupling only (three runs, not a registered contender) | 5, 4, 5                        | distribution                                             |
 
 Three claims were registered. The failure repeats on new worms: it does. The two changes help: they do, by the smallest margin the rule allowed. The changed recipe reaches the pass mark of 5 of 6: it does not. It lands on 4 in every run.
 
@@ -381,15 +381,15 @@ What this cannot say is why the original recipe breaks. Both sets of moving worm
 
 ## 11. What It Adds Up To
 
-| Question | An ordinary network or copy | What it was given | Then |
-| :--- | :--- | :--- | :--- |
-| **I. The Echo** | echo agreement 0.01 (two real worms: 0.10) | pokes to learn from | 0.09 to 0.11, inside the range of real worms |
-| **II. The Push** | predicts 77% of regions rise (measured: 12.5%) | a few brief light pulses | predicts 31%; correct direction in 27 of 29 mice |
-| **III. The Face** | individuality 0.78 (real worms: 1) | each worm's own dynamics | 0.99 |
-| **IV. The Long Memory** | 1.4 SDs less slow memory than the mouse | a slow drive, about 6% of each unit's variance | 0.0 SDs at the median; equivalence not shown |
-| **V. The Inner Light** | internal share 13% to 86% (mice: 59%) | nothing | no consistent gap to close |
-| **VI. The Waning** | second response equals the first (worm: about half) | nothing yet, because the cause is unknown | unexplained |
-| **VII. The Journey** | 1 to 3 of 6 tests on moving worms | coupling between neuron types, and activity shape | 4 of 6, one short of the pass mark |
+| Question                | An ordinary network or copy                         | What it was given                                 | Then                                             |
+| :---------------------- | :-------------------------------------------------- | :------------------------------------------------ | :----------------------------------------------- |
+| **I. The Echo**         | echo agreement 0.01 (two real worms: 0.10)          | pokes to learn from                               | 0.09 to 0.11, inside the range of real worms     |
+| **II. The Push**        | predicts 77% of regions rise (measured: 12.5%)      | a few brief light pulses                          | predicts 31%; correct direction in 27 of 29 mice |
+| **III. The Face**       | individuality 0.78 (real worms: 1)                  | each worm's own dynamics                          | 0.99                                             |
+| **IV. The Long Memory** | 1.4 SDs less slow memory than the mouse             | a slow drive, about 6% of each unit's variance    | 0.0 SDs at the median; equivalence not shown     |
+| **V. The Inner Light**  | internal share 13% to 86% (mice: 59%)               | nothing                                           | no consistent gap to close                       |
+| **VI. The Waning**      | second response equals the first (worm: about half) | nothing yet, because the cause is unknown         | unexplained                                      |
+| **VII. The Journey**    | 1 to 3 of 6 tests on moving worms                   | coupling between neuron types, and activity shape | 4 of 6, one short of the pass mark               |
 
 ![All seven results on one sheet](./summary.png)
 _Figure 11: All seven on one sheet. Each row runs from an ordinary network or copy (ring, on the left) toward the column where a network is as close to an animal as another animal is. The filled mark shows how much of the gap closed once the network was given what the right-hand column names. The numbers are each test's own measure._
@@ -454,14 +454,14 @@ The question in the title is too large for one project. The method does scale, t
 
 ### References
 
-- Atanas AA, et al. Brain-wide representations of behavior spanning multiple timescales and states in *C. elegans*. *Cell* 186, 4134 to 4151 (2023).
-- Baskoylu S, et al. Whole-brain recordings of freely moving *C. elegans* at a copper boundary (dataset). Dryad (2026). doi:10.5061/dryad.w9ghx3g4v
+- Atanas AA, et al. Brain-wide representations of behavior spanning multiple timescales and states in _C. elegans_. _Cell_ 186, 4134 to 4151 (2023).
+- Baskoylu S, et al. Whole-brain recordings of freely moving _C. elegans_ at a copper boundary (dataset). Dryad (2026). doi:10.5061/dryad.w9ghx3g4v
 - Biderman S, et al. Pythia: a suite for analyzing large language models across training and scale. ICML (2023).
 - Cho K, et al. Learning phrase representations using RNN encoder-decoder for statistical machine translation. EMNLP (2014).
-- Creamer MS, Leifer AM, Pillow JW. Bridging the gap between the connectome and whole-brain activity in *C. elegans*. bioRxiv (2024).
+- Creamer MS, Leifer AM, Pillow JW. Bridging the gap between the connectome and whole-brain activity in _C. elegans_. bioRxiv (2024).
 - Gu A, Dao T. Mamba: linear-time sequence modeling with selective state spaces. arXiv:2312.00752 (2023).
-- Hasani R, et al. Closed-form continuous-time neural networks. *Nature Machine Intelligence* 4, 992 to 1003 (2022).
-- Randi F, Sharma AK, Dvali S, Leifer AM. Neural signal propagation atlas of *Caenorhabditis elegans*. *Nature* 623, 406 to 414 (2023).
-- Siegle JH, et al. Survey of spiking in the mouse visual system reveals functional hierarchy. *Nature* 592, 86 to 92 (2021).
+- Hasani R, et al. Closed-form continuous-time neural networks. _Nature Machine Intelligence_ 4, 992 to 1003 (2022).
+- Randi F, Sharma AK, Dvali S, Leifer AM. Neural signal propagation atlas of _Caenorhabditis elegans_. _Nature_ 623, 406 to 414 (2023).
+- Siegle JH, et al. Survey of spiking in the mouse visual system reveals functional hierarchy. _Nature_ 592, 86 to 92 (2021).
 - Allen Institute for Brain Science. Visual Coding Neuropixels (DANDI 000021, 000022) and Visual Behavior Neuropixels (DANDI 000713).
-- White JG, Southgate E, Thomson JN, Brenner S. The structure of the nervous system of the nematode *Caenorhabditis elegans*. *Philosophical Transactions of the Royal Society B* 314, 1 to 340 (1986).
+- White JG, Southgate E, Thomson JN, Brenner S. The structure of the nervous system of the nematode _Caenorhabditis elegans_. _Philosophical Transactions of the Royal Society B_ 314, 1 to 340 (1986).
